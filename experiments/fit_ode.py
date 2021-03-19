@@ -5,6 +5,11 @@ import matplotlib.pyplot as plt
 from probnum import statespace, randvars, filtsmooth
 from bvps import bratus, BoundaryValueProblem, WrappedIntegrator
 from tqdm import tqdm
+import pandas as pd 
+
+def dataframe(row_labels, column_labels):
+    data = np.zeros((len(row_labels), len(column_labels)))
+    return pd.DataFrame(data=data, index=row_labels, columns=column_labels)
 
 
 def from_ode(ode, prior):
@@ -69,7 +74,7 @@ initrv, _ = integ.forward_rv(rv, t=bvp.t0, dt=0.)
 
 measmod = from_ode(bvp, ibm)
 
-stopcrit = filtsmooth.StoppingCriterion(atol=1e-3, rtol=1e-3, maxit=500)
+stopcrit = filtsmooth.StoppingCriterion(atol=1e-1, rtol=1e-1, maxit=10)
 
 measmod_iterated = filtsmooth.IteratedDiscreteComponent(measmod, stopcrit=stopcrit)
 kalman = filtsmooth.Kalman(dynamics_model=integ, measurement_model=measmod, initrv=initrv)
@@ -77,25 +82,33 @@ kalman_iterated = filtsmooth.Kalman(dynamics_model=integ, measurement_model=meas
 P0 = ibm.proj2coord(0)
 evalgrid = np.sort(np.random.rand(234))
 
-for num_gridpoints in [1, 5, 10,50, 100, 500]:
+
+labels = ["IEKS-EKF", "IEKS-IEKF", "KS-EKF", "KS-IEKF"]
+
+gridpoint_set = 2 ** np.arange(1, 6)
+results = dataframe(row_labels=gridpoint_set, column_labels=labels)
+
+for num_gridpoints in tqdm(gridpoint_set):
     grid = np.linspace(bvp.t0, bvp.tmax, num_gridpoints)
     data = np.zeros((len(grid), 2))
-    out = kalman.iterated_filtsmooth(dataset=data, times=grid, stopcrit=stopcrit)
-    out_noniterated = kalman.filtsmooth(dataset=data, times=grid)
-    out_3 = kalman_iterated.iterated_filtsmooth(dataset=data, times=grid, stopcrit=stopcrit)
-    out_4 = kalman_iterated.filtsmooth(dataset=data, times=grid)
+    out_ieks_ekf = kalman.iterated_filtsmooth(dataset=data, times=grid, stopcrit=stopcrit)
+    out_ks_ekf = kalman.filtsmooth(dataset=data, times=grid)
+    out_ieks_iekf = kalman_iterated.iterated_filtsmooth(dataset=data, times=grid, stopcrit=stopcrit)
+    out_ks_iekf = kalman_iterated.filtsmooth(dataset=data, times=grid)
 
     x1 = (refsol.sol(evalgrid)).T
-    x2 = (out(evalgrid).mean) @ P0.T
-    x3 = (out_noniterated(evalgrid).mean) @ P0.T
-    x4 = (out_3(evalgrid).mean) @ P0.T
-    x5 = (out_4(evalgrid).mean) @ P0.T
-    error = np.linalg.norm(x1  - x2) / np.sqrt(x2.size)
-    error_noniterated = np.linalg.norm(x1  - x3) / np.sqrt(x3.size)
-    error_3 = np.linalg.norm(x1  - x4) / np.sqrt(x3.size)
-    error_4 = np.linalg.norm(x1  - x5) / np.sqrt(x3.size)
-    print(f"N: {num_gridpoints} | IEKS-EKF: {error} | KS-EKS: {error_noniterated} | IEKS-IEKF: {error_3} | KS-IEKF: {error_4} ")
+    x_ieks_ekf = (out_ieks_ekf(evalgrid).mean) @ P0.T
+    x_ks_ekf = (out_ks_ekf(evalgrid).mean) @ P0.T
+    x_ieks_iekf = (out_ieks_iekf(evalgrid).mean) @ P0.T
+    x_ks_iekf = (out_ks_iekf(evalgrid).mean) @ P0.T
 
+    results["IEKS-EKF"][num_gridpoints] = np.linalg.norm(x1  - x_ieks_ekf) / np.sqrt(x1.size)
+    results["IEKS-IEKF"][num_gridpoints] = np.linalg.norm(x1  - x_ieks_iekf) / np.sqrt(x1.size)
+    results["KS-EKF"][num_gridpoints] = np.linalg.norm(x1  - x_ks_ekf) / np.sqrt(x1.size)
+    results["KS-IEKF"][num_gridpoints] = np.linalg.norm(x1  - x_ks_iekf) / np.sqrt(x1.size)
 
+results.to_csv("data/workprecision_first_attempt_bratus.csv")
+
+print(results)
 # plt.plot(out.locations, out.state_rvs.mean[:, 0])
 # plt.show()
