@@ -9,6 +9,9 @@ from typing import Union, Optional, Callable
 __all__ = ["BoundaryValueProblem", "bratus"]
 
 
+# Check out: https://uk.mathworks.com/help/matlab/ref/bvp4c.html
+
+
 @dataclasses.dataclass
 class BoundaryValueProblem:
     """Boundary value problems."""
@@ -30,15 +33,14 @@ class BoundaryValueProblem:
 
     @property
     def scipy_bc(self):
-
         def bc(ya, yb):
 
             return np.array([self.L @ ya - self.y0, self.R @ yb - self.ymax]).squeeze()
+
         return bc
 
 
-
-def bratus(tmax=1.):
+def bratus(tmax=1.0):
 
     L = np.eye(1, 2)
     R = np.eye(1, 2)
@@ -49,7 +51,6 @@ def bratus(tmax=1.):
 
     random_direction = np.random.rand(2)
 
-
     return BoundaryValueProblem(
         f=bratus_rhs, t0=t0, tmax=tmax, L=L, R=R, y0=y0, ymax=ymax, df=bratus_jacobian
     )
@@ -58,5 +59,6 @@ def bratus(tmax=1.):
 def bratus_rhs(t, y):
     return np.array([y[1], -np.exp(y[0])])
 
+
 def bratus_jacobian(t, y):
-    return np.array([[0., 1.], [-np.exp(y[0]), 0.]])
+    return np.array([[0.0, 1.0], [-np.exp(y[0]), 0.0]])
