@@ -1,45 +1,16 @@
+"""Compute the solution to the bratus BVP with a probabilistic solver."""
 import numpy as np
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from probnum import statespace, randvars, filtsmooth
-from bvps import bratus, BoundaryValueProblem, WrappedIntegrator
+from bvps import bratus, BoundaryValueProblem, WrappedIntegrator, from_ode
 from tqdm import tqdm
 import pandas as pd 
 
 def dataframe(row_labels, column_labels):
     data = np.zeros((len(row_labels), len(column_labels)))
     return pd.DataFrame(data=data, index=row_labels, columns=column_labels)
-
-
-def from_ode(ode, prior):
-
-    spatialdim = prior.spatialdim
-    h0 = prior.proj2coord(coord=0)
-    h1 = prior.proj2coord(coord=1)
-
-    def dyna(t, x):
-        return h1 @ x - ode.f(t, h0 @ x)
-
-    def diff_cholesky(t):
-        return 0.0 * np.eye(spatialdim)
-
-    def jacobian(t, x):
-        return h1 - ode.df(t, h0 @ x) @ h0
-
-    discrete_model = statespace.DiscreteGaussian(
-        input_dim=prior.dimension,
-        output_dim = spatialdim,
-        state_trans_fun=dyna,
-        proc_noise_cov_mat_fun=diff_cholesky,
-        jacob_state_trans_fun=jacobian,
-        proc_noise_cov_cholesky_fun=diff_cholesky,
-    )
-    return filtsmooth.DiscreteEKFComponent(
-        discrete_model,
-        forward_implementation="sqrt",
-        backward_implementation="sqrt",
-    )
 
 
 from scipy.integrate import solve_bvp
@@ -56,7 +27,7 @@ refsol = solve_bvp(bvp.f, bvp.scipy_bc, initial_grid, initial_guess, tol=1e-15)
 
 
 
-q = 4
+q = 3
 num_gridpoints = 50
 
 ibm = statespace.IBM(
@@ -74,7 +45,7 @@ initrv, _ = integ.forward_rv(rv, t=bvp.t0, dt=0.)
 
 measmod = from_ode(bvp, ibm)
 
-stopcrit = filtsmooth.StoppingCriterion(atol=1e-1, rtol=1e-1, maxit=10)
+stopcrit = filtsmooth.StoppingCriterion(atol=1e-1, rtol=1e-1, maxit=5)
 
 measmod_iterated = filtsmooth.IteratedDiscreteComponent(measmod, stopcrit=stopcrit)
 kalman = filtsmooth.Kalman(dynamics_model=integ, measurement_model=measmod, initrv=initrv)
@@ -85,7 +56,7 @@ evalgrid = np.sort(np.random.rand(234))
 
 labels = ["IEKS-EKF", "IEKS-IEKF", "KS-EKF", "KS-IEKF"]
 
-gridpoint_set = 2 ** np.arange(1, 6)
+gridpoint_set = 2 ** np.arange(1, 4)
 results = dataframe(row_labels=gridpoint_set, column_labels=labels)
 
 for num_gridpoints in tqdm(gridpoint_set):
