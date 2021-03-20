@@ -5,6 +5,7 @@ import numpy as np
 
 __all__ = ["WrappedIntegrator"]
 
+
 class WrappedIntegrator(statespace.Integrator, statespace.LTISDE):
     """
     Examples
@@ -62,16 +63,14 @@ class WrappedIntegrator(statespace.Integrator, statespace.LTISDE):
         _diffusion=1.0,
         **kwargs,
     ):
-        if np.abs(dt) == 0.:
+        if np.abs(dt) == 0.0:
             rv, _ = self._update_rv_initial_value(rv, t + dt)
             return rv, _
-        
-        if np.abs(dt) > 0.:
+
+        if np.abs(dt) > 0.0:
             # Plain old forward rv
-            rv, _ = self.integrator.forward_rv(
-                rv, t, dt=dt
-            )
-        
+            rv, _ = self.integrator.forward_rv(rv, t, dt=dt)
+
         rv, _ = self._update_rv_final_value(rv, t + dt)
         return rv, {}
 
@@ -81,65 +80,70 @@ class WrappedIntegrator(statespace.Integrator, statespace.LTISDE):
 
         dt_tmax = self.bvp.tmax - t
 
-        if np.abs(dt_tmax) > 0.:
+        if np.abs(dt_tmax) > 0.0:
 
             # Extrapolate to end point
-            final_point_rv, info = self.integrator.forward_rv(
-                rv, t, dt=dt_tmax
-            )
+            final_point_rv, info = self.integrator.forward_rv(rv, t, dt=dt_tmax)
         else:
             final_point_rv = rv
 
         # Condition on measurement at endpoint
         zero_data = np.zeros(len(self.bvp.ymax))
         updated_final_point_rv, _ = self.measmod_R.backward_realization(
-            realization_obtained=zero_data, rv=final_point_rv, t=self.bvp.tmax,
+            realization_obtained=zero_data,
+            rv=final_point_rv,
+            t=self.bvp.tmax,
         )
 
-        if np.abs(dt_tmax) > 0.:
+        if np.abs(dt_tmax) > 0.0:
             # Condition back to plain old forwarded rv
             updated_rv, _ = self.integrator.backward_rv(
-                rv_obtained=updated_final_point_rv, rv=rv, t=t, dt=dt_tmax)
+                rv_obtained=updated_final_point_rv, rv=rv, t=t, dt=dt_tmax
+            )
         else:
-            updated_rv=updated_final_point_rv
+            updated_rv = updated_final_point_rv
         return updated_rv, {}
-    
-
-
 
     def _update_rv_initial_value(self, rv, t):
 
-
-
         dt_t0 = self.bvp.t0 - t
 
-        if np.abs(dt_t0) > 0.:
+        if np.abs(dt_t0) > 0.0:
 
             # Extrapolate to initial point
-            final_point_rv, info = self.integrator.forward_rv(
-                rv, t, dt=dt_t0
-            )
+            final_point_rv, info = self.integrator.forward_rv(rv, t, dt=dt_t0)
         else:
             final_point_rv = rv
-            
+
         # Condition on measurement at endpoint
         zero_data = np.zeros(len(self.bvp.y0))
         updated_final_point_rv, _ = self.measmod_L.backward_realization(
-            realization_obtained=zero_data, rv=final_point_rv, t=self.bvp.t0,
+            realization_obtained=zero_data,
+            rv=final_point_rv,
+            t=self.bvp.t0,
         )
 
-        if np.abs(dt_t0) > 0.:
+        if np.abs(dt_t0) > 0.0:
 
             # Condition back to plain old forwarded rv
             updated_rv, _ = self.integrator.backward_rv(
-                rv_obtained=updated_final_point_rv, rv=rv, t=t, dt=dt_t0)
+                rv_obtained=updated_final_point_rv, rv=rv, t=t, dt=dt_t0
+            )
         else:
-            updated_rv = updated_final_point_rv 
-    
-
+            updated_rv = updated_final_point_rv
 
         return updated_rv, {}
 
-
     def backward_rv(self, *args, **kwargs):
         return self.integrator.backward_rv(*args, **kwargs)
+
+    @property
+    def ordint(self):
+        return self.integrator.ordint
+
+    @property
+    def spatialdim(self):
+        return self.integrator.ordint
+
+    def proj2coord(self, *args, **kwargs):
+        return self.integrator.proj2coord(*args, **kwargs)
