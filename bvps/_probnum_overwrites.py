@@ -41,6 +41,38 @@ def from_ode(ode, prior):
 class MyKalman(filtsmooth.Kalman):
     """Kalman filtering with calibration"""
 
+    def iterated_filtsmooth(self, dataset, times, stopcrit=None, old_posterior=None):
+        """Compute an iterated smoothing estimate with repeated posterior linearisation.
+
+        If the extended Kalman filter is used, this yields the IEKS. In
+        any case, the result is an approximation to the maximum-a-
+        posteriori estimate.
+        """
+
+        if stopcrit is None:
+            stopcrit = MyStoppingCriterion()
+
+        # Initialise iterated smoother
+        if old_posterior is None:
+            old_posterior = self.filtsmooth(
+                dataset=dataset,
+                times=times,
+                _previous_posterior=None,
+            )
+        new_posterior = old_posterior
+        new_mean = new_posterior.state_rvs.mean
+        old_mean = np.inf * np.ones(new_mean.shape)
+        while not stopcrit.terminate(error=new_mean - old_mean, reference=new_mean):
+            old_posterior = new_posterior
+            new_posterior = self.filtsmooth(
+                dataset=dataset,
+                times=times,
+                _previous_posterior=old_posterior,
+            )
+            new_mean = new_posterior.state_rvs.mean
+            old_mean = old_posterior(new_posterior.locations).mean
+        return new_posterior
+
     def filter(
         self,
         dataset: np.ndarray,
@@ -143,3 +175,56 @@ class MyKalman(filtsmooth.Kalman):
         info["current_sigma"] = sigma
 
         return upd_rv, info
+
+
+class MyStoppingCriterion(filtsmooth.StoppingCriterion):
+    def __init__(self, atol=1e-3, rtol=1e-6, maxit=1000, maxit_reached="error"):
+        self.atol = atol
+        self.rtol = rtol
+        self.maxit = maxit
+        self.iterations = 0
+
+        def error(msg):
+            raise RuntimeError(msg)
+
+        def warning(msg):
+            print(msg)
+
+        def go_on(*args, **kwargs):
+            pass
+
+        options = {
+            "error": error,
+            "warning": warning,
+            "pass": go_on,
+        }
+        self.maxit_behaviour = options[maxit_reached]
+
+        self.previous_number_of_iterations = 0
+
+    def terminate(self, error, reference):
+        """Decide whether the stopping criterion is satisfied, which implies terminating
+        of the iteration.
+
+        If the error is sufficiently small (with respect to atol, rtol
+        and the reference), return True. Else, return False. Throw a
+        runtime error if the maximum number of iterations is reached.
+        """
+        if self.iterations > self.maxit:
+            errormsg = f"Maximum number of iterations (N={self.maxit}) reached."
+            self.maxit_behaviour(errormsg)
+
+        magnitude = self.evaluate_error(error=error, reference=reference)
+        if magnitude > 1:
+            self.iterations += 1
+            return False
+        else:
+            self.previous_number_of_iterations = self.iterations
+            self.iterations = 0
+            return True
+
+    def evaluate_error(self, error, reference):
+        """Compute the normalised error."""
+        normalisation = self.atol + self.rtol * reference
+        magnitude = np.sqrt(np.mean((error / normalisation) ** 2))
+        return magnitude

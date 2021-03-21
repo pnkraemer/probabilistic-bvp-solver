@@ -129,7 +129,7 @@ def matlab_rhs(t, y):
 
 
 def matlab_jacobian(t, y):
-    return np.array([[0, 1], [-1 / t ** 4 - 2 / t]])
+    return np.array([[0, 1], [-1 / t ** 4, -2 / t]])
 
 
 def matlab_solution(t):
