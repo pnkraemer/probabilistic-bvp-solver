@@ -166,9 +166,13 @@ for num_gridpoints in tqdm(gridpoint_set):
     # results_anees["KS-IEKF"][num_gridpoints] = anees(out_ks_iekf, refsol.sol, evalgrid)
 
     # NCI
-    results_nci["IEKS-EKF"][num_gridpoints] = nci(out_ieks_ekf, refsol.sol, evalgrid)
+    results_nci["IEKS-EKF"][num_gridpoints] = nci(
+        out_ieks_ekf, refsol.sol, evalgrid
+    ) + 10 * np.log10(1.0 / out_ieks_ekf_ssq)
     # results_nci["IEKS-IEKF"][num_gridpoints] = nci(out_ieks_iekf, refsol.sol, evalgrid)
-    results_nci["KS-EKF"][num_gridpoints] = nci(out_ks_ekf, refsol.sol, evalgrid)
+    results_nci["KS-EKF"][num_gridpoints] = nci(
+        out_ks_ekf, refsol.sol, evalgrid
+    ) + 10 * np.log10(1.0 / out_ks_ekf_ssq)
     # results_nci["KS-IEKF"][num_gridpoints] = nci(out_ks_iekf, refsol.sol, evalgrid)
 
 results_rmse.to_csv("data/workprecision_first_attempt_r_example_rmse.csv")
