@@ -10,7 +10,8 @@ class WrappedIntegrator(statespace.Integrator, statespace.LTISDE):
     """
     Examples
     --------
-    >>> from probnum import statespace, randvars
+    >>> from probnum import statespace
+    >>> from probnum import random_variables as randvars
     >>> from bvps import bratus, BoundaryValueProblem
     >>> bvp = bratus()
     >>> print(isinstance(bvp, BoundaryValueProblem))
