@@ -4,15 +4,21 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from probnum import statespace, randvars
-from bvps import bratus, BoundaryValueProblem, WrappedIntegrator
+from bvps import (
+    bratus,
+    BoundaryValueProblem,
+    WrappedIntegrator,
+    generate_samples,
+    r_example,
+)
 from tqdm import tqdm
 
 
-bvp = bratus(tmax=1.0)
+bvp = r_example()
 grid = np.linspace(bvp.t0, bvp.tmax, 20)
 
 orders = [2, 3, 5, 8]
-num_samples = 10
+num_samples = 3
 fig, axes = plt.subplots(
     ncols=len(orders),
     nrows=2,
@@ -22,18 +28,6 @@ fig, axes = plt.subplots(
     dpi=250,
     constrained_layout=True,
 )
-
-
-def generate_samples(grid, transition, rv, base_measure_samples, fix=True):
-    if fix:
-        rv, _ = transition.forward_rv(rv, grid[0], dt=0.0)
-    smp = rv.mean + rv.cov_cholesky @ base_measure_samples[0]
-    yield smp
-    for t, tnew, b in zip(grid[:-1], grid[1:], base_measure_samples[1:]):
-        dt = tnew - t
-        rv, _ = transition.forward_realization(smp, t=t, dt=dt)
-        smp = rv.mean + rv.cov_cholesky @ b
-        yield smp
 
 
 for q, ax in tqdm(zip(orders, axes.T), total=len(orders)):

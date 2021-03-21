@@ -35,16 +35,16 @@ class WrappedIntegrator(statespace.Integrator, statespace.LTISDE):
         L, R = self.bvp.L, self.bvp.R
 
         self.measmod_R = statespace.DiscreteLTIGaussian(
-            R @ self.integrator.proj2coord(0) - self.bvp.ymax,
-            np.zeros(len(R)),
+            R @ self.integrator.proj2coord(0),
+            -self.bvp.ymax,
             0 * np.eye(len(R)),
             proc_noise_cov_cholesky=0 * np.eye(len(R)),
             forward_implementation="sqrt",
             backward_implementation="sqrt",
         )
         self.measmod_L = statespace.DiscreteLTIGaussian(
-            L @ self.integrator.proj2coord(0) - self.bvp.y0,
-            np.zeros(len(L)),
+            L @ self.integrator.proj2coord(0),
+            -self.bvp.y0,
             np.zeros((len(L), len(L))),
             proc_noise_cov_cholesky=np.zeros((len(L), len(L))),
             forward_implementation="sqrt",
@@ -84,6 +84,7 @@ class WrappedIntegrator(statespace.Integrator, statespace.LTISDE):
 
             # Extrapolate to end point
             final_point_rv, info = self.integrator.forward_rv(rv, t, dt=dt_tmax)
+
         else:
             final_point_rv = rv
 
@@ -94,6 +95,9 @@ class WrappedIntegrator(statespace.Integrator, statespace.LTISDE):
             rv=final_point_rv,
             t=self.bvp.tmax,
         )
+        # print(updated_final_point_rv.mean)
+        # print(self.bvp.ymax)
+        # print(t)
 
         if np.abs(dt_tmax) > 0.0:
             # Condition back to plain old forwarded rv

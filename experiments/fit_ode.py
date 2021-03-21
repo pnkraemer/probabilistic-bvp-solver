@@ -48,8 +48,8 @@ initial_guess = np.zeros((2, len(initial_grid)))
 refsol = solve_bvp(bvp.f, bvp.scipy_bc, initial_grid, initial_guess, tol=1e-15)
 
 
-q = 3
-num_gridpoints = 50
+q = 2
+num_gridpoints = 250
 
 ibm = statespace.IBM(
     ordint=q,
@@ -62,6 +62,7 @@ integ = WrappedIntegrator(ibm, bvp)
 
 rv = randvars.Normal(np.zeros(ibm.dimension), 2.0 * np.eye(ibm.dimension))
 initrv, _ = integ.forward_rv(rv, t=bvp.t0, dt=0.0)
+
 
 measmod = from_ode(bvp, ibm)
 
@@ -89,6 +90,8 @@ results_nci = dataframe(row_labels=gridpoint_set, column_labels=labels)
 for num_gridpoints in tqdm(gridpoint_set):
     grid = np.linspace(bvp.t0, bvp.tmax, num_gridpoints)
     data = np.zeros((len(grid), 2))
+
+    print(kalman.initrv.mean)
     out_ieks_ekf = diffeq.KalmanODESolution(
         kalman.iterated_filtsmooth(dataset=data, times=grid, stopcrit=stopcrit)
     )

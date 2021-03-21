@@ -1,6 +1,7 @@
 """These objects are suitable replacements of the corresponding ProbNum objects."""
 
 from probnum import statespace, filtsmooth
+from probnum import random_variables as randvars
 import numpy as np
 import scipy.linalg
 
@@ -100,14 +101,23 @@ class MyKalman(filtsmooth.Kalman):
 
             sigma = info["info_upd"]["current_sigma"]
             sigmas.append(sigma)
-            print(sigma)
+            # print(sigma)
 
             rvs.append(filtrv)
 
         ssq = np.mean(sigmas)
-        print("Warning: what about IEKF with the update?")
-        print("global sigma", ssq)
-        print()
+        # rvs = [
+        #     randvars.Normal(
+        #         mean=rv.mean,
+        #         cov=ssq * rv.cov,
+        #         cov_cholesky=np.sqrt(ssq) * rv.cov_cholesky,
+        #     )
+        #     for rv in rvs
+        # ]
+        # print("Warning: what about IEKF with the update?")
+        # print("global sigma", ssq)
+        self.ssq = ssq
+        # print()
         return filtsmooth.FilteringPosterior(times, rvs, self.dynamics_model)
 
     def update(self, rv, time, data, _linearise_at=None):
