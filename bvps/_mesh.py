@@ -23,3 +23,17 @@ def split_grid(a):
     y = a[:-1] + diff * 2.0 / 3.0
     full = np.append(np.append(a, x), y)
     return np.sort(full)
+
+
+def new_grid(a):
+    diff = np.diff(a)
+    x = a[:-1] + diff * 1.0 / 3.0
+    y = a[:-1] + diff * 2.0 / 3.0
+    full = np.append(x, y)
+    return np.sort(full)
+
+
+def new_grid2(a):
+    diff = np.diff(a)
+    x = a[:-1] + diff * 1.0 / 2.0
+    return np.sort(x)
