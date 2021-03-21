@@ -16,6 +16,7 @@ __all__ = [
 
 
 # Check out: https://uk.mathworks.com/help/matlab/ref/bvp4c.html
+# and: http://www.orcca.on.ca/TechReports/TechReports/2001/TR-01-02.pdf
 
 
 @dataclasses.dataclass

@@ -60,7 +60,7 @@ initial_guess = np.zeros((2, len(initial_grid)))
 refsol = solve_bvp(bvp.f, bvp.scipy_bc, initial_grid, initial_guess, tol=1e-15)
 
 
-q = 3
+q = 4
 num_gridpoints = 50
 
 ibm = statespace.IBM(
@@ -94,7 +94,7 @@ evalgrid = np.sort(np.random.rand(234))
 
 labels = ["IEKS-EKF", "KS-EKF"]
 
-gridpoint_set = 2 ** np.arange(4, 10)
+gridpoint_set = 2 ** np.arange(1, 9)
 results_rmse = dataframe(row_labels=gridpoint_set, column_labels=labels)
 results_anees = dataframe(row_labels=gridpoint_set, column_labels=labels)
 results_nci = dataframe(row_labels=gridpoint_set, column_labels=labels)

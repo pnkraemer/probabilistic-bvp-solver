@@ -17,13 +17,28 @@ results_nci = pd.read_csv(
     "data/workprecision_first_attempt_r_example_nci.csv", index_col=0
 )
 
+
+results_rmse2 = pd.read_csv(
+    "data/workprecision_first_attempt_r_example_rmse_q3.csv", index_col=0
+)
+results_anees2 = pd.read_csv(
+    "data/workprecision_first_attempt_r_example_anees_q3.csv", index_col=0
+)
+results_nci2 = pd.read_csv(
+    "data/workprecision_first_attempt_r_example_nci_q3.csv", index_col=0
+)
+
 fig, ax = plt.subplots(ncols=3, figsize=(12, 4), dpi=200, tight_layout=True)
 
 
-for colidx in results_rmse.columns:
-    ax[0].loglog(results_rmse.index, results_rmse[colidx], marker="o", label=colidx)
-    ax[1].loglog(results_anees.index, results_anees[colidx], marker="o", label=colidx)
-    ax[2].semilogx(results_nci.index, results_nci[colidx], marker="o", label=colidx)
+for colidx in results_rmse.columns[:1]:
+    ax[0].loglog(results_rmse.index, results_rmse[colidx], marker="o", label="q=4")
+    ax[1].loglog(results_anees.index, results_anees[colidx], marker="o", label="q=4")
+    ax[2].semilogx(results_nci.index, results_nci[colidx], marker="o", label="q=4")
+
+    ax[0].loglog(results_rmse2.index, results_rmse2[colidx], marker="o", label="q=3")
+    ax[1].loglog(results_anees2.index, results_anees2[colidx], marker="o", label="q=3")
+    ax[2].semilogx(results_nci2.index, results_nci2[colidx], marker="o", label="q=3")
 
 
 ax[1].fill_between(
