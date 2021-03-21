@@ -1,0 +1,1 @@
+axes.prop_cycle : cycler('color', ['107D79', 'FF9933', 'slateblue', 'lightcoral', '9467BD', '8C564B', 'E377C2', '7F7F7F', 'BCBD22', '17BECF'])   ## custom PN colors swapped in
