@@ -22,7 +22,7 @@ def from_ode(ode, prior):
         return 0.0 * np.eye(spatialdim)
 
     def jacobian(t, x):
-        
+
         return h1 - ode.df(t, h0 @ x) @ h0
 
     discrete_model = statespace.DiscreteGaussian(
@@ -73,12 +73,9 @@ class MyKalman(filtsmooth.Kalman):
                 _previous_posterior=old_posterior,
             )
 
-
             msrvs = _RandomVariableList(
                 [
-                    self.measurement_model.forward_realization(
-                        x.mean, t=t
-                    )[0]
+                    self.measurement_model.forward_realization(x.mean, t=t)[0]
                     for t, x in zip(new_posterior.locations, new_posterior.state_rvs)
                 ]
             )
@@ -86,14 +83,10 @@ class MyKalman(filtsmooth.Kalman):
             # new_mean = new_posterior.state_rvs.mean
             new_mean = np.ones((len(msrvs), len(msrvs[0].mean)))
 
-
-
-
             old_mean = old_posterior(new_posterior.locations).mean
 
             # errors = new_mean - old_mean
             print(stopcrit.evaluate_error(errors, new_mean))
-
 
         return new_posterior
 
@@ -257,10 +250,7 @@ class MyStoppingCriterion(filtsmooth.StoppingCriterion):
         return magnitude
 
 
-
 class MyIteratedDiscreteComponent(filtsmooth.IteratedDiscreteComponent):
-
-
     def backward_rv(
         self,
         rv_obtained,
@@ -284,14 +274,10 @@ class MyIteratedDiscreteComponent(filtsmooth.IteratedDiscreteComponent):
         new_mean = current_rv.mean.copy()
         old_mean = np.inf * np.ones(current_rv.mean.shape)
 
-
-
         reference = np.ones(1)
         error = np.inf * np.ones(1)
 
-        while not self.stopcrit.terminate(
-            error=error, reference=reference
-        ):
+        while not self.stopcrit.terminate(error=error, reference=reference):
             old_mean = new_mean.copy()
             current_rv, info = self._component.backward_rv(
                 rv_obtained=rv_obtained,

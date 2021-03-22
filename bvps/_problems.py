@@ -12,6 +12,7 @@ __all__ = [
     "bratus",
     "matlab_example",
     "r_example",
+    "problem_7",
 ]
 
 
@@ -171,3 +172,81 @@ def r_jacobian(t, y, xi):
     x, dx = y
     ynew = (x - x * dx) / xi
     return np.array([[0, 1.0], [1 / xi - dx / xi, -x / xi]])
+
+
+def problem_7(xi=0.01):
+    """https://rdrr.io/rforge/bvpSolve/f/inst/doc/bvpTests.pdf"""
+    L = np.eye(1, 2)
+    R = np.eye(1, 2)
+
+    y0 = np.array([-1.0]) 
+    ymax = np.array([1.0])
+
+    t0 = -1.0
+    tmax = 1.0
+
+    return BoundaryValueProblem(
+        f=lambda t, y: p7_rhs(t, y, xi=xi),
+        t0=t0,
+        tmax=tmax,
+        L=L,
+        R=R,
+        y0=y0,
+        ymax=ymax,
+        df=lambda t, y: p7_jacobian(t, y, xi=xi),
+    )
+
+
+def p7_rhs(t, y, xi):
+    x, dx = y
+    ynew = (
+        x
+        - t * dx
+        - (1 + xi * np.pi ** 2) * np.cos(np.pi * t)
+        - np.pi * t * np.sin(np.pi * t)
+    ) / xi
+    return np.array([dx, ynew])
+
+
+def p7_jacobian(t, y, xi):
+    x, dx = y
+    ynew = (x - x * dx) / xi
+    return np.array([[0, 1.0], [1 / xi , -t / xi]])
+
+
+
+
+def problem_15(xi=0.01):
+    """https://rdrr.io/rforge/bvpSolve/f/inst/doc/bvpTests.pdf"""
+    L = np.eye(1, 2)
+    R = np.eye(1, 2)
+
+    y0 = np.array([1.0]) 
+    ymax = np.array([1.0])
+
+    t0 = -1.0
+    tmax = 1.0
+
+    return BoundaryValueProblem(
+        f=lambda t, y: p15_rhs(t, y, xi=xi),
+        t0=t0,
+        tmax=tmax,
+        L=L,
+        R=R,
+        y0=y0,
+        ymax=ymax,
+        df=lambda t, y: p15_jacobian(t, y, xi=xi),
+    )
+
+
+def p15_rhs(t, y, xi):
+    x, dx = y
+    ynew = (
+        t * x
+    ) / xi
+    return np.array([dx, ynew])
+
+
+def p15_jacobian(t, y, xi):
+    x, dx = y
+    return np.array([[0, 1.0], [t / xi, 0.]])

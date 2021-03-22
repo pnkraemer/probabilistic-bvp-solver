@@ -24,8 +24,9 @@ from bvps import (
     new_grid,
     new_grid2,
     matlab_example,
+    problem_7,
     MyStoppingCriterion,
-    MyIteratedDiscreteComponent,
+    MyIteratedDiscreteComponent,problem_15
 )
 from tqdm import tqdm
 import pandas as pd
@@ -44,12 +45,19 @@ from probnumeval.timeseries import (
 from scipy.integrate import solve_bvp
 
 
-bvp = r_example(xi=0.01)
-bvp = matlab_example()
+bvp = problem_15(xi=0.0005)
+# bvp = matlab_example()
 
 initial_grid = np.linspace(bvp.t0, bvp.tmax, 5)
 initial_guess = np.zeros((2, len(initial_grid)))
 refsol = solve_bvp(bvp.f, bvp.scipy_bc, initial_grid, initial_guess, tol=1e-12)
+
+# dy is the interesting bit here
+plt.plot(refsol.x, refsol.y[1])
+for t in refsol.x:
+    plt.axvline(t, linewidth=0.1, color="k")
+plt.show()
+
 
 
 q = 3
@@ -121,14 +129,14 @@ for i in range(1, 12):
     out_ieks_ekf_ssq = kalman.ssq
     fig, ax = plt.subplots(dpi=300, nrows=2, sharex=True)
 
-    ax[0].plot(evalgrid, out_ieks_ekf(evalgrid).mean[:, 0])
-    ax[0].plot(evalgrid, refsol.sol(evalgrid).T[:, 0], linestyle="dashed")
+    ax[0].plot(evalgrid, out_ieks_ekf(evalgrid).mean[:, 1])
+    ax[0].plot(evalgrid, refsol.sol(evalgrid).T[:, 1], linestyle="dashed")
     # plt.plot(out_ieks_ekf.t, out_ieks_ekf.y.mean[:, 0])
     # for t in out_ieks_ekf.t:
     #     plt.axvline(t, linewidth=0.2)
 
-    # for t in new_grid_:
-    #     plt.axvline(t, linewidth=1)
+    for t in new_grid_:
+        ax[0].axvline(t, linewidth=0.5, color="gray")
     ax[1].semilogy(out_ieks_ekf.t[:-1], np.diff(out_ieks_ekf.t), ".")
     ax[1].semilogy(refsol.x[:-1], np.diff(refsol.x), ".")
     plt.show()
@@ -143,7 +151,7 @@ for i in range(1, 12):
     print()
 
     new_grid_ = new_grid2(out_ieks_ekf.t)
-    errors = out_ieks_ekf(new_grid_).std * np.sqrt(out_ieks_ekf_ssq)
+    # errors = out_ieks_ekf(new_grid_).std * np.sqrt(out_ieks_ekf_ssq)
 
     msrvs = _RandomVariableList(
         [measmod.forward_rv(old_posterior(t), t=t)[0] for t in new_grid_]
