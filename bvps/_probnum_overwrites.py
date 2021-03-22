@@ -4,6 +4,7 @@ from probnum import statespace, filtsmooth
 from probnum import random_variables as randvars
 import numpy as np
 import scipy.linalg
+from probnum._randomvariablelist import _RandomVariableList
 
 __all__ = ["from_ode", "MyKalman"]
 
@@ -21,6 +22,7 @@ def from_ode(ode, prior):
         return 0.0 * np.eye(spatialdim)
 
     def jacobian(t, x):
+        
         return h1 - ode.df(t, h0 @ x) @ h0
 
     discrete_model = statespace.DiscreteGaussian(
@@ -62,15 +64,37 @@ class MyKalman(filtsmooth.Kalman):
         new_posterior = old_posterior
         new_mean = new_posterior.state_rvs.mean
         old_mean = np.inf * np.ones(new_mean.shape)
-        while not stopcrit.terminate(error=new_mean - old_mean, reference=new_mean):
+        errors = np.inf * np.ones(new_mean.shape)
+        while not stopcrit.terminate(error=errors, reference=new_mean):
             old_posterior = new_posterior
             new_posterior = self.filtsmooth(
                 dataset=dataset,
                 times=times,
                 _previous_posterior=old_posterior,
             )
-            new_mean = new_posterior.state_rvs.mean
+
+
+            msrvs = _RandomVariableList(
+                [
+                    self.measurement_model.forward_realization(
+                        x.mean, t=t
+                    )[0]
+                    for t, x in zip(new_posterior.locations, new_posterior.state_rvs)
+                ]
+            )
+            errors = np.abs(msrvs.mean)
+            # new_mean = new_posterior.state_rvs.mean
+            new_mean = np.ones((len(msrvs), len(msrvs[0].mean)))
+
+
+
+
             old_mean = old_posterior(new_posterior.locations).mean
+
+            # errors = new_mean - old_mean
+            print(stopcrit.evaluate_error(errors, new_mean))
+
+
         return new_posterior
 
     def filter(
@@ -215,6 +239,7 @@ class MyStoppingCriterion(filtsmooth.StoppingCriterion):
             self.maxit_behaviour(errormsg)
 
         magnitude = self.evaluate_error(error=error, reference=reference)
+        # print("M", magnitude)
         if magnitude > 1:
             self.iterations += 1
             return False
@@ -226,5 +251,61 @@ class MyStoppingCriterion(filtsmooth.StoppingCriterion):
     def evaluate_error(self, error, reference):
         """Compute the normalised error."""
         normalisation = self.atol + self.rtol * reference
+
+        # return np.amax(error / normalisation)
         magnitude = np.sqrt(np.mean((error / normalisation) ** 2))
         return magnitude
+
+
+
+class MyIteratedDiscreteComponent(filtsmooth.IteratedDiscreteComponent):
+
+
+    def backward_rv(
+        self,
+        rv_obtained,
+        rv,
+        rv_forwarded=None,
+        gain=None,
+        t=None,
+        dt=None,
+        _diffusion=1.0,
+        _linearise_at=None,
+    ):
+        current_rv, info = self._component.backward_rv(
+            rv_obtained=rv_obtained,
+            rv=rv,
+            t=t,
+            dt=dt,
+            _diffusion=_diffusion,
+            _linearise_at=_linearise_at,
+        )
+
+        new_mean = current_rv.mean.copy()
+        old_mean = np.inf * np.ones(current_rv.mean.shape)
+
+
+
+        reference = np.ones(1)
+        error = np.inf * np.ones(1)
+
+        while not self.stopcrit.terminate(
+            error=error, reference=reference
+        ):
+            old_mean = new_mean.copy()
+            current_rv, info = self._component.backward_rv(
+                rv_obtained=rv_obtained,
+                rv=rv,
+                t=t,
+                dt=dt,
+                _diffusion=_diffusion,
+                _linearise_at=current_rv,
+            )
+
+            fwd, _ = self._component.forward_realization(current_rv.mean, t=t)
+            error = np.abs(fwd.mean)
+            reference = np.ones(error.shape)
+
+            new_mean = current_rv.mean.copy()
+
+        return current_rv, info

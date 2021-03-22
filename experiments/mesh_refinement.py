@@ -25,6 +25,7 @@ from bvps import (
     new_grid2,
     matlab_example,
     MyStoppingCriterion,
+    MyIteratedDiscreteComponent
 )
 from tqdm import tqdm
 import pandas as pd
@@ -44,10 +45,11 @@ from scipy.integrate import solve_bvp
 
 
 bvp = r_example(xi=0.01)
+bvp = matlab_example()
 
 initial_grid = np.linspace(bvp.t0, bvp.tmax, 5)
 initial_guess = np.zeros((2, len(initial_grid)))
-refsol = solve_bvp(bvp.f, bvp.scipy_bc, initial_grid, initial_guess, tol=1e-15)
+refsol = solve_bvp(bvp.f, bvp.scipy_bc, initial_grid, initial_guess, tol=1e-12)
 
 
 q = 3
@@ -68,10 +70,10 @@ initrv, _ = integ.forward_rv(rv, t=bvp.t0, dt=0.0)
 
 measmod = from_ode(bvp, ibm)
 # measmod = filtsmooth.IteratedDiscreteComponent(measmod)
-# stopcrit = MyStoppingCriterion(atol=1e-2, rtol=1e-2, maxit=500)
+stopcrit = MyStoppingCriterion(atol=1e-2, rtol=1e-2, maxit=500)
 # stopcrit = MyStoppingCriterion()
 
-# measmod_iterated = filtsmooth.IteratedDiscreteComponent(measmod, stopcrit=stopcrit)
+measmod_iterated = MyIteratedDiscreteComponent(measmod, stopcrit=stopcrit)
 kalman = MyKalman(dynamics_model=integ, measurement_model=measmod, initrv=initrv)
 
 # kalman_iterated = filtsmooth.Kalman(
@@ -80,7 +82,7 @@ kalman = MyKalman(dynamics_model=integ, measurement_model=measmod, initrv=initrv
 P0 = ibm.proj2coord(0)
 evalgrid = np.sort(np.random.rand(234))
 
-num_gridpoints = 2
+num_gridpoints = 50
 grid = np.linspace(bvp.t0, bvp.tmax, num_gridpoints)
 data = np.zeros((len(grid), 2))
 
@@ -104,12 +106,12 @@ data = np.zeros((len(grid), 2))
 # plt.plot(out_ks_ekf.t, out_ks_ekfA.y.mean[:, 0])
 # plt.show()
 
-
+new_grid_ = []
 ###### Next round #######
 evalgrid = np.linspace(bvp.t0, bvp.tmax, 100)
 old_posterior = None
-for i in range(10):
-    stopcrit = MyStoppingCriterion(atol=1e-6, rtol=1e-6)
+for i in range(1, 8):
+    stopcrit = MyStoppingCriterion(atol=1e-2, rtol=1e-2)
     old_posterior = kalman.iterated_filtsmooth(
         dataset=data, times=grid, stopcrit=stopcrit, old_posterior=old_posterior
     )
@@ -117,13 +119,34 @@ for i in range(10):
     out_ieks_ekf = diffeq.KalmanODESolution(old_posterior)
     print("NUMBER OF ITERATIONS", stopcrit.previous_number_of_iterations)
     out_ieks_ekf_ssq = kalman.ssq
+    plt.subplots(dpi=300)
 
     plt.plot(evalgrid, out_ieks_ekf(evalgrid).mean[:, 0])
-    # plt.plot(evalgrid, refsol.sol(evalgrid).T[:, 0], linestyle="dashed")
+    plt.plot(evalgrid, refsol.sol(evalgrid).T[:, 0], linestyle="dashed")
     # plt.plot(out_ieks_ekf.t, out_ieks_ekf.y.mean[:, 0])
     for t in out_ieks_ekf.t:
         plt.axvline(t, linewidth=0.2)
+    
+    for t in new_grid_:
+        plt.axvline(t, linewidth=1)
+    
     plt.show()
+
+
+    msrvs = _RandomVariableList(
+        [measmod.forward_rv(old_posterior(t), t=t)[0] for t in old_posterior.locations]
+    )
+    errors = np.abs(msrvs.mean * np.sqrt(out_ieks_ekf_ssq))
+    print("ERRORS:", errors)
+    print("MEAN ERRORS:", np.mean(errors))
+    print("MAX ERRORS:", np.amax(errors))
+    print()
+
+
+
+
+
+
 
     new_grid_ = new_grid2(out_ieks_ekf.t)
     errors = out_ieks_ekf(new_grid_).std * np.sqrt(out_ieks_ekf_ssq)
@@ -133,15 +156,16 @@ for i in range(10):
     )
     errors = msrvs.std * np.sqrt(out_ieks_ekf_ssq)
     # print(errors, error2)
-    new_t = new_grid_[np.linalg.norm(errors, axis=1) > np.mean(np.abs(errors))]
+    
+    new_t = new_grid_[np.linalg.norm(errors, axis=1) > np.median(np.linalg.norm(errors, axis=1))]
     # new_t = new_grid_[np.linalg.norm(errors, axis=1) > 1e-1]
     grid = np.sort(np.append(grid, new_t))
-    print("ERROR MAGNITUDE", np.linalg.norm(errors, axis=1))
+    # print("ERROR MAGNITUDE", np.linalg.norm(errors, axis=1))
     # grid = new_t
     data = np.zeros((len(grid), 2))
-    print("MEAN ERROR", np.mean(np.abs(errors)))
+    # print("MEAN ERROR", np.mean(np.abs(errors)))
     print("NUMBER OF GRIDPOINTS", len(grid))
-    print()
+    # print()
 
 
 ###### Next round #######
