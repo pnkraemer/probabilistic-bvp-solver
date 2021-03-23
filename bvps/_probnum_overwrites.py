@@ -12,6 +12,7 @@ __all__ = ["from_ode", "MyKalman"]
 def from_ode(ode, prior):
 
     spatialdim = prior.spatialdim
+    print(spatialdim)
     h0 = prior.proj2coord(coord=0)
     h1 = prior.proj2coord(coord=1)
 
@@ -62,7 +63,7 @@ class MyKalman(filtsmooth.Kalman):
                 _previous_posterior=None,
             )
         new_posterior = old_posterior
-        new_mean = new_posterior.state_rvs.mean
+        new_mean = new_posterior.states.mean
         old_mean = np.inf * np.ones(new_mean.shape)
         errors = np.inf * np.ones(new_mean.shape)
         while not stopcrit.terminate(error=errors, reference=new_mean):
@@ -76,14 +77,14 @@ class MyKalman(filtsmooth.Kalman):
             msrvs = _RandomVariableList(
                 [
                     self.measurement_model.forward_realization(x.mean, t=t)[0]
-                    for t, x in zip(new_posterior.locations, new_posterior.state_rvs)
+                    for t, x in zip(new_posterior.locations, new_posterior.states)
                 ]
             )
             errors = np.abs(msrvs.mean)
             # print(errors)
-            # new_mean = new_posterior.state_rvs.mean
-            new_mean = np.ones((len(msrvs), len(msrvs[0].mean)))
-
+            new_mean = new_posterior.states.mean @ self.dynamics_model.proj2coord(1).T
+            # new_mean = np.ones((len(msrvs), len(msrvs[0].mean)))
+            # print(errors)
             old_mean = old_posterior(new_posterior.locations).mean
 
             # errors = new_mean - old_mean
@@ -118,24 +119,18 @@ class MyKalman(filtsmooth.Kalman):
         dataset, times = np.asarray(dataset), np.asarray(times)
         rvs = []
         sigmas = []
-        print(times[0])
+        # print(times[0])
         _linearise_update_at = (
             None if _previous_posterior is None else _previous_posterior(times[0])
         )
         if _previous_posterior is not None:
-            filtrv, *_ = self.update(
-                data=dataset[0],
-                rv=_previous_posterior[0],
-                time=times[0],
-                _linearise_at=_linearise_update_at,
-            )
-        else:
-            filtrv, *_ = self.update(
-                data=dataset[0],
-                rv=self.initrv,
-                time=times[0],
-                _linearise_at=_linearise_update_at,
-            )
+            self.initrv.mean = _previous_posterior[0].mean
+        filtrv, *_ = self.update(
+            data=dataset[0],
+            rv=self.initrv,
+            time=times[0],
+            _linearise_at=_linearise_update_at,
+        )
 
         rvs.append(filtrv)
         for idx in range(1, len(times)):
@@ -310,11 +305,14 @@ class MyStoppingCriterion(filtsmooth.StoppingCriterion):
 
     def evaluate_error(self, error, reference):
         """Compute the normalised error."""
-        normalisation = self.atol + self.rtol * reference
-
-        # return np.amax(error / normalisation)
-        magnitude = np.sqrt(np.mean((error / normalisation) ** 2))
+        # normalisation = self.atol + self.rtol * np.abs(reference)
+        quotient = self.evaluate_quotient(error=error, reference=reference)
+        magnitude = np.sqrt(np.mean(quotient ** 2))
         return magnitude
+
+    def evaluate_quotient(self, error, reference):
+        normalisation = self.atol + self.rtol * np.abs(reference)
+        return error / normalisation
 
 
 class MyIteratedDiscreteComponent(filtsmooth.IteratedDiscreteComponent):

@@ -152,3 +152,11 @@ class WrappedIntegrator(statespace.Integrator, statespace.LTISDE):
 
     def proj2coord(self, *args, **kwargs):
         return self.integrator.proj2coord(*args, **kwargs)
+
+    @property
+    def dimension(self):
+        return self.integrator.dimension
+
+    @property
+    def spatialdim(self):
+        return self.integrator.spatialdim
