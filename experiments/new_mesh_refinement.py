@@ -60,8 +60,11 @@ posterior = probsolve_bvp(
     insert="single",
 )
 
+
 evalgrid = np.linspace(bvp.t0, bvp.tmax)
-plt.plot(evalgrid, posterior(evalgrid).mean[:, 0])
-for t in posterior.locations:
-    plt.axvline(t, linewidth=0.1)
-plt.show()
+
+for post in posterior:
+    plt.plot(evalgrid, post(evalgrid).mean[:, 0])
+    for t in post.locations:
+        plt.axvline(t, linewidth=0.1)
+    plt.show()

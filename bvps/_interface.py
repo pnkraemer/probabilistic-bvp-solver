@@ -58,7 +58,7 @@ def probsolve_bvp(
     )
     bvp_posterior = diffeq.KalmanODESolution(kalman_posterior)
     sigma_squared = kalman.ssq
-
+    yield bvp_posterior
     # Set up candidates for mesh refinement
     if insert == "single":
         candidate_locations = insert_single_points(bvp_posterior.locations)
@@ -96,6 +96,6 @@ def probsolve_bvp(
         mask = np.linalg.norm(quotient, axis=1) > np.sqrt(bvp_dim)
         # print(np.linalg.norm(quotient, axis=1))
         print(len(grid))
-
+        yield bvp_posterior
         # print(mask, len(grid))
-    return bvp_posterior
+    # return bvp_posterior
