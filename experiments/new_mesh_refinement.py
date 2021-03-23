@@ -31,15 +31,15 @@ from probnum import random_variables as randvars
 from scipy.integrate import solve_bvp
 
 
-# bvp = r_example(xi=0.1)
-bvp = matlab_example()
+bvp = r_example(xi=0.001)
+# bvp = matlab_example()
 
-initial_grid = np.linspace(bvp.t0, bvp.tmax, 120)
+initial_grid = np.linspace(bvp.t0, bvp.tmax, 10)
 initial_guess = np.zeros((2, len(initial_grid)))
 refsol = solve_bvp(bvp.f, bvp.scipy_bc, initial_grid, initial_guess, tol=1e-12)
 
 
-q = 2
+q = 3
 
 ibm = statespace.IBM(
     ordint=q,
@@ -55,16 +55,21 @@ posterior = probsolve_bvp(
     bvp=bvp,
     bridge_prior=integ,
     initial_grid=initial_grid,
-    atol=1e-8,
-    rtol=1e-8,
+    atol=1e-4,
+    rtol=1e-4,
     insert="single",
+    which_method="iekf",
 )
 
 
 evalgrid = np.linspace(bvp.t0, bvp.tmax)
 
 for post in posterior:
-    plt.plot(evalgrid, post(evalgrid).mean[:, 0])
+    fig, ax = plt.subplots(nrows=2)
+
+    ax[0].plot(evalgrid, post(evalgrid).mean[:, 0])
+    ax[0].plot(evalgrid, refsol.sol(evalgrid).T[:, 0], color="gray", linestyle="dashed")
     for t in post.locations:
-        plt.axvline(t, linewidth=0.1)
+        ax[0].axvline(t, linewidth=0.1, color="k")  #
+    ax[1].semilogy(post.locations[:-1], np.diff(post.locations), "x", color="k")
     plt.show()

@@ -33,7 +33,9 @@ def probsolve_bvp(
 
     measmod = from_ode(bvp, bridge_prior)
     if which_method == "iekf":
-        stopcrit_iekf = MyStoppingCriterion(atol=atol, rtol=rtol, maxit=maxit)
+        stopcrit_iekf = MyStoppingCriterion(
+            atol=100 * atol, rtol=100 * rtol, maxit=maxit
+        )
         measmod = MyIteratedDiscreteComponent(measmod, stopcrit=stopcrit_iekf)
 
     rv = randvars.Normal(
@@ -50,7 +52,7 @@ def probsolve_bvp(
     # Call IEKS ##############################
 
     grid = initial_grid
-    stopcrit_ieks = MyStoppingCriterion(atol=atol, rtol=rtol, maxit=maxit)
+    stopcrit_ieks = MyStoppingCriterion(atol=100 * atol, rtol=100 * rtol, maxit=maxit)
     bvp_dim = len(bvp.R.T)
     data = np.zeros((len(grid), bvp_dim))
     kalman_posterior = kalman.iterated_filtsmooth(

@@ -1,7 +1,6 @@
 """These objects are suitable replacements of the corresponding ProbNum objects."""
 
 from probnum import statespace, filtsmooth
-from probnum import random_variables as randvars
 import numpy as np
 import scipy.linalg
 from probnum._randomvariablelist import _RandomVariableList
@@ -12,7 +11,6 @@ __all__ = ["from_ode", "MyKalman"]
 def from_ode(ode, prior):
 
     spatialdim = prior.spatialdim
-    print(spatialdim)
     h0 = prior.proj2coord(coord=0)
     h1 = prior.proj2coord(coord=1)
 
@@ -171,7 +169,9 @@ class MyKalman(filtsmooth.Kalman):
         # print("global sigma", ssq)
         self.ssq = ssq
         # print()
-        return filtsmooth.FilteringPosterior(times, rvs, self.dynamics_model)
+        return filtsmooth.FilteringPosterior(
+            locations=times, states=rvs, transition=self.dynamics_model
+        )
 
     def update(self, rv, time, data, _linearise_at=None):
 

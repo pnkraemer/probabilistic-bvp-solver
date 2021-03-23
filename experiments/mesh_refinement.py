@@ -111,7 +111,7 @@ new_grid_ = []
 evalgrid = np.linspace(bvp.t0, bvp.tmax, 100)
 old_posterior = None
 for i in range(1, 12):
-    stopcrit = MyStoppingCriterion(atol=1e-6, rtol=1e-6)
+    stopcrit = MyStoppingCriterion(atol=1e-3, rtol=1e-6)
     old_posterior = kalman.iterated_filtsmooth(
         dataset=data, times=grid, stopcrit=stopcrit, old_posterior=old_posterior
     )
