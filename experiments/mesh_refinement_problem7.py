@@ -26,7 +26,8 @@ from bvps import (
     matlab_example,
     problem_7,
     MyStoppingCriterion,
-    MyIteratedDiscreteComponent,problem_15
+    MyIteratedDiscreteComponent,
+    problem_15,
 )
 from tqdm import tqdm
 import pandas as pd
@@ -57,7 +58,6 @@ plt.plot(refsol.x, refsol.y[1])
 for t in refsol.x:
     plt.axvline(t, linewidth=0.1, color="k")
 plt.show()
-
 
 
 q = 3

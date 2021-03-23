@@ -70,7 +70,7 @@ initrv, _ = integ.forward_rv(rv, t=bvp.t0, dt=0.0)
 
 measmod = from_ode(bvp, ibm)
 # measmod = filtsmooth.IteratedDiscreteComponent(measmod)
-stopcrit = MyStoppingCriterion(atol=1e-2, rtol=1e-2, maxit=500)
+stopcrit = MyStoppingCriterion(atol=1e-10, rtol=1e-10, maxit=500)
 # stopcrit = MyStoppingCriterion()
 
 measmod_iterated = MyIteratedDiscreteComponent(measmod, stopcrit=stopcrit)
@@ -82,7 +82,7 @@ kalman = MyKalman(dynamics_model=integ, measurement_model=measmod, initrv=initrv
 P0 = ibm.proj2coord(0)
 evalgrid = np.sort(np.random.rand(234))
 
-num_gridpoints = 100
+num_gridpoints = 133
 grid = np.linspace(bvp.t0, bvp.tmax, num_gridpoints)
 data = np.zeros((len(grid), 2))
 
@@ -111,7 +111,7 @@ new_grid_ = []
 evalgrid = np.linspace(bvp.t0, bvp.tmax, 100)
 old_posterior = None
 for i in range(1, 12):
-    stopcrit = MyStoppingCriterion(atol=1e-2, rtol=1e-2)
+    stopcrit = MyStoppingCriterion(atol=1e-6, rtol=1e-6)
     old_posterior = kalman.iterated_filtsmooth(
         dataset=data, times=grid, stopcrit=stopcrit, old_posterior=old_posterior
     )
@@ -121,39 +121,21 @@ for i in range(1, 12):
     out_ieks_ekf_ssq = kalman.ssq
     fig, ax = plt.subplots(dpi=300, nrows=2, sharex=True)
 
-    ax[0].plot(evalgrid, out_ieks_ekf(evalgrid).mean[:, 0])
-    ax[0].plot(evalgrid, refsol.sol(evalgrid).T[:, 0], linestyle="dashed")
-    # plt.plot(out_ieks_ekf.t, out_ieks_ekf.y.mean[:, 0])
-    # for t in out_ieks_ekf.t:
-    #     plt.axvline(t, linewidth=0.2)
-
-    # for t in new_grid_:
-    #     plt.axvline(t, linewidth=1)
-    ax[1].semilogy(out_ieks_ekf.t[:-1], np.diff(out_ieks_ekf.t), ".")
-    ax[1].semilogy(refsol.x[:-1], np.diff(refsol.x), ".")
-    plt.show()
-
-    msrvs = _RandomVariableList(
-        [measmod.forward_rv(old_posterior(t), t=t)[0] for t in old_posterior.locations]
-    )
-    errors = np.abs(msrvs.mean * np.sqrt(out_ieks_ekf_ssq))
-    print("ERRORS:", errors)
-    print("MEAN ERRORS:", np.mean(errors))
-    print("MAX ERRORS:", np.amax(errors))
-    print()
+    # msrvs = _RandomVariableList(
+    #     [measmod.forward_rv(old_posterior(t), t=t)[0] for t in old_posterior.locations]
+    # )
+    # errors = np.abs(msrvs.mean * np.sqrt(out_ieks_ekf_ssq))
 
     new_grid_ = new_grid2(out_ieks_ekf.t)
     errors = out_ieks_ekf(new_grid_).std * np.sqrt(out_ieks_ekf_ssq)
 
-    msrvs = _RandomVariableList(
-        [measmod.forward_rv(old_posterior(t), t=t)[0] for t in new_grid_]
-    )
-    errors = msrvs.std * np.sqrt(out_ieks_ekf_ssq)
-    # print(errors, error2)
+    # msrvs = _RandomVariableList(
+    #     [measmod.forward_rv(old_posterior(t), t=t)[0] for t in new_grid_]
+    # )
+    # errors = msrvs.std * np.sqrt(out_ieks_ekf_ssq)
+    # # print(errors, error2)
 
-    new_t = new_grid_[
-        np.linalg.norm(errors, axis=1) > np.median(np.linalg.norm(errors, axis=1))
-    ]
+    new_t = new_grid_[np.linalg.norm(errors, axis=1) > 1e-2]
     # new_t = new_grid_[np.linalg.norm(errors, axis=1) > 1e-1]
     grid = np.sort(np.append(grid, new_t))
     # print("ERROR MAGNITUDE", np.linalg.norm(errors, axis=1))
@@ -161,9 +143,22 @@ for i in range(1, 12):
     data = np.zeros((len(grid), 2))
     # print("MEAN ERROR", np.mean(np.abs(errors)))
     print("NUMBER OF GRIDPOINTS", len(grid))
-    # print()
+    # print("ERRORS:", errors)
+    print("MEAN ERRORS:", np.mean(errors))
+    print("MAX ERRORS:", np.amax(errors))
+    print()
 
+    ax[0].plot(evalgrid, out_ieks_ekf(evalgrid).mean[:, 0])
+    ax[0].plot(evalgrid, refsol.sol(evalgrid).T[:, 0], linestyle="dashed")
+    ax[0].plot(out_ieks_ekf.t, out_ieks_ekf.y.mean[:, 0], "o")
+    for t in out_ieks_ekf.t:
+        ax[0].axvline(t, linewidth=0.1, color="k")
 
+    for t in new_grid_:
+        ax[0].axvline(t, linewidth=0.5, color="k")
+    ax[1].semilogy(out_ieks_ekf.t[:-1], np.diff(out_ieks_ekf.t), ".")
+    ax[1].semilogy(refsol.x[:-1], np.diff(refsol.x), ".")
+    plt.show()
 ###### Next round #######
 
 

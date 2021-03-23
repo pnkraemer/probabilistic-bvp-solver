@@ -80,13 +80,14 @@ class MyKalman(filtsmooth.Kalman):
                 ]
             )
             errors = np.abs(msrvs.mean)
+            # print(errors)
             # new_mean = new_posterior.state_rvs.mean
             new_mean = np.ones((len(msrvs), len(msrvs[0].mean)))
 
             old_mean = old_posterior(new_posterior.locations).mean
 
             # errors = new_mean - old_mean
-            print(stopcrit.evaluate_error(errors, new_mean))
+            # print(stopcrit.evaluate_error(errors, new_mean))
 
         return new_posterior
 
@@ -117,16 +118,24 @@ class MyKalman(filtsmooth.Kalman):
         dataset, times = np.asarray(dataset), np.asarray(times)
         rvs = []
         sigmas = []
-
+        print(times[0])
         _linearise_update_at = (
             None if _previous_posterior is None else _previous_posterior(times[0])
         )
-        filtrv, *_ = self.update(
-            data=dataset[0],
-            rv=self.initrv,
-            time=times[0],
-            _linearise_at=_linearise_update_at,
-        )
+        if _previous_posterior is not None:
+            filtrv, *_ = self.update(
+                data=dataset[0],
+                rv=_previous_posterior[0],
+                time=times[0],
+                _linearise_at=_linearise_update_at,
+            )
+        else:
+            filtrv, *_ = self.update(
+                data=dataset[0],
+                rv=self.initrv,
+                time=times[0],
+                _linearise_at=_linearise_update_at,
+            )
 
         rvs.append(filtrv)
         for idx in range(1, len(times)):
@@ -192,6 +201,64 @@ class MyKalman(filtsmooth.Kalman):
         info["current_sigma"] = sigma
 
         return upd_rv, info
+
+    def filter_step(
+        self,
+        start,
+        stop,
+        current_rv,
+        data,
+        _linearise_predict_at=None,
+        _linearise_update_at=None,
+        _diffusion=1.0,
+    ):
+        """A single filter step.
+
+        Consists of a prediction step (t -> t+1) and an update step (at t+1).
+
+        Parameters
+        ----------
+        start : float
+            Predict FROM this time point.
+        stop : float
+            Predict TO this time point.
+        current_rv : RandomVariable
+            Predict based on this random variable. For instance, this can be the result
+            of a previous call to filter_step.
+        data : array_like
+            Compute the update based on this data.
+        _linearise_predict_at
+            Linearise the prediction step at this RV. Used for iterated filtering and smoothing.
+        _linearise_update_at
+            Linearise the update step at this RV. Used for iterated filtering and smoothing.
+        _diffusion
+            Custom diffusion for the underlying Wiener process. Used in calibration.
+
+        Returns
+        -------
+        RandomVariable
+            Resulting filter estimate after the single step.
+        dict
+            Additional information provided by predict() and update().
+            Contains keys `pred_rv`, `info_pred`, `meas_rv`, `info_upd`.
+        """
+        data = np.asarray(data)
+        info = {}
+        info["pred_rv"], info["info_pred"] = self.predict(
+            rv=current_rv,
+            start=start,
+            stop=stop,
+            _linearise_at=_linearise_predict_at,
+            _diffusion=_diffusion,
+        )
+
+        filtrv, info["info_upd"] = self.update(
+            rv=info["pred_rv"],
+            time=stop,
+            data=data,
+            _linearise_at=_linearise_update_at,
+        )
+        return filtrv, info
 
 
 class MyStoppingCriterion(filtsmooth.StoppingCriterion):
