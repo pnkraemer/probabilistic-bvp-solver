@@ -1,10 +1,8 @@
 import dataclasses
+from typing import Callable, Optional, Union
+
 import numpy as np
-
 from probnum.type import FloatArgType
-
-from typing import Union, Optional, Callable
-
 
 __all__ = [
     "BoundaryValueProblem",
@@ -49,11 +47,7 @@ class BoundaryValueProblem:
 
 @dataclasses.dataclass
 class SecondOrderBoundaryValueProblem:
-    """2nd order boundary value problems. Now, f=f(t, y, dy).
-
-
-
-    """
+    """2nd order boundary value problems. Now, f=f(t, y, dy)."""
 
     f: Callable[[float, np.ndarray, np.ndarray], np.ndarray]
     t0: float
@@ -104,8 +98,6 @@ def bratus_jacobian(t, y):
     return np.array([[0.0, 1.0], [-np.exp(y[0]), 0.0]])
 
 
-
-
 def bratus_second_order(tmax=1.0):
 
     L = np.eye(1, 2)
@@ -116,7 +108,15 @@ def bratus_second_order(tmax=1.0):
     tmax = tmax
 
     return SecondOrderBoundaryValueProblem(
-        f=bratus_second_order_rhs, t0=t0, tmax=tmax, L=L, R=R, y0=y0, ymax=ymax, df_dy=bratus_second_order_jacobian_y, df_ddy=bratus_second_order_jacobian_dy
+        f=bratus_second_order_rhs,
+        t0=t0,
+        tmax=tmax,
+        L=L,
+        R=R,
+        y0=y0,
+        ymax=ymax,
+        df_dy=bratus_second_order_jacobian_y,
+        df_ddy=bratus_second_order_jacobian_dy,
     )
 
 
@@ -125,12 +125,11 @@ def bratus_second_order_rhs(t, y, dy):
 
 
 def bratus_second_order_jacobian_y(t, y, dy):
-    return -np.exp(y)*np.eye(1)
-    
-def bratus_second_order_jacobian_dy(t, y, dy):
-    return 0.*np.eye(1)
-    
+    return -np.exp(y) * np.eye(1)
 
+
+def bratus_second_order_jacobian_dy(t, y, dy):
+    return 0.0 * np.eye(1)
 
 
 def matlab_example(tmax=1.0):
@@ -173,18 +172,6 @@ def matlab_solution(t):
     return np.array([y1, y2])
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 def matlab_example_second_order(tmax=1.0):
     """This has a closed form solution AND anisotropic behaviour (a lot happens in the beginning).
     Use this to show step-size adaptivity."""
@@ -213,46 +200,15 @@ def matlab_example_second_order(tmax=1.0):
 
 
 def matlab_rhs_second_order(t, y, dy):
-    return -2*dy / t - y/(t**4)
-
+    return -2 * dy / t - y / (t ** 4)
 
 
 def matlab_jacobian_dy(t, y, dy):
     return -1 / t ** 4 * np.ones((len(y), len(y)))
 
+
 def matlab_jacobian_ddy(t, y, dy):
-    return -2 / t* np.ones((len(y), len(y)))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    return -2 / t * np.ones((len(y), len(y)))
 
 
 def r_example(y0=None, ymax=None, xi=0.01):
@@ -295,7 +251,7 @@ def problem_7(xi=0.01):
     L = np.eye(1, 2)
     R = np.eye(1, 2)
 
-    y0 = np.array([-1.0]) 
+    y0 = np.array([-1.0])
     ymax = np.array([1.0])
 
     t0 = -1.0
@@ -327,9 +283,7 @@ def p7_rhs(t, y, xi):
 def p7_jacobian(t, y, xi):
     x, dx = y
     ynew = (x - x * dx) / xi
-    return np.array([[0, 1.0], [1 / xi , -t / xi]])
-
-
+    return np.array([[0, 1.0], [1 / xi, -t / xi]])
 
 
 def problem_15(xi=0.01):
@@ -337,7 +291,7 @@ def problem_15(xi=0.01):
     L = np.eye(1, 2)
     R = np.eye(1, 2)
 
-    y0 = np.array([1.0]) 
+    y0 = np.array([1.0])
     ymax = np.array([1.0])
 
     t0 = -1.0
@@ -357,12 +311,10 @@ def problem_15(xi=0.01):
 
 def p15_rhs(t, y, xi):
     x, dx = y
-    ynew = (
-        t * x
-    ) / xi
+    ynew = (t * x) / xi
     return np.array([dx, ynew])
 
 
 def p15_jacobian(t, y, xi):
     x, dx = y
-    return np.array([[0, 1.0], [t / xi, 0.]])
+    return np.array([[0, 1.0], [t / xi, 0.0]])

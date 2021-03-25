@@ -1,10 +1,9 @@
 """These objects are suitable replacements of the corresponding ProbNum objects."""
 
-from probnum import statespace, filtsmooth
 import numpy as np
 import scipy.linalg
+from probnum import filtsmooth, statespace
 from probnum._randomvariablelist import _RandomVariableList
-
 
 
 class MyKalman(filtsmooth.Kalman):
@@ -283,9 +282,7 @@ class MyStoppingCriterion(filtsmooth.StoppingCriterion):
         return error / normalisation
 
 
-
 class ConstantStopping(filtsmooth.StoppingCriterion):
-
     def terminate(self, error, reference):
 
         if self.iterations > self.maxit:
@@ -294,10 +291,8 @@ class ConstantStopping(filtsmooth.StoppingCriterion):
             self.iterations = 0
             return True
 
-
         self.iterations += 1
         return False
-    
 
     def evaluate_quotient(self, error, reference):
         normalisation = self.atol + self.rtol * np.abs(reference)

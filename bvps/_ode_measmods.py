@@ -1,11 +1,10 @@
 """Updated ODE measurement mdoels."""
 
 
-from probnum import statespace, filtsmooth
 import numpy as np
 import scipy.linalg
+from probnum import filtsmooth, statespace
 from probnum._randomvariablelist import _RandomVariableList
-
 
 
 def from_ode(ode, prior):
@@ -53,7 +52,9 @@ def from_second_order_ode(ode, prior):
         return 0.0 * np.eye(spatialdim)
 
     def jacobian(t, x):
-        return h2 - ode.df_dy(t, h0 @ x, h1 @ x) @ h0 - ode.df_ddy(t, h0 @ x, h1 @ x) @ h1
+        return (
+            h2 - ode.df_dy(t, h0 @ x, h1 @ x) @ h0 - ode.df_ddy(t, h0 @ x, h1 @ x) @ h1
+        )
 
     discrete_model = statespace.DiscreteGaussian(
         input_dim=prior.dimension,
@@ -68,4 +69,3 @@ def from_second_order_ode(ode, prior):
         forward_implementation="sqrt",
         backward_implementation="sqrt",
     )
-
