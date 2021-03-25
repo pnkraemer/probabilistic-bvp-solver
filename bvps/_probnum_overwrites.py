@@ -156,7 +156,6 @@ class MyKalman(filtsmooth.Kalman):
         upd_rv, info = self.measurement_model.backward_realization(
             data, rv, t=time, _linearise_at=_linearise_at
         )
-
         sigma = meas_rv.mean.T @ scipy.linalg.cho_solve(
             (meas_rv.cov_cholesky, True), meas_rv.mean
         )

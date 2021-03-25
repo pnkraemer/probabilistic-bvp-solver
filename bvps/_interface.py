@@ -3,7 +3,7 @@ import numpy as np
 from probnum import diffeq, randvars
 from probnum._randomvariablelist import _RandomVariableList
 
-from ._mesh import insert_single_points, insert_two_points
+from ._mesh import insert_single_points, insert_two_points, insert_three_points
 from ._ode_measmods import from_ode, from_second_order_ode
 from ._problems import SecondOrderBoundaryValueProblem
 from ._probnum_overwrites import (
@@ -15,7 +15,6 @@ from ._probnum_overwrites import (
 
 import scipy.linalg
 
-
 def probsolve_bvp(
     bvp,
     bridge_prior,
@@ -24,7 +23,7 @@ def probsolve_bvp(
     rtol,
     maxit=50,
     which_method="iekf",
-    insert="single",
+    insert="double",
     which_errors = "defect"
 ):
     """Solve a BVP.
@@ -83,8 +82,10 @@ def probsolve_bvp(
     # Set up candidates for mesh refinement
     if insert == "single":
         candidate_locations = insert_single_points(bvp_posterior.locations)
-    else:
+    elif insert == "double":
         candidate_locations = insert_two_points(bvp_posterior.locations)
+    else:
+        candidate_locations = insert_three_points(bvp_posterior.locations)
 
     # Estimate errors and choose nodes to refine
     if which_errors == "defect":
@@ -92,7 +93,7 @@ def probsolve_bvp(
     else:
         errors, reference = estimate_errors_via_std(bvp_posterior, kalman_posterior, candidate_locations, sigma_squared, measmod)
         
-    yield bvp_posterior, sigma_squared, errors, kalman_posterior
+    yield bvp_posterior, sigma_squared, errors, kalman_posterior, candidate_locations
 
     magnitude = stopcrit_bvp.evaluate_error(
         error=errors, reference=reference
@@ -106,7 +107,12 @@ def probsolve_bvp(
 
         # Refine grid
         new_points = candidate_locations[mask]
-        grid = np.sort(np.append(grid, new_points))
+
+        # new_fullgrid = np.union1d(grid, new_points)
+        # sparse_fullgrid = np.union1d(new_fullgrid, new_fullgrid[:-1] + 0.5*np.diff(new_fullgrid))[::3]
+        # grid = np.union1d(sparse_fullgrid, grid[[0, -1]])
+
+        grid = np.union1d(grid, new_points)
         data = np.zeros((len(grid), bvp_dim))
 
 
@@ -120,8 +126,10 @@ def probsolve_bvp(
         # Set up candidates for mesh refinement
         if insert == "single":
             candidate_locations = insert_single_points(bvp_posterior.locations)
-        else:
+        elif insert == "double":
             candidate_locations = insert_two_points(bvp_posterior.locations)
+        else:
+            candidate_locations = insert_three_points(bvp_posterior.locations)
 
         # Estimate errors and choose nodes to refine
         if which_errors == "defect":
@@ -140,7 +148,7 @@ def probsolve_bvp(
         mask = norm > np.median(norm)
 
 
-        yield bvp_posterior, sigma_squared, errors, kalman_posterior
+        yield bvp_posterior, sigma_squared, errors, kalman_posterior, candidate_locations
 
 
 

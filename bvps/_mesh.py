@@ -40,6 +40,17 @@ def insert_two_points(a):
     full = np.append(x, y)
     return np.sort(full)
 
+def insert_three_points(a):
+    diff = np.diff(a)
+    x = a[:-1] + diff * 1.0 / 5.0
+    y = a[:-1] + diff * 2.0 / 5.0
+    z = a[:-1] + diff * 3.0 / 5.0
+    w = a[:-1] + diff * 4.0 / 5.0
+    full = np.append(x, y)
+    full2 = np.append(full, z)
+    full3 = np.append(full2, w)
+    return np.sort(full3)
+
 
 def new_grid2(a):
     diff = np.diff(a)
