@@ -2,6 +2,7 @@ from ._problems import (
     BoundaryValueProblem,
     bratus,
     matlab_example,
+    matlab_example_second_order,
     r_example,
     problem_7,
     problem_15,

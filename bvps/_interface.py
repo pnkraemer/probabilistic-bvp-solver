@@ -69,7 +69,13 @@ def probsolve_bvp(
     stopcrit_ieks = ConstantStopping(maxit=maxit)
 
     bvp_dim = len(bvp.R.T)
+    bvp_dim = 1
+
     data = np.zeros((len(grid), bvp_dim))
+
+
+    print(data.shape)
+
     kalman_posterior = kalman.iterated_filtsmooth(
         dataset=data, times=grid, stopcrit=stopcrit_ieks
     )
@@ -102,7 +108,8 @@ def probsolve_bvp(
         new_points = candidate_locations[mask]
         grid = np.sort(np.append(grid, new_points))
         data = np.zeros((len(grid), bvp_dim))
-        print(kalman.initrv.mean)
+        # print(data.shape)
+        # print(kalman.initrv.mean)
         kalman_posterior = kalman.iterated_filtsmooth(
             dataset=data, times=grid, stopcrit=stopcrit_ieks
         )

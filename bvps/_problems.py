@@ -125,10 +125,10 @@ def bratus_second_order_rhs(t, y, dy):
 
 
 def bratus_second_order_jacobian_y(t, y, dy):
-    return -np.exp(y)
+    return -np.exp(y)*np.eye(1)
     
 def bratus_second_order_jacobian_dy(t, y, dy):
-    return np.zeros_like(dy)
+    return 0.*np.eye(1)
     
 
 
@@ -171,6 +171,88 @@ def matlab_solution(t):
     y1 = np.sin(1 / t)
     y2 = -1 / t ** 2 * np.cos(1 / t)
     return np.array([y1, y2])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def matlab_example_second_order(tmax=1.0):
+    """This has a closed form solution AND anisotropic behaviour (a lot happens in the beginning).
+    Use this to show step-size adaptivity."""
+
+    L = np.eye(1, 2)
+    R = np.eye(1, 2)
+
+    y0 = np.zeros(1)
+    ymax = np.array([np.sin(1.0)])
+
+    t0 = 1 / (3 * np.pi)
+    tmax = tmax
+
+    return SecondOrderBoundaryValueProblem(
+        f=matlab_rhs_second_order,
+        t0=t0,
+        tmax=tmax,
+        L=L,
+        R=R,
+        y0=y0,
+        ymax=ymax,
+        df_dy=matlab_jacobian_dy,
+        df_ddy=matlab_jacobian_ddy,
+        solution=matlab_solution,
+    )
+
+
+def matlab_rhs_second_order(t, y, dy):
+    return -2*dy / t - y/(t**4)
+
+
+
+def matlab_jacobian_dy(t, y, dy):
+    return -1 / t ** 4 * np.ones((len(y), len(y)))
+
+def matlab_jacobian_ddy(t, y, dy):
+    return -2 / t* np.ones((len(y), len(y)))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def r_example(y0=None, ymax=None, xi=0.01):

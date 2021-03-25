@@ -35,8 +35,13 @@ class WrappedIntegrator(statespace.Integrator, statespace.LTISDE):
 
         L, R = self.bvp.L, self.bvp.R
 
+        proj  = np.stack((self.integrator.proj2coord(0)[0] , self.integrator.proj2coord(1)[0]))
+        # print(proj.shape, R.shape)
+        Rnew =  R @ proj
+        Lnew =  L @ proj
+
         self.measmod_R = statespace.DiscreteLTIGaussian(
-            R @ self.integrator.proj2coord(0),
+           Rnew,
             -self.bvp.ymax,
             0 * np.eye(len(R)),
             proc_noise_cov_cholesky=0 * np.eye(len(R)),
@@ -44,7 +49,7 @@ class WrappedIntegrator(statespace.Integrator, statespace.LTISDE):
             backward_implementation="sqrt",
         )
         self.measmod_L = statespace.DiscreteLTIGaussian(
-            L @ self.integrator.proj2coord(0),
+           Lnew,
             -self.bvp.y0,
             np.zeros((len(L), len(L))),
             proc_noise_cov_cholesky=np.zeros((len(L), len(L))),

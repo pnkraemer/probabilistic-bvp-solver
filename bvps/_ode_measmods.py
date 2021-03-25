@@ -53,7 +53,6 @@ def from_second_order_ode(ode, prior):
         return 0.0 * np.eye(spatialdim)
 
     def jacobian(t, x):
-
         return h2 - ode.df_dy(t, h0 @ x, h1 @ x) @ h0 - ode.df_ddy(t, h0 @ x, h1 @ x) @ h1
 
     discrete_model = statespace.DiscreteGaussian(
