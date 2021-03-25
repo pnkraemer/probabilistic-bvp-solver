@@ -13,6 +13,8 @@ from ._probnum_overwrites import (
     MyStoppingCriterion,
 )
 
+import scipy.linalg
+
 
 def probsolve_bvp(
     bvp,
@@ -23,6 +25,7 @@ def probsolve_bvp(
     maxit=50,
     which_method="iekf",
     insert="single",
+    which_errors = "defect"
 ):
     """Solve a BVP.
 
@@ -69,49 +72,45 @@ def probsolve_bvp(
     # stopcrit_ieks = MyStoppingCriterion(atol=100 * atol, rtol=100 * rtol, maxit=maxit)
     stopcrit_ieks = ConstantStopping(maxit=maxit)
 
-    data = np.zeros((len(grid), bvp_dim))
-
-    print(len(grid))
-
+    # Initial solve
+    data = np.zeros((len(grid), bvp_dim)) 
     kalman_posterior = kalman.iterated_filtsmooth(
         dataset=data, times=grid, stopcrit=stopcrit_ieks
     )
     bvp_posterior = diffeq.KalmanODESolution(kalman_posterior)
     sigma_squared = kalman.ssq
+
     # Set up candidates for mesh refinement
     if insert == "single":
         candidate_locations = insert_single_points(bvp_posterior.locations)
     else:
         candidate_locations = insert_two_points(bvp_posterior.locations)
-    evaluated_posterior = bvp_posterior(candidate_locations)
-    errors = evaluated_posterior.std * np.sqrt(sigma_squared)
 
-    evaluated_kalman_posterior = kalman_posterior(candidate_locations)
-    msrvs = _RandomVariableList(
-        [
-            measmod.forward_realization(m, t=t)[0]
-            for m, t in zip(evaluated_kalman_posterior.mean, candidate_locations)
-        ]
-    )
-    errors = np.abs(msrvs.mean * np.sqrt(sigma_squared))
-
-    yield bvp_posterior, sigma_squared, errors
+    # Estimate errors and choose nodes to refine
+    if which_errors == "defect":
+        errors, reference = estimate_errors_via_defect(bvp_posterior, kalman_posterior, candidate_locations, sigma_squared, measmod)
+    else:
+        errors, reference = estimate_errors_via_std(bvp_posterior, kalman_posterior, candidate_locations, sigma_squared, measmod)
+        
+    yield bvp_posterior, sigma_squared, errors, kalman_posterior
 
     magnitude = stopcrit_bvp.evaluate_error(
-        error=errors, reference=evaluated_posterior.mean
+        error=errors, reference=reference
     )
-    quotient = stopcrit_bvp.evaluate_quotient(errors, evaluated_posterior.mean)
-    mask = np.linalg.norm(quotient, axis=1) > np.sqrt(bvp_dim)
+    quotient = stopcrit_bvp.evaluate_quotient(errors, reference)
+    norm = np.linalg.norm(quotient, axis=1)
+    mask = norm > np.median(norm)
 
     # while np.any(mask):
     while True:
+
+        # Refine grid
         new_points = candidate_locations[mask]
         grid = np.sort(np.append(grid, new_points))
         data = np.zeros((len(grid), bvp_dim))
-        print(len(grid))
 
-        # print(data.shape)
-        # print(kalman.initrv.mean)
+
+        # Compute new solution
         kalman_posterior = kalman.iterated_filtsmooth(
             dataset=data, times=grid, stopcrit=stopcrit_ieks
         )
@@ -123,27 +122,46 @@ def probsolve_bvp(
             candidate_locations = insert_single_points(bvp_posterior.locations)
         else:
             candidate_locations = insert_two_points(bvp_posterior.locations)
-        evaluated_posterior = bvp_posterior(candidate_locations)
-        errors = evaluated_posterior.std * np.sqrt(sigma_squared)
 
-        evaluated_kalman_posterior = kalman_posterior(candidate_locations)
-        msrvs = _RandomVariableList(
-            [
-                measmod.forward_realization(m, t=t)[0]
-                for m, t in zip(evaluated_kalman_posterior.mean, candidate_locations)
-            ]
-        )
-        errors = np.abs(msrvs.mean * np.sqrt(sigma_squared))
+        # Estimate errors and choose nodes to refine
+        if which_errors == "defect":
+            errors, reference = estimate_errors_via_defect(bvp_posterior, kalman_posterior, candidate_locations, sigma_squared, measmod)
+        else:
+            errors, reference = estimate_errors_via_std(bvp_posterior, kalman_posterior, candidate_locations, sigma_squared, measmod)
+
+
 
         magnitude = stopcrit_bvp.evaluate_error(
-            error=errors, reference=evaluated_posterior.mean
+            error=errors, reference=reference
         )
-        quotient = stopcrit_bvp.evaluate_quotient(errors, evaluated_posterior.mean)
-        # mask = np.linalg.norm(quotient, axis=1) > np.sqrt(bvp_dim)
-        mask = np.linalg.norm(errors, axis=1) > np.median(
-            np.linalg.norm(errors, axis=1)
-        )
-        # print(np.linalg.norm(quotient, axis=1))
-        yield bvp_posterior, sigma_squared, errors
-        # print(mask, len(grid))
-    # return bvp_posterior
+        quotient = stopcrit_bvp.evaluate_quotient(errors, reference)
+
+        norm = np.linalg.norm(quotient, axis=1)
+        mask = norm > np.median(norm)
+
+
+        yield bvp_posterior, sigma_squared, errors, kalman_posterior
+
+
+
+def estimate_errors_via_std(bvp_posterior, kalman_posterior, grid, ssq, measmod):
+    evaluated_posterior = bvp_posterior(grid)
+    errors = evaluated_posterior.std * np.sqrt(ssq)
+    reference = evaluated_posterior.mean
+    assert errors.shape == reference.shape
+    return errors, evaluated_posterior.mean
+
+
+
+def estimate_errors_via_defect(bvp_posterior, kalman_posterior, grid, ssq, measmod):
+    evaluated_kalman_posterior = kalman_posterior(grid)
+    msrvs = _RandomVariableList(
+        [
+            measmod.forward_realization(m, t=t)[0]
+            for m, t in zip(evaluated_kalman_posterior.mean, grid)
+        ]
+    )
+    errors = np.abs(msrvs.mean)
+    reference = evaluated_kalman_posterior.mean @ kalman_posterior.transition.proj2coord(0).T
+    assert errors.shape == reference.shape
+    return errors, reference

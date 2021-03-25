@@ -318,3 +318,66 @@ def p15_rhs(t, y, xi):
 def p15_jacobian(t, y, xi):
     x, dx = y
     return np.array([[0, 1.0], [t / xi, 0.0]])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def problem_7_second_order(xi=0.01):
+    """https://rdrr.io/rforge/bvpSolve/f/inst/doc/bvpTests.pdf"""
+    L = np.eye(1, 2)
+    R = np.eye(1, 2)
+
+    y0 = np.array([-1.0])
+    ymax = np.array([1.0])
+
+    t0 = -1.0
+    tmax = 1.0
+
+    return SecondOrderBoundaryValueProblem(
+        f=lambda t, y, dy: p7_rhs_second_order(t, y, dy, xi=xi),
+        t0=t0,
+        tmax=tmax,
+        L=L,
+        R=R,
+        y0=y0,
+        ymax=ymax,
+        df_dy=lambda t, y, dy: p7_jacobian_second_order_dy(t, y, dy, xi=xi),
+        df_ddy=lambda t, y, dy: p7_jacobian_second_order_ddy(t, y, dy, xi=xi),
+    )
+
+
+def p7_rhs_second_order(t, y, dy, xi):
+
+    return ( - (1 + xi * np.pi ** 2) * np.cos(np.pi * t) - np.pi * t * np.sin(np.pi * t) + y - t*dy) / xi
+
+def p7_jacobian_second_order_dy(t, y,  dy, xi):
+    return np.ones((1, 1)) * -t
+
+
+def p7_jacobian_second_order_ddy(t, y, dy, xi):
+    return np.ones((1, 1))

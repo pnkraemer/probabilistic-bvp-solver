@@ -12,6 +12,7 @@ from ._problems import (
     problem_7,
     problem_15,
     r_example,
+    problem_7_second_order,
 )
 from ._probnum_overwrites import (
     ConstantStopping,
