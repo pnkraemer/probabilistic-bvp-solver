@@ -47,31 +47,36 @@ class BoundaryValueProblem:
         return bc
 
 
-# @dataclasses.dataclass
-# class SecondOrderBoundaryValueProblem:
-#     """2nd order boundary value problems. Now, f=f(t, y, dy)"""
+@dataclasses.dataclass
+class SecondOrderBoundaryValueProblem:
+    """2nd order boundary value problems. Now, f=f(t, y, dy).
 
-#     f: Callable[[float, np.ndarray, np.ndarray], np.ndarray]
-#     t0: float
-#     tmax: float
 
-#     L: np.ndarray  # projection from y to initial boundary value
-#     R: np.ndarray  # projection from y to final boundary value
 
-#     y0: Union[FloatArgType, np.ndarray]
-#     ymax: Union[FloatArgType, np.ndarray]
-#     df: Optional[Callable[[float, np.ndarray, np.ndarray], np.ndarray]] = None
+    """
 
-#     # For testing and benchmarking
-#     solution: Optional[Callable[[float], np.ndarray]] = None
+    f: Callable[[float, np.ndarray, np.ndarray], np.ndarray]
+    t0: float
+    tmax: float
 
-#     @property
-#     def scipy_bc(self):
-#         def bc(ya, yb):
+    L: np.ndarray  # projection from y to initial boundary value
+    R: np.ndarray  # projection from y to final boundary value
 
-#             return np.array([self.L @ ya - self.y0, self.R @ yb - self.ymax]).squeeze()
+    y0: Union[FloatArgType, np.ndarray]
+    ymax: Union[FloatArgType, np.ndarray]
+    df_dy: Optional[Callable[[float, np.ndarray, np.ndarray], np.ndarray]] = None
+    df_ddy: Optional[Callable[[float, np.ndarray, np.ndarray], np.ndarray]] = None
 
-#         return bc
+    # For testing and benchmarking
+    solution: Optional[Callable[[float], np.ndarray]] = None
+
+    @property
+    def scipy_bc(self):
+        def bc(ya, yb):
+
+            return np.array([self.L @ ya - self.y0, self.R @ yb - self.ymax]).squeeze()
+
+        return bc
 
 
 ####################################################################################################################
@@ -97,6 +102,35 @@ def bratus_rhs(t, y):
 
 def bratus_jacobian(t, y):
     return np.array([[0.0, 1.0], [-np.exp(y[0]), 0.0]])
+
+
+
+
+def bratus_second_order(tmax=1.0):
+
+    L = np.eye(1, 2)
+    R = np.eye(1, 2)
+    y0 = np.zeros(1)
+    ymax = np.zeros(1)
+    t0 = 0.0
+    tmax = tmax
+
+    return SecondOrderBoundaryValueProblem(
+        f=bratus_second_order_rhs, t0=t0, tmax=tmax, L=L, R=R, y0=y0, ymax=ymax, df_dy=bratus_second_order_jacobian_y, df_ddy=bratus_second_order_jacobian_dy
+    )
+
+
+def bratus_second_order_rhs(t, y, dy):
+    return -np.exp(y)
+
+
+def bratus_second_order_jacobian_y(t, y, dy):
+    return -np.exp(y)
+    
+def bratus_second_order_jacobian_dy(t, y, dy):
+    return np.zeros_like(dy)
+    
+
 
 
 def matlab_example(tmax=1.0):
