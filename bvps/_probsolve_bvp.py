@@ -24,7 +24,8 @@ def probsolve_bvp(
     maxit=50,
     which_method="iekf",
     insert="double",
-    which_errors = "defect"
+    which_errors = "defect",
+    ignore_bridge=False,
 ):
     """Solve a BVP.
 
@@ -58,9 +59,16 @@ def probsolve_bvp(
     )
     initrv, _ = bridge_prior.forward_rv(rv, t=bvp.t0, dt=0.0)
 
-    kalman = MyKalman(
-        dynamics_model=bridge_prior, measurement_model=measmod, initrv=initrv
-    )
+    if ignore_bridge:
+        print("No bridge detected.")
+        kalman = MyKalman(
+            dynamics_model=bridge_prior.integrator, measurement_model=measmod, initrv=rv
+        )
+    else:
+        kalman = MyKalman(
+            dynamics_model=bridge_prior, measurement_model=measmod, initrv=rv
+        )
+
 
     # stopcrit_bvp = MyStoppingCriterion(atol=atol, rtol=rtol, maxit=maxit)
     stopcrit_bvp = ConstantStopping(maxit=maxit)
@@ -73,9 +81,15 @@ def probsolve_bvp(
 
     # Initial solve
     data = np.zeros((len(grid), bvp_dim)) 
-    kalman_posterior = kalman.iterated_filtsmooth(
-        dataset=data, times=grid, stopcrit=stopcrit_ieks
-    )
+    if ignore_bridge:
+        kalman_posterior = kalman.iterated_filtsmooth(
+            dataset=data, times=grid, stopcrit=stopcrit_ieks, measmodL=bridge_prior.measmod_L, measmodR=bridge_prior.measmod_R
+        )
+    else:
+        kalman_posterior = kalman.iterated_filtsmooth(
+            dataset=data, times=grid, stopcrit=stopcrit_ieks, measmodL=None, measmodR=None
+        )
+
     bvp_posterior = diffeq.KalmanODESolution(kalman_posterior)
     sigma_squared = kalman.ssq
 
@@ -117,9 +131,14 @@ def probsolve_bvp(
 
 
         # Compute new solution
-        kalman_posterior = kalman.iterated_filtsmooth(
-            dataset=data, times=grid, stopcrit=stopcrit_ieks
-        )
+        if ignore_bridge:
+            kalman_posterior = kalman.iterated_filtsmooth(
+                dataset=data, times=grid, stopcrit=stopcrit_ieks, measmodL=bridge_prior.measmod_L, measmodR=bridge_prior.measmod_R
+            )
+        else:
+            kalman_posterior = kalman.iterated_filtsmooth(
+                dataset=data, times=grid, stopcrit=stopcrit_ieks, measmodL=None, measmodR=None
+            )
         bvp_posterior = diffeq.KalmanODESolution(kalman_posterior)
         sigma_squared = kalman.ssq
 

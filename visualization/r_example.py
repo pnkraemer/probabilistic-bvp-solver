@@ -62,8 +62,8 @@ for axis in ax:
     axis.set_xlabel(r"Mesh-size, $N$")
     axis.legend(fancybox=False)
 
-ax[0].set_ylabel("RMSE")
-ax[1].set_ylabel("ANEES")
+ax[0].set_ylabel(r"RMSE, $\varepsilon$")
+ax[1].set_ylabel(r"ANEES, $\chi^2$")
 
 ax[0].set_title(r"$\bf A$" + "  ", loc="left", fontweight="bold", ha="right")
 ax[1].set_title(r"$\bf B$" + "  ", loc="left", fontweight="bold", ha="right")

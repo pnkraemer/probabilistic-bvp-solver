@@ -9,7 +9,8 @@ from probnum._randomvariablelist import _RandomVariableList
 class MyKalman(filtsmooth.Kalman):
     """Kalman filtering with calibration"""
 
-    def iterated_filtsmooth(self, dataset, times, stopcrit=None, old_posterior=None):
+
+    def iterated_filtsmooth(self, dataset, times, measmodL, measmodR, stopcrit=None, old_posterior=None):
         """Compute an iterated smoothing estimate with repeated posterior linearisation.
 
         If the extended Kalman filter is used, this yields the IEKS. In
@@ -25,6 +26,8 @@ class MyKalman(filtsmooth.Kalman):
             old_posterior = self.filtsmooth(
                 dataset=dataset,
                 times=times,
+                measmodL=measmodL,
+                measmodR=measmodR,
                 _previous_posterior=None,
             )
         new_posterior = old_posterior
@@ -36,6 +39,8 @@ class MyKalman(filtsmooth.Kalman):
             new_posterior = self.filtsmooth(
                 dataset=dataset,
                 times=times,
+                measmodR=measmodR,
+                measmodL=measmodL,
                 _previous_posterior=old_posterior,
             )
 
@@ -57,10 +62,52 @@ class MyKalman(filtsmooth.Kalman):
 
         return new_posterior
 
+
+    def filtsmooth(
+        self,
+        dataset: np.ndarray,
+        times: np.ndarray,
+        measmodL=None,
+        measmodR=None,
+        _previous_posterior = None,
+    ):
+        """Apply Gaussian filtering and smoothing to a data set.
+
+        Parameters
+        ----------
+        dataset : array_like, shape (N, M)
+            Data set that is filtered.
+        times : array_like, shape (N,)
+            Temporal locations of the data points.
+            The zeroth element in times and dataset is the location of the initial random variable.
+        _previous_posterior: KalmanPosterior
+            If specified, approximate Gaussian filtering and smoothing linearises at this, prescribed posterior.
+            This is used for iterated filtering and smoothing. For standard filtering, this can be ignored.
+
+
+        Returns
+        -------
+        KalmanPosterior
+            Posterior distribution of the filtered output
+        """
+        dataset, times = np.asarray(dataset), np.asarray(times)
+        filter_posterior = self.filter(
+            dataset,
+            times,
+            measmodL,
+            measmodR,
+            _previous_posterior=_previous_posterior,
+        )
+        smooth_posterior = self.smooth(filter_posterior)
+        return smooth_posterior
+
+
     def filter(
         self,
         dataset: np.ndarray,
         times: np.ndarray,
+        measmodL=None,
+        measmodR=None,
         _previous_posterior=None,
     ):
         """Apply Gaussian filtering (no smoothing!) to a data set.
@@ -90,12 +137,19 @@ class MyKalman(filtsmooth.Kalman):
         )
         if _previous_posterior is not None:
             self.initrv.mean = _previous_posterior[0].mean
+        
+        if measmodL is not None:
+            filtrv, _ = measmodL.backward_realization(realization_obtained=dataset[0], rv=self.initrv, t=times[0])
+        else:
+            filtrv = self.initrv
+
         filtrv, *_ = self.update(
             data=dataset[0],
-            rv=self.initrv,
+            rv=filtrv,
             time=times[0],
             _linearise_at=_linearise_update_at,
         )
+
 
         rvs.append(filtrv)
         for idx in range(1, len(times)):
@@ -122,6 +176,10 @@ class MyKalman(filtsmooth.Kalman):
             # print(sigma)
 
             rvs.append(filtrv)
+
+        if measmodR is not None:
+            rvs[-1], _ = measmodR.backward_realization(realization_obtained=dataset[-1], rv=rvs[-1], t=times[-1])
+
 
         ssq = np.mean(sigmas)
         # rvs = [

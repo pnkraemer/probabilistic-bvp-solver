@@ -56,7 +56,7 @@ refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=1
 
 
 
-q = 4
+q = 2
 
 ibm = statespace.IBM(
     ordint=q,
@@ -76,7 +76,8 @@ posterior = probsolve_bvp(
     rtol=1e-14,
     insert="triple",
     which_method="iekf",
-    maxit=10
+    maxit=10,
+    ignore_bridge=False,
 )
 
 
@@ -84,7 +85,7 @@ evalgrid = np.linspace(bvp.t0, bvp.tmax, 300)
 
 for idx, (post, ssq, errors, kalpost, candidates) in enumerate(posterior):
 
-    fig, ax = plt.subplots(nrows=3, sharex=True, dpi=400)
+    fig, ax = plt.subplots(nrows=3, sharex=True, dpi=200)
     evaluated = post(evalgrid)
     m = evaluated.mean[:, 0]
     s = evaluated.std[:, 0] * np.sqrt(ssq)
