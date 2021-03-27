@@ -50,13 +50,13 @@ bvp1st = matlab_example(tmax=1)
 # bvp = problem_7_second_order(xi=0.1)
 # bvp1st = problem_7(xi=0.1)
 
-initial_grid = np.linspace(bvp.t0, bvp.tmax, 10)
+initial_grid = np.linspace(bvp.t0, bvp.tmax, 50)
 initial_guess = np.zeros((2, len(initial_grid)))
 refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=1e-12)
 
 
 
-q = 2
+q = 4
 
 ibm = statespace.IBM(
     ordint=q,
@@ -75,15 +75,19 @@ posterior = probsolve_bvp(
     atol=1e-14,
     rtol=1e-14,
     insert="triple",
-    which_method="iekf",
-    maxit=10,
+    which_method="ekf",
+    maxit=5,
     ignore_bridge=False,
 )
 
 
-evalgrid = np.linspace(bvp.t0, bvp.tmax, 300)
+evalgrid = np.linspace(bvp.t0, bvp.tmax, 100)
 
 for idx, (post, ssq, errors, kalpost, candidates) in enumerate(posterior):
+
+    plt.style.use(["./visualization/science.mplstyle",
+     #"./visualization/notebook.mplstyle"
+     ])
 
     fig, ax = plt.subplots(nrows=3, sharex=True, dpi=200)
     evaluated = post(evalgrid)
@@ -116,8 +120,8 @@ for idx, (post, ssq, errors, kalpost, candidates) in enumerate(posterior):
 
     ax[2].set_xlabel("Time")
     ax[0].set_ylabel("Solution")
-    ax[1].set_ylabel("Error & Estimation")
+    ax[1].set_ylabel("Error / Estimation")
     ax[2].set_ylabel("Stepsize")
-    ax[0].set_title(f"Refinement #{idx + 1}: $N={len(post.locations)}$ Points | Scipy {len(refsol.x)}")
+    ax[0].set_title(f"Refinement {idx + 1}: $N={len(post.locations)}$ Points | Scipy {len(refsol.x)}")
     fig.align_ylabels()
     plt.show()

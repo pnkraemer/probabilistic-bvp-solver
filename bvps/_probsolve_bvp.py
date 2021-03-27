@@ -66,7 +66,7 @@ def probsolve_bvp(
         )
     else:
         kalman = MyKalman(
-            dynamics_model=bridge_prior, measurement_model=measmod, initrv=rv
+            dynamics_model=bridge_prior, measurement_model=measmod, initrv=initrv
         )
 
 
