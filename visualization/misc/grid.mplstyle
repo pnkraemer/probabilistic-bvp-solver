@@ -5,11 +5,11 @@ axes.grid : True
 axes.axisbelow : True
 grid.linestyle : --
 grid.color : k
-grid.alpha : 0.5
-grid.linewidth : 0.5
+grid.alpha : 0.25
+grid.linewidth : 0.25
 
 # Legend
 legend.frameon : True
 legend.framealpha : 1.0
-legend.fancybox : True
+legend.fancybox : False
 legend.numpoints : 1

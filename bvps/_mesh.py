@@ -40,6 +40,7 @@ def insert_two_points(a):
     full = np.append(x, y)
     return np.sort(full)
 
+
 def insert_three_points(a):
     diff = np.diff(a)
     x = a[:-1] + diff * 1.0 / 5.0

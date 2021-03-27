@@ -9,8 +9,9 @@ from probnum._randomvariablelist import _RandomVariableList
 class MyKalman(filtsmooth.Kalman):
     """Kalman filtering with calibration"""
 
-
-    def iterated_filtsmooth(self, dataset, times, measmodL, measmodR, stopcrit=None, old_posterior=None):
+    def iterated_filtsmooth(
+        self, dataset, times, measmodL, measmodR, stopcrit=None, old_posterior=None
+    ):
         """Compute an iterated smoothing estimate with repeated posterior linearisation.
 
         If the extended Kalman filter is used, this yields the IEKS. In
@@ -62,14 +63,13 @@ class MyKalman(filtsmooth.Kalman):
 
         return new_posterior
 
-
     def filtsmooth(
         self,
         dataset: np.ndarray,
         times: np.ndarray,
         measmodL=None,
         measmodR=None,
-        _previous_posterior = None,
+        _previous_posterior=None,
     ):
         """Apply Gaussian filtering and smoothing to a data set.
 
@@ -100,7 +100,6 @@ class MyKalman(filtsmooth.Kalman):
         )
         smooth_posterior = self.smooth(filter_posterior)
         return smooth_posterior
-
 
     def filter(
         self,
@@ -137,9 +136,11 @@ class MyKalman(filtsmooth.Kalman):
         )
         if _previous_posterior is not None:
             self.initrv.mean = _previous_posterior[0].mean
-        
+
         if measmodL is not None:
-            filtrv, _ = measmodL.backward_realization(realization_obtained=dataset[0], rv=self.initrv, t=times[0])
+            filtrv, _ = measmodL.backward_realization(
+                realization_obtained=dataset[0], rv=self.initrv, t=times[0]
+            )
         else:
             filtrv = self.initrv
 
@@ -149,7 +150,6 @@ class MyKalman(filtsmooth.Kalman):
             time=times[0],
             _linearise_at=_linearise_update_at,
         )
-
 
         rvs.append(filtrv)
         for idx in range(1, len(times)):
@@ -178,8 +178,9 @@ class MyKalman(filtsmooth.Kalman):
             rvs.append(filtrv)
 
         if measmodR is not None:
-            rvs[-1], _ = measmodR.backward_realization(realization_obtained=dataset[-1], rv=rvs[-1], t=times[-1])
-
+            rvs[-1], _ = measmodR.backward_realization(
+                realization_obtained=dataset[-1], rv=rvs[-1], t=times[-1]
+            )
 
         ssq = np.mean(sigmas)
         # rvs = [
