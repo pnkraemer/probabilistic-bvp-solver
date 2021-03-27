@@ -29,46 +29,45 @@ results_nci2 = pd.read_csv(
 )
 
 
-plt.style.use(
-    [
-        "stylesheets/hollow_markers.mplstyle",
-        "stylesheets/8pt.mplstyle",
-        "stylesheets/13_tile_jmlr.mplstyle",
-        "stylesheets/thin_lines.mplstyle",
-        "stylesheets/probnumeval_colors.mplstyle",
-    ]
-)
+plt.style.use(["./visualization/science.mplstyle", "./visualization/color/high-contrast.mplstyle", "./stylesheets/13_tile_jmlr.mplstyle", 
+# "./stylesheets/probnum_colors.mplstyle"
+])
 
-fig, ax = plt.subplots(ncols=4, dpi=200, constrained_layout=True)
+fig, ax = plt.subplots(ncols=2, dpi=150, constrained_layout=True)
 
 
 for colidx, linestyle, marker in zip(results_rmse.columns[:1], LINESTYLES, MARKERS):
     ax[0].loglog(
         results_rmse.index,
         results_rmse[colidx],
-        label="q=4",
+        label=r"$\nu=4$",
         linestyle=linestyle,
         marker=marker,
     )
-    ax[1].loglog(results_anees.index, results_anees[colidx], marker="o", label="q=4")
-    ax[2].semilogx(results_nci.index, results_nci[colidx], marker="o", label="q=4")
+    ax[1].loglog(results_anees.index, results_anees[colidx], linestyle=linestyle, marker=marker, label=r"$\nu=4$")
+    # ax[2].semilogx(results_nci.index, results_nci[colidx], marker="o", label="q=4")
 
-    ax[0].loglog(results_rmse2.index, results_rmse2[colidx], marker="o", label="q=3")
-    ax[1].loglog(results_anees2.index, results_anees2[colidx], marker="o", label="q=3")
-    ax[2].semilogx(results_nci2.index, results_nci2[colidx], marker="o", label="q=3")
+    ax[0].loglog(results_rmse2.index, results_rmse2[colidx], marker=marker, label=r"$\nu=3$")
+    ax[1].loglog(results_anees2.index, results_anees2[colidx], marker=marker, label=r"$\nu=3$")
+    # ax[2].semilogx(results_nci2.index, results_nci2[colidx], marker="o", label="q=3")
 
-
-ax[1].fill_between(
-    results_anees.index, out[0], out[1], color="green", alpha=0.25, label="99% Conf."
-)
+ax[1].axhspan(out[0], out[1], alpha=0.1)
+ax[1].axhline(1., alpha=0.2)
+# ax[1].fill_between(
+#     results_anees.index, out[0], out[1], color="green", alpha=0.25, label="99% Conf."
+# )
 
 
 for axis in ax:
-    axis.set_xlabel("N")
-    axis.legend()
+    axis.set_xlabel(r"Mesh-size, $N$")
+    axis.legend(fancybox=False)
 
-ax[0].set_title("RMSE")
-ax[1].set_title("ANEES")
-ax[2].set_title("NCI")
+ax[0].set_ylabel("RMSE")
+ax[1].set_ylabel("ANEES")
+
+ax[0].set_title(r"$\bf A$" + "  ", loc="left", fontweight="bold", ha="right")
+ax[1].set_title(r"$\bf B$" + "  ", loc="left", fontweight="bold", ha="right")
+
+# ax[2].set_title("NCI")
 plt.savefig("figures/r_example_results.pdf")
 plt.show()
