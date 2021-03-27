@@ -1,14 +1,19 @@
 """Solving BVPs."""
+import numpy as np
+from probnum import diffeq, randvars
+from probnum._randomvariablelist import _RandomVariableList
+
+from ._mesh import insert_single_points, insert_two_points, insert_three_points
+from ._ode_measmods import from_ode, from_second_order_ode
+from ._problems import SecondOrderBoundaryValueProblem
 from ._probnum_overwrites import (
-    from_ode,
-    MyStoppingCriterion,
+    ConstantStopping,
     MyIteratedDiscreteComponent,
     MyKalman,
+    MyStoppingCriterion,
 )
-from probnum import randvars, diffeq
-import numpy as np
-from ._mesh import insert_single_points, insert_two_points
 
+import scipy.linalg
 
 def probsolve_bvp(
     bvp,
@@ -16,9 +21,10 @@ def probsolve_bvp(
     initial_grid,
     atol,
     rtol,
-    maxit=500,
-    which_method="ekf",
-    insert="single",
+    maxit=50,
+    which_method="iekf",
+    insert="double",
+    which_errors = "defect"
 ):
     """Solve a BVP.
 
@@ -31,11 +37,20 @@ def probsolve_bvp(
 
     # Construct Kalman object ##############################
 
-    measmod = from_ode(bvp, bridge_prior)
+    if isinstance(bvp, SecondOrderBoundaryValueProblem):
+        print("Recognised a 2nd order BVP")
+        measmod = from_second_order_ode(bvp, bridge_prior)
+
+        bvp_dim = len(bvp.R.T) // 2
+
+    else:
+        measmod = from_ode(bvp, bridge_prior)
+        bvp_dim = len(bvp.R.T)
     if which_method == "iekf":
-        stopcrit_iekf = MyStoppingCriterion(
-            atol=100 * atol, rtol=100 * rtol, maxit=maxit
-        )
+        stopcrit_iekf = ConstantStopping(maxit=maxit)
+        # stopcrit_iekf = MyStoppingCriterion(
+        #     atol=100 * atol, rtol=100 * rtol, maxit=maxit
+        # )
         measmod = MyIteratedDiscreteComponent(measmod, stopcrit=stopcrit_iekf)
 
     rv = randvars.Normal(
@@ -47,37 +62,61 @@ def probsolve_bvp(
         dynamics_model=bridge_prior, measurement_model=measmod, initrv=initrv
     )
 
-    stopcrit_bvp = MyStoppingCriterion(atol=atol, rtol=rtol, maxit=maxit)
+    # stopcrit_bvp = MyStoppingCriterion(atol=atol, rtol=rtol, maxit=maxit)
+    stopcrit_bvp = ConstantStopping(maxit=maxit)
 
     # Call IEKS ##############################
 
     grid = initial_grid
-    stopcrit_ieks = MyStoppingCriterion(atol=100 * atol, rtol=100 * rtol, maxit=maxit)
-    bvp_dim = len(bvp.R.T)
-    data = np.zeros((len(grid), bvp_dim))
+    # stopcrit_ieks = MyStoppingCriterion(atol=100 * atol, rtol=100 * rtol, maxit=maxit)
+    stopcrit_ieks = ConstantStopping(maxit=maxit)
+
+    # Initial solve
+    data = np.zeros((len(grid), bvp_dim)) 
     kalman_posterior = kalman.iterated_filtsmooth(
         dataset=data, times=grid, stopcrit=stopcrit_ieks
     )
     bvp_posterior = diffeq.KalmanODESolution(kalman_posterior)
     sigma_squared = kalman.ssq
-    yield bvp_posterior
+
     # Set up candidates for mesh refinement
     if insert == "single":
         candidate_locations = insert_single_points(bvp_posterior.locations)
-    else:
+    elif insert == "double":
         candidate_locations = insert_two_points(bvp_posterior.locations)
-    evaluated_posterior = bvp_posterior(candidate_locations)
-    errors = evaluated_posterior.std * np.sqrt(sigma_squared)
-    magnitude = stopcrit_bvp.evaluate_error(
-        error=errors, reference=evaluated_posterior.mean
-    )
-    quotient = stopcrit_bvp.evaluate_quotient(errors, evaluated_posterior.mean)
-    mask = np.linalg.norm(quotient, axis=1) > np.sqrt(bvp_dim)
+    else:
+        candidate_locations = insert_three_points(bvp_posterior.locations)
 
-    while np.any(mask):
+    # Estimate errors and choose nodes to refine
+    if which_errors == "defect":
+        errors, reference = estimate_errors_via_defect(bvp_posterior, kalman_posterior, candidate_locations, sigma_squared, measmod)
+    else:
+        errors, reference = estimate_errors_via_std(bvp_posterior, kalman_posterior, candidate_locations, sigma_squared, measmod)
+        
+    yield bvp_posterior, sigma_squared, errors, kalman_posterior, candidate_locations
+
+    magnitude = stopcrit_bvp.evaluate_error(
+        error=errors, reference=reference
+    )
+    quotient = stopcrit_bvp.evaluate_quotient(errors, reference)
+    norm = np.linalg.norm(quotient, axis=1)
+    mask = norm > np.median(norm)
+
+    # while np.any(mask):
+    while True:
+
+        # Refine grid
         new_points = candidate_locations[mask]
-        grid = np.sort(np.append(grid, new_points))
+
+        # new_fullgrid = np.union1d(grid, new_points)
+        # sparse_fullgrid = np.union1d(new_fullgrid, new_fullgrid[:-1] + 0.5*np.diff(new_fullgrid))[::3]
+        # grid = np.union1d(sparse_fullgrid, grid[[0, -1]])
+
+        grid = np.union1d(grid, new_points)
         data = np.zeros((len(grid), bvp_dim))
+
+
+        # Compute new solution
         kalman_posterior = kalman.iterated_filtsmooth(
             dataset=data, times=grid, stopcrit=stopcrit_ieks
         )
@@ -87,17 +126,50 @@ def probsolve_bvp(
         # Set up candidates for mesh refinement
         if insert == "single":
             candidate_locations = insert_single_points(bvp_posterior.locations)
-        else:
+        elif insert == "double":
             candidate_locations = insert_two_points(bvp_posterior.locations)
-        evaluated_posterior = bvp_posterior(candidate_locations)
-        errors = evaluated_posterior.std * np.sqrt(sigma_squared)
+        else:
+            candidate_locations = insert_three_points(bvp_posterior.locations)
+
+        # Estimate errors and choose nodes to refine
+        if which_errors == "defect":
+            errors, reference = estimate_errors_via_defect(bvp_posterior, kalman_posterior, candidate_locations, sigma_squared, measmod)
+        else:
+            errors, reference = estimate_errors_via_std(bvp_posterior, kalman_posterior, candidate_locations, sigma_squared, measmod)
+
+
+
         magnitude = stopcrit_bvp.evaluate_error(
-            error=errors, reference=evaluated_posterior.mean
+            error=errors, reference=reference
         )
-        quotient = stopcrit_bvp.evaluate_quotient(errors, evaluated_posterior.mean)
-        mask = np.linalg.norm(quotient, axis=1) > np.sqrt(bvp_dim)
-        # print(np.linalg.norm(quotient, axis=1))
-        print(len(grid))
-        yield bvp_posterior
-        # print(mask, len(grid))
-    # return bvp_posterior
+        quotient = stopcrit_bvp.evaluate_quotient(errors, reference)
+
+        norm = np.linalg.norm(quotient, axis=1)
+        mask = norm > np.median(norm)
+
+
+        yield bvp_posterior, sigma_squared, errors, kalman_posterior, candidate_locations
+
+
+
+def estimate_errors_via_std(bvp_posterior, kalman_posterior, grid, ssq, measmod):
+    evaluated_posterior = bvp_posterior(grid)
+    errors = evaluated_posterior.std * np.sqrt(ssq)
+    reference = evaluated_posterior.mean
+    assert errors.shape == reference.shape
+    return errors, evaluated_posterior.mean
+
+
+
+def estimate_errors_via_defect(bvp_posterior, kalman_posterior, grid, ssq, measmod):
+    evaluated_kalman_posterior = kalman_posterior(grid)
+    msrvs = _RandomVariableList(
+        [
+            measmod.forward_realization(m, t=t)[0]
+            for m, t in zip(evaluated_kalman_posterior.mean, grid)
+        ]
+    )
+    errors = np.abs(msrvs.mean)
+    reference = evaluated_kalman_posterior.mean @ kalman_posterior.transition.proj2coord(0).T
+    assert errors.shape == reference.shape
+    return errors, reference

@@ -1,42 +1,9 @@
 """These objects are suitable replacements of the corresponding ProbNum objects."""
 
-from probnum import statespace, filtsmooth
 import numpy as np
 import scipy.linalg
+from probnum import filtsmooth, statespace
 from probnum._randomvariablelist import _RandomVariableList
-
-__all__ = ["from_ode", "MyKalman"]
-
-
-def from_ode(ode, prior):
-
-    spatialdim = prior.spatialdim
-    h0 = prior.proj2coord(coord=0)
-    h1 = prior.proj2coord(coord=1)
-
-    def dyna(t, x):
-        return h1 @ x - ode.f(t, h0 @ x)
-
-    def diff_cholesky(t):
-        return 0.0 * np.eye(spatialdim)
-
-    def jacobian(t, x):
-
-        return h1 - ode.df(t, h0 @ x) @ h0
-
-    discrete_model = statespace.DiscreteGaussian(
-        input_dim=prior.dimension,
-        output_dim=spatialdim,
-        state_trans_fun=dyna,
-        proc_noise_cov_mat_fun=diff_cholesky,
-        jacob_state_trans_fun=jacobian,
-        proc_noise_cov_cholesky_fun=diff_cholesky,
-    )
-    return filtsmooth.DiscreteEKFComponent(
-        discrete_model,
-        forward_implementation="sqrt",
-        backward_implementation="sqrt",
-    )
 
 
 class MyKalman(filtsmooth.Kalman):
@@ -189,7 +156,6 @@ class MyKalman(filtsmooth.Kalman):
         upd_rv, info = self.measurement_model.backward_realization(
             data, rv, t=time, _linearise_at=_linearise_at
         )
-
         sigma = meas_rv.mean.T @ scipy.linalg.cho_solve(
             (meas_rv.cov_cholesky, True), meas_rv.mean
         )
@@ -309,6 +275,23 @@ class MyStoppingCriterion(filtsmooth.StoppingCriterion):
         quotient = self.evaluate_quotient(error=error, reference=reference)
         magnitude = np.sqrt(np.mean(quotient ** 2))
         return magnitude
+
+    def evaluate_quotient(self, error, reference):
+        normalisation = self.atol + self.rtol * np.abs(reference)
+        return error / normalisation
+
+
+class ConstantStopping(filtsmooth.StoppingCriterion):
+    def terminate(self, error, reference):
+
+        if self.iterations > self.maxit:
+            self.previous_number_of_iterations = self.iterations
+
+            self.iterations = 0
+            return True
+
+        self.iterations += 1
+        return False
 
     def evaluate_quotient(self, error, reference):
         normalisation = self.atol + self.rtol * np.abs(reference)
