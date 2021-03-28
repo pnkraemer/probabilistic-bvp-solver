@@ -51,7 +51,7 @@ bvp1st = matlab_example(tmax=1)
 
 initial_grid = np.linspace(bvp.t0, bvp.tmax, 50)
 initial_guess = np.zeros((2, len(initial_grid)))
-refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=1e-12)
+refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=1e-6)
 
 
 q = 4
@@ -70,16 +70,18 @@ posterior = probsolve_bvp(
     bvp=bvp,
     bridge_prior=integ,
     initial_grid=initial_grid,
-    atol=1e-14,
-    rtol=1e-14,
-    insert="triple",
+    atol=1e-2,
+    rtol=1e-2,
+    insert="double",
     which_method="ekf",
-    maxit=5,
+    maxit=3,
     ignore_bridge=False,
+    which_errors="defect",
+    refinement="tolerance"
 )
 
 
-evalgrid = np.linspace(bvp.t0, bvp.tmax, 100)
+evalgrid = np.linspace(bvp.t0, bvp.tmax, 50)
 
 for idx, (post, ssq, errors, kalpost, candidates) in enumerate(posterior):
 
@@ -112,6 +114,15 @@ for idx, (post, ssq, errors, kalpost, candidates) in enumerate(posterior):
         color="darksalmon",
         label="Error",
     )
+    # ax[1].semilogy(
+    #     candidates[np.linalg.norm(errors, axis=1) > np.median(np.linalg.norm(errors, axis=1))],
+    #     np.linalg.norm(errors, axis=1)[np.linalg.norm(errors, axis=1) > np.median(np.linalg.norm(errors, axis=1))],
+    #     "+",
+    #     color="green",
+    #     label="Error",
+    # )
+
+
     ax[1].semilogy(
         evalgrid, discrepancy, color="steelblue", linestyle="dashed", label="Truth"
     )

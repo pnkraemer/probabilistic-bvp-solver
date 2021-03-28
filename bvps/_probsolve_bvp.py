@@ -27,6 +27,7 @@ def probsolve_bvp(
     insert="double",
     which_errors="defect",
     ignore_bridge=False,
+    refinement="median",
 ):
     """Solve a BVP.
 
@@ -114,6 +115,10 @@ def probsolve_bvp(
         errors, reference = estimate_errors_via_defect(
             bvp_posterior, kalman_posterior, candidate_locations, sigma_squared, measmod
         )
+    elif which_errors == "probabilistic_defect":
+        errors, reference = estimate_errors_via_probabilistic_defect(
+            bvp_posterior, kalman_posterior, candidate_locations, sigma_squared, measmod
+        )
     else:
         errors, reference = estimate_errors_via_std(
             bvp_posterior, kalman_posterior, candidate_locations, sigma_squared, measmod
@@ -122,23 +127,28 @@ def probsolve_bvp(
     yield bvp_posterior, sigma_squared, errors, kalman_posterior, candidate_locations
 
     magnitude = stopcrit_bvp.evaluate_error(error=errors, reference=reference)
-    quotient = stopcrit_bvp.evaluate_quotient(errors, reference)
-    norm = np.linalg.norm(quotient, axis=1)
-    mask = norm > np.median(norm)
+    quotient = stopcrit_bvp.evaluate_quotient(errors, reference).squeeze()
+    # norm = np.linalg.norm(quotient, axis=1)
 
+    print(quotient.shape)
+
+    if refinement == "median":
+        mask = quotient > np.median(quotient)
+    else:
+        mask = quotient > 1
     # while np.any(mask):
     while True:
 
         # Refine grid
         new_points = candidate_locations[mask]
-
+        
         # new_fullgrid = np.union1d(grid, new_points)
         # sparse_fullgrid = np.union1d(new_fullgrid, new_fullgrid[:-1] + 0.5*np.diff(new_fullgrid))[::3]
         # grid = np.union1d(sparse_fullgrid, grid[[0, -1]])
 
         grid = np.union1d(grid, new_points)
         data = np.zeros((len(grid), bvp_dim))
-
+        print(len(grid))
         # Compute new solution
         if ignore_bridge:
             kalman_posterior = kalman.iterated_filtsmooth(
@@ -176,6 +186,10 @@ def probsolve_bvp(
                 sigma_squared,
                 measmod,
             )
+        elif which_errors == "probabilistic_defect":
+            errors, reference = estimate_errors_via_probabilistic_defect(
+                bvp_posterior, kalman_posterior, candidate_locations, sigma_squared, measmod
+            )
         else:
             errors, reference = estimate_errors_via_std(
                 bvp_posterior,
@@ -186,11 +200,12 @@ def probsolve_bvp(
             )
 
         magnitude = stopcrit_bvp.evaluate_error(error=errors, reference=reference)
-        quotient = stopcrit_bvp.evaluate_quotient(errors, reference)
+        quotient = stopcrit_bvp.evaluate_quotient(errors, reference).squeeze()
 
-        norm = np.linalg.norm(quotient, axis=1)
-        mask = norm > np.median(norm)
-
+        if refinement == "median":
+            mask = quotient > np.median(quotient)
+        else:
+            mask = quotient > 1
         yield bvp_posterior, sigma_squared, errors, kalman_posterior, candidate_locations
 
 
@@ -211,6 +226,23 @@ def estimate_errors_via_defect(bvp_posterior, kalman_posterior, grid, ssq, measm
         ]
     )
     errors = np.abs(msrvs.mean)
+    reference = (
+        evaluated_kalman_posterior.mean @ kalman_posterior.transition.proj2coord(0).T
+    )
+    assert errors.shape == reference.shape
+    return errors, reference
+
+
+
+def estimate_errors_via_probabilistic_defect(bvp_posterior, kalman_posterior, grid, ssq, measmod):
+    evaluated_kalman_posterior = kalman_posterior(grid)
+    msrvs = _RandomVariableList(
+        [
+            measmod.forward_rv(rv, t=t)[0]
+            for rv, t in zip(evaluated_kalman_posterior, grid)
+        ]
+    )
+    errors = np.sqrt(np.abs(msrvs.mean)**2 + np.abs(msrvs.std)**2)
     reference = (
         evaluated_kalman_posterior.mean @ kalman_posterior.transition.proj2coord(0).T
     )
