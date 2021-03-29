@@ -37,6 +37,10 @@ class MyKalman(filtsmooth.Kalman):
         errors = np.inf * np.ones(new_mean.shape)
         while not stopcrit.terminate(error=errors, reference=new_mean):
             old_posterior = new_posterior
+            old_mean = old_posterior.states.mean.copy()
+
+            # print("BEFORE", new_posterior.states.mean)
+
             new_posterior = self.filtsmooth(
                 dataset=dataset,
                 times=times,
@@ -44,13 +48,63 @@ class MyKalman(filtsmooth.Kalman):
                 measmodL=measmodL,
                 _previous_posterior=old_posterior,
             )
+            # print("AFTER", new_posterior.states.mean)
+
+
+            # # 
+            # current_best_loss = np.inf
+            # current_best_alpha = np.inf
+            # # old_mean = old_posterior.states.mean 
+            # new_mean = new_posterior.states.mean
+            # old_cov_cholesky = old_posterior.states.cov
+            # new_cov_cholesky = new_posterior.states.cov
+            # for alpha in 0.9 ** (np.arange(5)):
+            #     new_state_mean = (1-alpha) * old_mean + alpha * new_mean
+            #     # new_state_cov_cholesky = utils.linalg.cholesky_update(              (1-alpha) * old_cov_cholesky, alpha * new_cov_cholesky)
+            #     # print(old_mean[:, 0])
+            #     # print(new_mean[:, 0])
+            #     # print(new_state_mean[:, 0])
+            #     loss_rvs = _RandomVariableList(
+            #         [
+            #             self.measurement_model.forward_realization(m, t=t)[0]
+            #             for t, m in zip(new_posterior.locations, new_state_mean)
+            #         ]
+            #     )
+            #     # print(loss_rvs.mean)
+            #     loss = np.linalg.norm(loss_rvs.mean)
+            #     if loss < current_best_loss:
+            #         current_best_loss = loss
+            #         current_best_alpha = alpha
+
+
+            # # Use new best alpha for update
+            # new_state_means = (1-current_best_alpha) * old_mean + current_best_alpha * new_mean
+            # new_state_covs = (1-current_best_alpha) * old_cov_cholesky + current_best_alpha * new_cov_cholesky
+            # new_posterior.states = _RandomVariableList([randvars.Normal(mean=m, cov=S) for m, S in zip(new_state_means, new_state_covs)])
+            # print("BEST LOSS", current_best_loss / len(loss_rvs), "BEST ALPHA:", current_best_alpha)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
             new_initrv = new_posterior[0]
-            print(times)
             new_mean = new_initrv.mean 
             new_cov_cholesky = utils.linalg.cholesky_update(new_initrv.cov_cholesky, new_mean - self.initrv.mean)
             new_cov = new_cov_cholesky @ new_cov_cholesky.T
-            self.initrv = randvars.Normal(mean=new_mean, cov=new_cov, cov_cholesky=new_cov_cholesky)
+            self.initrv = randvars.Normal(mean=new_mean, cov=new_initrv.cov, cov_cholesky=new_initrv.cov_cholesky)
 
             msrvs = _RandomVariableList(
                 [
@@ -142,7 +196,10 @@ class MyKalman(filtsmooth.Kalman):
             None if _previous_posterior is None else _previous_posterior(times[0])
         )
         # if _previous_posterior is not None:
-        #     self.initrv.mean = _previous_posterior[0].mean
+        #     new_initrv = _previous_posterior[0]
+        #     self.initrv = randvars.Normal(mean=new_initrv.mean, cov=new_initrv.cov, cov_cholesky=new_initrv.cov_cholesky)
+
+            # self.initrv.mean = _previous_posterior[0].mean
 
         if measmodL is not None:
             filtrv, _ = measmodL.backward_realization(

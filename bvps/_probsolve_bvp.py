@@ -98,8 +98,8 @@ def probsolve_bvp(
     # Call IEKS ##############################
 
     grid = initial_grid
-    stopcrit_ieks = MyStoppingCriterion(atol=100 * atol, rtol=100 * rtol, maxit=maxit)
-    # stopcrit_ieks = ConstantStopping(maxit=maxit)
+    # stopcrit_ieks = MyStoppingCriterion(atol=100 * atol, rtol=100 * rtol, maxit=maxit)
+    stopcrit_ieks = ConstantStopping(maxit=maxit)
 
     # Initial solve
     data = np.zeros((len(grid), bvp_dim))
