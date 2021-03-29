@@ -46,7 +46,7 @@ class MyKalman(filtsmooth.Kalman):
             )
 
             new_initrv = new_posterior[0]
-
+            print(times)
             new_mean = new_initrv.mean 
             new_cov_cholesky = utils.linalg.cholesky_update(new_initrv.cov_cholesky, new_mean - self.initrv.mean)
             new_cov = new_cov_cholesky @ new_cov_cholesky.T

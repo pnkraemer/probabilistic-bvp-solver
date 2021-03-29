@@ -34,7 +34,7 @@ from probnum import random_variables as randvars
 
 from scipy.integrate import solve_bvp
 
-TOL = 1e-1
+TOL = 1e-2
 
 # bvp = r_example(xi=0.01)
 # # bvp = matlab_example()
@@ -43,8 +43,8 @@ TOL = 1e-1
 # bvp1st = bratus()
 
 
-bvp = matlab_example_second_order(tmax=1)
-bvp1st = matlab_example(tmax=1)
+bvp = matlab_example_second_order(tmax=2)
+bvp1st = matlab_example(tmax=2)
 
 
 # bvp = problem_7_second_order(xi=0.1)
@@ -55,7 +55,7 @@ initial_guess = np.zeros((2, len(initial_grid)))
 refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=TOL)
 
 
-q = 3
+q = 4
 
 ibm = statespace.IBM(
     ordint=q,
@@ -81,7 +81,7 @@ posterior = probsolve_bvp(
 )
 
 
-evalgrid = np.linspace(bvp.t0, bvp.tmax, 50)
+evalgrid = np.linspace(bvp.t0, bvp.tmax, 150, endpoint=True)
 
 for idx, (post, ssq, errors, kalpost, candidates) in enumerate(posterior):
 
@@ -122,7 +122,7 @@ for idx, (post, ssq, errors, kalpost, candidates) in enumerate(posterior):
     #     label="Error",
     # )
 
-    ax[1].semilogy(evalgrid, discrepancy, ".", color="steelblue", label="True Error")
+    ax[1].semilogy(evalgrid, discrepancy, linestyle="dashed", color="steelblue", label="True Error")
     ax[1].semilogy(
         evalgrid,
         scipy_discrepancy,
@@ -134,9 +134,8 @@ for idx, (post, ssq, errors, kalpost, candidates) in enumerate(posterior):
 
     ax[2].semilogy(post.locations[:-1], np.diff(post.locations), "x", color="k")
     ax[2].semilogy(refsol.x[:-1], np.diff(refsol.x), ".", color="steelblue")
-
     # ax[0].set_ylim((-1.5, 3.5))
-    ax[1].set_ylim((1e-14, 1e8))
+    ax[1].set_ylim((1e-14, 1e1))
     ax[2].set_ylim((1e-4, 1e0))
     ax[1].legend(frameon=False)
 

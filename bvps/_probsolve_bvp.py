@@ -92,14 +92,14 @@ def probsolve_bvp(
             dynamics_model=bridge_prior, measurement_model=measmod, initrv=initrv
         )
 
-    # stopcrit_bvp = MyStoppingCriterion(atol=atol, rtol=rtol, maxit=maxit)
-    stopcrit_bvp = ConstantStopping(maxit=maxit)
+    stopcrit_bvp = MyStoppingCriterion(atol=atol, rtol=rtol, maxit=maxit)
+    # stopcrit_bvp = ConstantStopping(maxit=maxit)
 
     # Call IEKS ##############################
 
     grid = initial_grid
-    # stopcrit_ieks = MyStoppingCriterion(atol=100 * atol, rtol=100 * rtol, maxit=maxit)
-    stopcrit_ieks = ConstantStopping(maxit=maxit)
+    stopcrit_ieks = MyStoppingCriterion(atol=100 * atol, rtol=100 * rtol, maxit=maxit)
+    # stopcrit_ieks = ConstantStopping(maxit=maxit)
 
     # Initial solve
     data = np.zeros((len(grid), bvp_dim))
@@ -241,7 +241,7 @@ def estimate_errors_via_defect(bvp_posterior, kalman_posterior, grid, ssq, measm
             for m, t in zip(evaluated_kalman_posterior.mean, grid)
         ]
     )
-    errors = np.abs(msrvs.mean) * h
+    errors = np.abs(msrvs.mean) #* h
     reference = (
         evaluated_kalman_posterior.mean @ kalman_posterior.transition.proj2coord(0).T
     )
@@ -260,7 +260,7 @@ def estimate_errors_via_probabilistic_defect(
             for rv, t in zip(evaluated_kalman_posterior, grid)
         ]
     )
-    errors = np.sqrt(np.abs(msrvs.mean) ** 2 + np.abs(msrvs.std) ** 2) * h
+    errors = np.sqrt(np.abs(msrvs.mean) ** 2 + np.abs(msrvs.std) ** 2) #* h
     reference = (
         evaluated_kalman_posterior.mean @ kalman_posterior.transition.proj2coord(1).T
     )
