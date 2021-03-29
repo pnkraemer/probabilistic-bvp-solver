@@ -71,7 +71,7 @@ ax[0].grid(which="minor")
 ax[1].grid(which="minor")
 
 
-ax[1].axhspan(out[0], out[1], alpha=0.1, color="black", linewidth=0.)
+ax[1].axhspan(out[0], out[1], alpha=0.1, color="black", linewidth=0.0)
 ax[1].axhline(1.0, color="black", linewidth=0.5)
 # ax[1].fill_between(
 #     results_anees.index, out[0], out[1], color="green", alpha=0.25, label="99% Conf."
@@ -81,8 +81,6 @@ ax[1].axhline(1.0, color="black", linewidth=0.5)
 for axis in ax:
     axis.set_xlabel(r"Mesh-size, $N$")
     axis.legend(fancybox=False, edgecolor="black").get_frame().set_linewidth(0.5)
-
-
 
 
 ax[0].set_ylabel(r"RMSE, $\varepsilon$")

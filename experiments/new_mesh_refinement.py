@@ -70,14 +70,14 @@ posterior = probsolve_bvp(
     bvp=bvp,
     bridge_prior=integ,
     initial_grid=initial_grid,
-    atol=1e-2,
-    rtol=1e-2,
+    atol=1e-1,
+    rtol=1e-1,
     insert="double",
-    which_method="ekf",
+    which_method="iekf",
     maxit=3,
     ignore_bridge=False,
     which_errors="defect",
-    refinement="tolerance"
+    refinement="tolerance",
 )
 
 
@@ -106,13 +106,13 @@ for idx, (post, ssq, errors, kalpost, candidates) in enumerate(posterior):
     discrepancy = np.abs(bvp.solution(evalgrid)[0] - m)
     scipy_discrepancy = np.abs(refsol.sol(evalgrid)[0] - bvp.solution(evalgrid)[0])
 
-    ax[1].semilogy(evalgrid, s, color="k", label="Uncertainty")
+    # ax[1].semilogy(evalgrid, s, color="k", label="Uncertainty")
     ax[1].semilogy(
         candidates,
         np.linalg.norm(errors, axis=1),
-        "+",
+        ".",
         color="darksalmon",
-        label="Error",
+        label="Estimated error",
     )
     # ax[1].semilogy(
     #     candidates[np.linalg.norm(errors, axis=1) > np.median(np.linalg.norm(errors, axis=1))],
@@ -122,16 +122,13 @@ for idx, (post, ssq, errors, kalpost, candidates) in enumerate(posterior):
     #     label="Error",
     # )
 
-
-    ax[1].semilogy(
-        evalgrid, discrepancy, color="steelblue", linestyle="dashed", label="Truth"
-    )
+    ax[1].semilogy(evalgrid, discrepancy, ".", color="steelblue", label="True Error")
     ax[1].semilogy(
         evalgrid,
         scipy_discrepancy,
         color="gray",
         linestyle="dotted",
-        label="scipy error",
+        label="Scipy error",
     )
 
     ax[2].semilogy(post.locations[:-1], np.diff(post.locations), "x", color="k")
