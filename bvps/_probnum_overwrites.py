@@ -100,11 +100,11 @@ class MyKalman(filtsmooth.Kalman):
 
 
 
-            new_initrv = new_posterior[0]
-            new_mean = new_initrv.mean 
-            new_cov_cholesky = utils.linalg.cholesky_update(new_initrv.cov_cholesky, new_mean - self.initrv.mean)
-            new_cov = new_cov_cholesky @ new_cov_cholesky.T
-            self.initrv = randvars.Normal(mean=new_mean, cov=new_initrv.cov, cov_cholesky=new_initrv.cov_cholesky)
+            # new_initrv = new_posterior[0]
+            # new_mean = new_initrv.mean 
+            # new_cov_cholesky = utils.linalg.cholesky_update(new_initrv.cov_cholesky, new_mean - self.initrv.mean)
+            # new_cov = new_cov_cholesky @ new_cov_cholesky.T
+            # self.initrv = randvars.Normal(mean=new_mean, cov=new_cov, cov_cholesky=new_cov_cholesky)
 
             msrvs = _RandomVariableList(
                 [

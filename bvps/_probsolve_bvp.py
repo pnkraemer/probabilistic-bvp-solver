@@ -260,7 +260,7 @@ def estimate_errors_via_probabilistic_defect(
             for rv, t in zip(evaluated_kalman_posterior, grid)
         ]
     )
-    errors = np.sqrt(np.abs(msrvs.mean) ** 2 + np.abs(msrvs.std) ** 2) #* h
+    errors = np.sqrt(np.abs(msrvs.mean) ** 2 + np.abs(msrvs.std) ** 2 * ssq**2) #* h
     reference = (
         evaluated_kalman_posterior.mean @ kalman_posterior.transition.proj2coord(1).T
     )

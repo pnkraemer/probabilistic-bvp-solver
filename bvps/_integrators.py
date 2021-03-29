@@ -53,8 +53,8 @@ class WrappedIntegrator(statespace.Integrator, statespace.LTISDE):
         self.measmod_L = statespace.DiscreteLTIGaussian(
             Lnew,
             -self.bvp.y0,
-            np.zeros((len(L), len(L))),
-            proc_noise_cov_cholesky=np.zeros((len(L), len(L))),
+            0 * np.eye(len(L)),
+            proc_noise_cov_cholesky=0 * np.eye(len(L)),
             forward_implementation="sqrt",
             backward_implementation="sqrt",
         )
