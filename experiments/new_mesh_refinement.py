@@ -34,6 +34,7 @@ from probnum import random_variables as randvars
 
 from scipy.integrate import solve_bvp
 
+TOL = 1e-1
 
 # bvp = r_example(xi=0.01)
 # # bvp = matlab_example()
@@ -49,12 +50,12 @@ bvp1st = matlab_example(tmax=1)
 # bvp = problem_7_second_order(xi=0.1)
 # bvp1st = problem_7(xi=0.1)
 
-initial_grid = np.linspace(bvp.t0, bvp.tmax, 50)
+initial_grid = np.linspace(bvp.t0, bvp.tmax, 10)
 initial_guess = np.zeros((2, len(initial_grid)))
-refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=1e-6)
+refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=TOL)
 
 
-q = 4
+q = 3
 
 ibm = statespace.IBM(
     ordint=q,
@@ -65,16 +66,15 @@ ibm = statespace.IBM(
 
 integ = WrappedIntegrator(ibm, bvp)
 
-
 posterior = probsolve_bvp(
     bvp=bvp,
     bridge_prior=integ,
     initial_grid=initial_grid,
-    atol=1e-1,
-    rtol=1e-1,
-    insert="double",
+    atol=TOL,
+    rtol=TOL,
+    insert="single",
     which_method="iekf",
-    maxit=3,
+    maxit=10,
     ignore_bridge=False,
     which_errors="defect",
     refinement="tolerance",
@@ -130,6 +130,7 @@ for idx, (post, ssq, errors, kalpost, candidates) in enumerate(posterior):
         linestyle="dotted",
         label="Scipy error",
     )
+    ax[1].axhline(TOL, color="black")
 
     ax[2].semilogy(post.locations[:-1], np.diff(post.locations), "x", color="k")
     ax[2].semilogy(refsol.x[:-1], np.diff(refsol.x), ".", color="steelblue")

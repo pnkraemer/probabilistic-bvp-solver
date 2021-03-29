@@ -148,8 +148,8 @@ def probsolve_bvp(
     #     mask = refine_median(quotient)
     # else:
     #     mask = refine_tolerance(quotient)
-    # while np.any(mask):
-    while True:
+    while np.any(mask):
+    # while True:
 
         # Refine grid
         new_points = candidate_locations[mask]
@@ -159,8 +159,9 @@ def probsolve_bvp(
         # grid = np.union1d(sparse_fullgrid, grid[[0, -1]])
 
         grid = np.union1d(grid, new_points)
+        print(grid.shape, new_points.shape, candidate_locations.shape)
+
         data = np.zeros((len(grid), bvp_dim))
-        print(len(grid))
         # Compute new solution
         if ignore_bridge:
             kalman_posterior = kalman.iterated_filtsmooth(
@@ -216,6 +217,7 @@ def probsolve_bvp(
         magnitude = stopcrit_bvp.evaluate_error(error=errors, reference=reference)
         quotient = stopcrit_bvp.evaluate_quotient(errors, reference).squeeze()
         print(quotient)
+
 
         mask = refinement_function(quotient)
         yield bvp_posterior, sigma_squared, errors, kalman_posterior, candidate_locations

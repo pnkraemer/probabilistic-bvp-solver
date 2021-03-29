@@ -2,7 +2,7 @@
 
 import numpy as np
 import scipy.linalg
-from probnum import filtsmooth, statespace
+from probnum import filtsmooth, statespace, utils, randvars
 from probnum._randomvariablelist import _RandomVariableList
 
 
@@ -44,6 +44,13 @@ class MyKalman(filtsmooth.Kalman):
                 measmodL=measmodL,
                 _previous_posterior=old_posterior,
             )
+
+            new_initrv = new_posterior[0]
+
+            new_mean = new_initrv.mean 
+            new_cov_cholesky = utils.linalg.cholesky_update(new_initrv.cov_cholesky, new_mean - self.initrv.mean)
+            new_cov = new_cov_cholesky @ new_cov_cholesky.T
+            self.initrv = randvars.Normal(mean=new_mean, cov=new_cov, cov_cholesky=new_cov_cholesky)
 
             msrvs = _RandomVariableList(
                 [
@@ -134,8 +141,8 @@ class MyKalman(filtsmooth.Kalman):
         _linearise_update_at = (
             None if _previous_posterior is None else _previous_posterior(times[0])
         )
-        if _previous_posterior is not None:
-            self.initrv.mean = _previous_posterior[0].mean
+        # if _previous_posterior is not None:
+        #     self.initrv.mean = _previous_posterior[0].mean
 
         if measmodL is not None:
             filtrv, _ = measmodL.backward_realization(
