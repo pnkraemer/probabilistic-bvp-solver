@@ -19,6 +19,8 @@ class MyKalman(filtsmooth.Kalman):
         posteriori estimate.
         """
 
+        self.ct = 0
+
         if stopcrit is None:
             stopcrit = MyStoppingCriterion()
 
@@ -40,6 +42,17 @@ class MyKalman(filtsmooth.Kalman):
             old_mean = old_posterior.states.mean.copy()
 
             # print("BEFORE", new_posterior.states.mean)
+
+
+
+
+
+
+
+
+
+
+
 
             new_posterior = self.filtsmooth(
                 dataset=dataset,
@@ -88,14 +101,9 @@ class MyKalman(filtsmooth.Kalman):
 
 
 
+            # self.ct += 1
 
-
-
-
-
-
-
-
+            # print(self.ct)
 
 
 
@@ -105,6 +113,11 @@ class MyKalman(filtsmooth.Kalman):
             # new_cov_cholesky = utils.linalg.cholesky_update(new_initrv.cov_cholesky, new_mean - self.initrv.mean)
             # new_cov = new_cov_cholesky @ new_cov_cholesky.T
             # self.initrv = randvars.Normal(mean=new_mean, cov=new_cov, cov_cholesky=new_cov_cholesky)
+
+
+
+
+
 
             msrvs = _RandomVariableList(
                 [
@@ -155,8 +168,8 @@ class MyKalman(filtsmooth.Kalman):
         filter_posterior = self.filter(
             dataset,
             times,
-            measmodL,
-            measmodR,
+            measmodL=measmodL,
+            measmodR=measmodR,
             _previous_posterior=_previous_posterior,
         )
         smooth_posterior = self.smooth(filter_posterior)
@@ -197,6 +210,7 @@ class MyKalman(filtsmooth.Kalman):
         )
         # if _previous_posterior is not None:
         #     new_initrv = _previous_posterior[0]
+
         #     self.initrv = randvars.Normal(mean=new_initrv.mean, cov=new_initrv.cov, cov_cholesky=new_initrv.cov_cholesky)
 
             # self.initrv.mean = _previous_posterior[0].mean
@@ -207,6 +221,9 @@ class MyKalman(filtsmooth.Kalman):
             )
         else:
             filtrv = self.initrv
+
+
+        # filtrv = self.initrv
 
         filtrv, *_ = self.update(
             data=dataset[0],

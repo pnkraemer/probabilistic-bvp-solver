@@ -139,11 +139,13 @@ def matlab_example(tmax=1.0):
     L = np.eye(1, 2)
     R = np.eye(1, 2)
 
-    y0 = np.zeros(1)
-    ymax = np.array([np.sin(1.0)])
 
     t0 = 1 / (3 * np.pi)
     tmax = tmax
+
+    y0 = matlab_solution(t0)[0].reshape((-1,))
+    ymax = matlab_solution(tmax)[0].reshape((-1,))
+
 
     return BoundaryValueProblem(
         f=matlab_rhs,
@@ -179,11 +181,11 @@ def matlab_example_second_order(tmax=1.0):
     L = np.eye(1, 2)
     R = np.eye(1, 2)
 
-    y0 = np.zeros(1)
-    ymax = np.array([np.sin(1.0)])
-
     t0 = 1 / (3 * np.pi)
     tmax = tmax
+
+    y0 = matlab_solution(t0)[0].reshape((-1,))
+    ymax = matlab_solution(tmax)[0].reshape((-1,))
 
     return SecondOrderBoundaryValueProblem(
         f=matlab_rhs_second_order,

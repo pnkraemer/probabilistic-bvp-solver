@@ -34,7 +34,7 @@ from probnum import random_variables as randvars
 
 from scipy.integrate import solve_bvp
 
-TOL = 1e-1
+TOL = 1e-3
 
 # bvp = r_example(xi=0.01)
 # # bvp = matlab_example()
@@ -42,16 +42,15 @@ TOL = 1e-1
 # bvp = bratus_second_order()
 # bvp1st = bratus()
 
-TMAX = 0.3
-bvp = matlab_example_second_order(tmax=TMAX)
-bvp1st = matlab_example(tmax=TMAX)
+
+# bvp = matlab_example_second_order(tmax=1)
+# bvp1st = matlab_example(tmax=1)
 
 
 # bvp = problem_7_second_order(xi=0.1)
 # bvp1st = problem_7(xi=0.1)
 
-# initial_grid = np.union1d(np.linspace(bvp.t0, 0.3, 200), np.linspace(bvp.t0, bvp.tmax, 20))
-initial_grid = np.linspace(bvp.t0, bvp.tmax, 2)
+initial_grid = np.union1d(np.linspace(bvp.t0, bvp.tmax, 10), np.linspace(bvp.t0, bvp.t0 + 0.2, 10))
 initial_guess = np.zeros((2, len(initial_grid)))
 refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=TOL)
 
@@ -68,7 +67,7 @@ refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=T
 
 
 
-q = 3
+q = 5
 
 ibm = statespace.IBM(
     ordint=q,
@@ -79,14 +78,6 @@ ibm = statespace.IBM(
 
 integ = WrappedIntegrator(ibm, bvp)
 
-
-
-
-
-# initial_grid = np.linspace(bvp.t0, bvp.tmax, 2)
-
-
-
 posterior = probsolve_bvp(
     bvp=bvp,
     bridge_prior=integ,
@@ -94,9 +85,9 @@ posterior = probsolve_bvp(
     atol=1*TOL,
     rtol=1*TOL,
     insert="double",
-    which_method="ekf",
-    maxit=15,
-    ignore_bridge=True,
+    which_method="iekf",
+    maxit=5,
+    ignore_bridge=False,
     which_errors="defect",
     refinement="tolerance",
 )
@@ -144,12 +135,6 @@ for idx, (post, ssq, errors, kalpost, candidates, h) in enumerate(posterior):
     ax[0].plot(
         evalgrid, bvp.solution(evalgrid).T[:, 0], color="red", linestyle="dotted"
     )
-
-    ax[0].fill_between(evalgrid, m - 3*s, m + 3*s)
-    ax[0].fill_between(evalgrid, m2 - 3*s2, m2 + 3*s2)
-
-    for t in post.locations:
-        ax[0].axvline(t, linewidth=0.1, color="k")
 
     discrepancy = np.abs(bvp.solution(evalgrid)[0] - m)
     scipy_discrepancy = np.abs(refsol.sol(evalgrid)[0] - bvp.solution(evalgrid)[0])
