@@ -28,7 +28,7 @@ for q, ax in zip(orders, axes):
     for idx in range(num_samples):
         samples = np.load(path + str(q) + str(idx) + ".npy")
 
-        ax.plot(grid, samples[:, 0], color="C2")
+        ax.plot(grid, samples[:, 0], color="black")
         ax.set_xlabel(r"Time, $t$")
         ax.set_title(f"Order, $\\nu = {q}$")
 
