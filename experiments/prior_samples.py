@@ -17,8 +17,8 @@ from tqdm import tqdm
 bvp = r_example()
 grid = np.linspace(bvp.t0, bvp.tmax, 20)
 
-orders = [2, 3, 5, 8]
-num_samples = 3
+orders = [1, 3, 5]
+num_samples = 15
 fig, axes = plt.subplots(
     ncols=len(orders),
     nrows=2,
@@ -30,6 +30,8 @@ fig, axes = plt.subplots(
 )
 
 
+path = "./probabilistic-bvp-solver/data/prior_samples/samples_"
+np.save(path + "grid", grid)
 for q, ax in tqdm(zip(orders, axes.T), total=len(orders)):
     ibm = statespace.IBM(
         ordint=q,
@@ -46,21 +48,22 @@ for q, ax in tqdm(zip(orders, axes.T), total=len(orders)):
     base_measure_samples = np.random.randn(num_samples, len(grid), ibm.dimension)
     base_measure_samples2 = np.random.randn(num_samples, len(grid), ibm.dimension)
 
-    for smp, smp2 in zip(base_measure_samples, base_measure_samples2):
+    for idx, (smp, smp2) in enumerate(zip(base_measure_samples, base_measure_samples2)):
         samples = np.array(list(generate_samples(grid, integ, rv, smp)))
+        np.save(path + str(q) + str(idx), samples)
         samples2 = np.array(list(generate_samples(grid, integ, rv2, smp2, fix=False)))
         ax[0].plot(
             grid, samples[:, 0], color="darkorange", linestyle="dashed", linewidth=0.75
         )
         ax[0].set_title(f"Order: $\\nu={q}$")
 
-        ax[1].plot(
-            grid, samples2[:, 0], color="teal", linestyle="dashed", linewidth=0.75
-        )
-        ax[1].set_xlabel("Time, $t$")
+        # ax[1].plot(
+        #     grid, samples2[:, 0], color="teal", linestyle="dashed", linewidth=0.75
+        # )
+        # ax[1].set_xlabel("Time, $t$")
 axes[0][0].set_ylabel("Type I Samples")
 axes[1][0].set_ylabel("Type II Samples")
-plt.savefig("figures/IBMBridges.pdf")
+plt.savefig("./probabilistic-bvp-solver/figures/IBMBridges.pdf")
 plt.show()
 
 # for t, smp in zip(grid, samples):
