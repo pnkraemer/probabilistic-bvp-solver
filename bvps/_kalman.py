@@ -43,17 +43,6 @@ class MyKalman(filtsmooth.Kalman):
 
             # print("BEFORE", new_posterior.states.mean)
 
-
-
-
-
-
-
-
-
-
-
-
             new_posterior = self.filtsmooth(
                 dataset=dataset,
                 times=times,
@@ -63,11 +52,10 @@ class MyKalman(filtsmooth.Kalman):
             )
             # print("AFTER", new_posterior.states.mean)
 
-
-            # # 
+            # #
             # current_best_loss = np.inf
             # current_best_alpha = np.inf
-            # # old_mean = old_posterior.states.mean 
+            # # old_mean = old_posterior.states.mean
             # new_mean = new_posterior.states.mean
             # old_cov_cholesky = old_posterior.states.cov
             # new_cov_cholesky = new_posterior.states.cov
@@ -89,35 +77,26 @@ class MyKalman(filtsmooth.Kalman):
             #         current_best_loss = loss
             #         current_best_alpha = alpha
 
-
             # # Use new best alpha for update
             # new_state_means = (1-current_best_alpha) * old_mean + current_best_alpha * new_mean
             # new_state_covs = (1-current_best_alpha) * old_cov_cholesky + current_best_alpha * new_cov_cholesky
             # new_posterior.states = _RandomVariableList([randvars.Normal(mean=m, cov=S) for m, S in zip(new_state_means, new_state_covs)])
             # print("BEST LOSS", current_best_loss / len(loss_rvs), "BEST ALPHA:", current_best_alpha)
 
-
-
-
-
-
             # self.ct += 1
 
             # print(self.ct)
 
-
-
-
             # new_initrv = new_posterior[0]
-            # new_mean = new_initrv.mean 
-            # new_cov_cholesky = utils.linalg.cholesky_update(new_initrv.cov_cholesky, new_mean - self.initrv.mean)
+            # new_mean = new_initrv.mean.copy()
+            # # new_cov_cholesky = utils.linalg.cholesky_update(
+            # #     new_initrv.cov_cholesky, new_mean - self.initrv.mean
+            # # )
+            # new_cov_cholesky = self.initrv.cov_cholesky.copy()
             # new_cov = new_cov_cholesky @ new_cov_cholesky.T
-            # self.initrv = randvars.Normal(mean=new_mean, cov=new_cov, cov_cholesky=new_cov_cholesky)
-
-
-
-
-
+            # self.initrv = randvars.Normal(
+            #     mean=new_mean, cov=new_cov, cov_cholesky=new_cov_cholesky
+            # )
 
             msrvs = _RandomVariableList(
                 [
@@ -213,7 +192,7 @@ class MyKalman(filtsmooth.Kalman):
 
         #     self.initrv = randvars.Normal(mean=new_initrv.mean, cov=new_initrv.cov, cov_cholesky=new_initrv.cov_cholesky)
 
-            # self.initrv.mean = _previous_posterior[0].mean
+        # self.initrv.mean = _previous_posterior[0].mean
 
         if measmodL is not None:
             filtrv, _ = measmodL.backward_realization(
@@ -222,14 +201,12 @@ class MyKalman(filtsmooth.Kalman):
         else:
             filtrv = self.initrv
 
-
         # filtrv = self.initrv
-
         filtrv, *_ = self.update(
             data=dataset[0],
-            rv=filtrv,
+            rv=self.initrv,
             time=times[0],
-            _linearise_at=_linearise_update_at,
+            _linearise_at=filtrv,
         )
 
         rvs.append(filtrv)

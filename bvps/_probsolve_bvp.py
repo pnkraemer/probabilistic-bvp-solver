@@ -6,7 +6,7 @@ from probnum._randomvariablelist import _RandomVariableList
 from ._mesh import insert_single_points, insert_two_points, insert_three_points
 from ._ode_measmods import from_ode, from_second_order_ode
 from ._problems import SecondOrderBoundaryValueProblem
-from ._probnum_overwrites import (
+from ._kalman import (
     ConstantStopping,
     MyIteratedDiscreteComponent,
     MyKalman,
@@ -78,7 +78,7 @@ def probsolve_bvp(
         measmod = MyIteratedDiscreteComponent(measmod, stopcrit=stopcrit_iekf)
 
     rv = randvars.Normal(
-        10*np.ones(bridge_prior.dimension),1e6* np.eye(bridge_prior.dimension)
+        10 * np.ones(bridge_prior.dimension), 1e6 * np.eye(bridge_prior.dimension)
     )
     initrv, _ = bridge_prior.forward_rv(rv, t=bvp.t0, dt=0.0)
 
@@ -154,22 +154,16 @@ def probsolve_bvp(
     # else:
     #     mask = refine_tolerance(quotient)
     while np.any(mask):
-    # while True:
-
+        # while True:
 
         new_initrv = kalman_posterior.states[0]
         new_mean = new_initrv.mean.copy()
         # new_cov_cholesky = utils.linalg.cholesky_update(new_initrv.cov_cholesky, new_mean - kalman.initrv.mean)
         new_cov_cholesky = kalman.initrv.cov_cholesky
         new_cov = new_cov_cholesky @ new_cov_cholesky.T
-        kalman.initrv = randvars.Normal(mean=new_mean, cov=new_cov, cov_cholesky=new_cov_cholesky)
-
-
-
-
-
-
-
+        kalman.initrv = randvars.Normal(
+            mean=new_mean, cov=new_cov, cov_cholesky=new_cov_cholesky
+        )
 
         # Refine grid
         new_points = candidate_locations[mask]
@@ -242,7 +236,6 @@ def probsolve_bvp(
         quotient = stopcrit_bvp.evaluate_quotient(errors, reference).squeeze()
         # print(quotient)
 
-
         mask = refinement_function(quotient)
         yield bvp_posterior, sigma_squared, errors, kalman_posterior, candidate_locations, h
 
@@ -284,7 +277,7 @@ def estimate_errors_via_probabilistic_defect(
             for rv, t in zip(evaluated_kalman_posterior, grid)
         ]
     )
-    errors = np.sqrt(np.abs(msrvs.mean) ** 2 + np.abs(msrvs.std) ** 2 * ssq**2)
+    errors = np.sqrt(np.abs(msrvs.mean) ** 2 + np.abs(msrvs.std) ** 2 * ssq ** 2)
     reference = (
         evaluated_kalman_posterior.mean @ kalman_posterior.transition.proj2coord(0).T
     )

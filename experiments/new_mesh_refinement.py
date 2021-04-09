@@ -42,7 +42,7 @@ TOL = 1e-1
 # bvp = bratus_second_order()
 # bvp1st = bratus()
 
-TMAX = 0.3
+TMAX = 0.15
 bvp = matlab_example_second_order(tmax=TMAX)
 bvp1st = matlab_example(tmax=TMAX)
 
@@ -56,16 +56,12 @@ initial_guess = np.zeros((2, len(initial_grid)))
 refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=TOL)
 
 
-
-
-
 # initial_grid = refsol.x
 
 # plt.plot(refsol.x, np.ones_like(refsol.x), ".")
 # plt.show()
 # print(refsol.x)
 # assert False
-
 
 
 q = 3
@@ -80,64 +76,70 @@ ibm = statespace.IBM(
 integ = WrappedIntegrator(ibm, bvp)
 
 
-
-
-
 # initial_grid = np.linspace(bvp.t0, bvp.tmax, 2)
-
 
 
 posterior = probsolve_bvp(
     bvp=bvp,
     bridge_prior=integ,
     initial_grid=initial_grid,
-    atol=1*TOL,
-    rtol=1*TOL,
+    atol=1 * TOL,
+    rtol=1 * TOL,
     insert="double",
     which_method="ekf",
-    maxit=15,
+    maxit=5,
     ignore_bridge=True,
     which_errors="defect",
     refinement="tolerance",
 )
 
 
-print("Current information: EM in the filter sucks, EM on iterated filtsmooth level is okay, no EM is fine too.")
+print(
+    "Current information: EM in the filter sucks, EM on iterated filtsmooth level is okay, no EM is fine too."
+)
 
 
 evalgrid = np.linspace(bvp.t0, bvp.tmax, 150, endpoint=True)
 
 for idx, (post, ssq, errors, kalpost, candidates, h) in enumerate(posterior):
-    print("Why is the filtering posterior soooo bad even if the smoothing posterior is alright?")
-    post2 = diffeq.KalmanODESolution(kalpost.filtering_posterior)
-
+    print(
+        "Why is the filtering posterior soooo bad even if the smoothing posterior is alright?"
+    )
+    post2 = post.kalman_posterior.filtering_posterior
+    # print(post.locations, post2.locations)
     # print(post.states[0].mean)
     # print(kalpost.filtering_posterior.states[0].mean)
     # post = post.filtering_solution
     # print(kalpost.states[0].mean)
     # print(kalpost.states[0].std)
     # print()
-    plt.style.use(
-        [
-            "./visualization/science.mplstyle",
-            # "./visualization/notebook.mplstyle"
-        ]
-    )
+    # plt.style.use(
+    #     [
+    #         "./visualization/science.mplstyle",
+    #         # "./visualization/notebook.mplstyle"
+    #     ]
+    # )
 
     fig, ax = plt.subplots(nrows=3, sharex=True, dpi=200)
     evaluated = post(evalgrid)
     m = evaluated.mean[:, 0]
-    s = evaluated.std[:, 0] #* np.sqrt(ssq)
-
+    s = evaluated.std[:, 0] * np.sqrt(ssq)
 
     evaluated2 = post2(evalgrid)
     m2 = evaluated2.mean[:, 0]
-    s2 = evaluated2.std[:, 0] #* np.sqrt(ssq)
+    s2 = evaluated2.std[:, 0] * np.sqrt(ssq)
 
+    t = post.locations
+    m = post.states.mean[:, 0]
+    s = post.states.std[:, 0]
 
-    discrepancy = np.abs(refsol.sol(evalgrid).T[:, 0] - m)
-    ax[0].plot(evalgrid, m, color="k")
-    ax[0].plot(evalgrid, m2, color="orange")
+    t2 = post2.locations
+    m2 = post2.states.mean[:, 0]
+    s2 = post2.states.std[:, 0]
+
+    discrepancy = np.abs(refsol.sol(evalgrid).T[:, 0] - post(evalgrid).mean[:, 0])
+    ax[0].plot(t, m, color="k")
+    ax[0].plot(t2, m2, color="orange")
     ax[0].plot(
         evalgrid, refsol.sol(evalgrid).T[:, 0], color="steelblue", linestyle="dashed"
     )
@@ -145,13 +147,16 @@ for idx, (post, ssq, errors, kalpost, candidates, h) in enumerate(posterior):
         evalgrid, bvp.solution(evalgrid).T[:, 0], color="red", linestyle="dotted"
     )
 
-    ax[0].fill_between(evalgrid, m - 3*s, m + 3*s)
-    ax[0].fill_between(evalgrid, m2 - 3*s2, m2 + 3*s2)
+    # print(s)
+    # print(s2)
+
+    ax[0].fill_between(t, m - 3 * s, m + 3 * s)
+    ax[0].fill_between(t2, m2 - 3 * s2, m2 + 3 * s2)
 
     for t in post.locations:
         ax[0].axvline(t, linewidth=0.1, color="k")
 
-    discrepancy = np.abs(bvp.solution(evalgrid)[0] - m)
+    discrepancy = np.abs(bvp.solution(evalgrid)[0] - post(evalgrid).mean[:, 0])
     scipy_discrepancy = np.abs(refsol.sol(evalgrid)[0] - bvp.solution(evalgrid)[0])
 
     # ax[1].semilogy(evalgrid, s, color="k", label="Uncertainty")
@@ -170,7 +175,9 @@ for idx, (post, ssq, errors, kalpost, candidates, h) in enumerate(posterior):
     #     label="Error",
     # )
 
-    ax[1].semilogy(evalgrid, discrepancy, linestyle="dashed", color="steelblue", label="True Error")
+    ax[1].semilogy(
+        evalgrid, discrepancy, linestyle="dashed", color="steelblue", label="True Error"
+    )
     ax[1].semilogy(
         evalgrid,
         scipy_discrepancy,
