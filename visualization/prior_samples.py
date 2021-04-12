@@ -25,10 +25,10 @@ grid = np.load(path + "grid.npy")
 fig, axes = plt.subplots(ncols=3, dpi=350, constrained_layout=True, sharey=True)
 for q, ax in zip(orders, axes):
 
-    for idx in range(num_samples):
+    for idx in range(num_samples // 3):
         samples = np.load(path + str(q) + str(idx) + ".npy")
 
-        ax.plot(grid, samples[:, 0], color="black")
+        ax.plot(grid, samples[:, 0], color="C0")
         ax.set_xlabel(r"Time, $t$")
         ax.set_title(f"Order, $\\nu = {q}$")
 
@@ -62,6 +62,6 @@ axes[0].set_ylabel(r"Prior, $Y_0(t)$")
 # ax[1].set_xlabel(r"Time, $t$")
 
 
-plt.savefig("./probabilistic-bvp-solver/figures/prior_samples.pdf")
+plt.savefig("./figures/prior_samples.pdf")
 
 plt.show()

@@ -13,6 +13,8 @@ from ._kalman import (
     MyStoppingCriterion,
 )
 
+from ._bvp_initialise import *
+
 import scipy.linalg
 
 
@@ -70,6 +72,7 @@ def probsolve_bvp(
     else:
         measmod = from_ode(bvp, bridge_prior)
         bvp_dim = len(bvp.R.T)
+
     if which_method == "iekf":
         stopcrit_iekf = ConstantStopping(maxit=maxit)
         # stopcrit_iekf = MyStoppingCriterion(
@@ -101,27 +104,35 @@ def probsolve_bvp(
     # stopcrit_ieks = MyStoppingCriterion(atol=100 * atol, rtol=100 * rtol, maxit=maxit)
     stopcrit_ieks = ConstantStopping(maxit=maxit)
 
-    # Initial solve
-    data = np.zeros((len(grid), bvp_dim))
-    if ignore_bridge:
-        kalman_posterior = kalman.iterated_filtsmooth(
-            dataset=data,
-            times=grid,
-            stopcrit=stopcrit_ieks,
-            measmodL=bridge_prior.measmod_L,
-            measmodR=bridge_prior.measmod_R,
-        )
-    else:
-        kalman_posterior = kalman.iterated_filtsmooth(
-            dataset=data,
-            times=grid,
-            stopcrit=stopcrit_ieks,
-            measmodL=None,
-            measmodR=None,
-        )
+    # # Initial solve
+    # data = np.zeros((len(grid), bvp_dim))
+    # if ignore_bridge:
+    #     kalman_posterior = kalman.iterated_filtsmooth(
+    #         dataset=data,
+    #         times=grid,
+    #         stopcrit=stopcrit_ieks,
+    #         measmodL=bridge_prior.measmod_L,
+    #         measmodR=bridge_prior.measmod_R,
+    #     )
+    # else:
+    #     kalman_posterior = kalman.iterated_filtsmooth(
+    #         dataset=data,
+    #         times=grid,
+    #         stopcrit=stopcrit_ieks,
+    #         measmodL=None,
+    #         measmodR=None,
+    #     )
+
+    kalman_posterior = bvp_initialise_ode(
+        bvp=bvp,
+        bridge_prior=bridge_prior,
+        initial_grid=initial_grid,
+    )
 
     bvp_posterior = diffeq.KalmanODESolution(kalman_posterior)
-    sigma_squared = kalman.ssq
+    # sigma_squared = kalman.ssq
+    sigma_squared = 1.0
+    # kalman_posterior = bvp_posterior.kalman_posterior
 
     # Set up candidates for mesh refinement
 
@@ -138,15 +149,15 @@ def probsolve_bvp(
     # errors *= h[:, None]
 
     print(errors.shape, h.shape)
-    yield bvp_posterior, sigma_squared, errors, kalman_posterior, candidate_locations, h
 
     magnitude = stopcrit_bvp.evaluate_error(error=errors, reference=reference)
-    quotient = stopcrit_bvp.evaluate_quotient(errors, reference).squeeze()
-    # norm = np.linalg.norm(quotient, axis=1)
+    quotient = stopcrit_bvp.evaluate_quotient(errors, reference)
+    quotient = np.linalg.norm(quotient, axis=1)
+    yield bvp_posterior, sigma_squared, errors, kalman_posterior, candidate_locations, h, quotient
 
     # print(quotient.shape)
     mask = refinement_function(quotient)
-
+    print(mask)
     print(quotient)
     # print(quotient)
     # if refinement == "median":
@@ -166,6 +177,7 @@ def probsolve_bvp(
         )
 
         # Refine grid
+        print(mask.shape)
         new_points = candidate_locations[mask]
 
         # new_fullgrid = np.union1d(grid, new_points)
@@ -235,9 +247,17 @@ def probsolve_bvp(
         magnitude = stopcrit_bvp.evaluate_error(error=errors, reference=reference)
         quotient = stopcrit_bvp.evaluate_quotient(errors, reference).squeeze()
         # print(quotient)
+        quotient = np.linalg.norm(quotient, axis=1)
 
         mask = refinement_function(quotient)
-        yield bvp_posterior, sigma_squared, errors, kalman_posterior, candidate_locations, h
+
+        kalman.initrv = randvars.Normal(
+            mean=kalman_posterior[0].mean,
+            cov=kalman.initrv.cov,
+            cov_cholesky=kalman.initrv.cov_cholesky,
+        )
+
+        yield bvp_posterior, sigma_squared, errors, kalman_posterior, candidate_locations, h, quotient
 
 
 def estimate_errors_via_std(bvp_posterior, kalman_posterior, grid, ssq, measmod):
@@ -277,7 +297,7 @@ def estimate_errors_via_probabilistic_defect(
             for rv, t in zip(evaluated_kalman_posterior, grid)
         ]
     )
-    errors = np.sqrt(np.abs(msrvs.mean) ** 2 + np.abs(msrvs.std) ** 2 * ssq ** 2)
+    errors = np.sqrt(np.abs(msrvs.mean) ** 2 + np.abs(msrvs.std) ** 2)
     reference = (
         evaluated_kalman_posterior.mean @ kalman_posterior.transition.proj2coord(0).T
     )

@@ -62,17 +62,17 @@ fig, ax = plt.subplots(ncols=2, dpi=350, constrained_layout=True, sharey=True)
 
 
 ax[0].plot(evalgrid, truth, linestyle="dashed", color="gray")
-ax[0].plot(evalgrid, smoother_guesses, color="black")
+ax[0].plot(evalgrid, smoother_guesses, color="C0")
 ax[0].plot(
     initial_grid,
     initial_guess[:, 1],
     linestyle="None",
     marker="o",
-    color="black",
+    color="C0",
     zorder=-1,
 )
 ax[1].plot(evalgrid, truth, linestyle="dashed", color="gray")
-ax[1].plot(evalgrid, smoother_ode, color="black")
+ax[1].plot(evalgrid, smoother_ode, color="C0")
 
 
 ax[0].set_title("Via Vector")

@@ -18,7 +18,7 @@ bvp = r_example()
 grid = np.linspace(bvp.t0, bvp.tmax, 20)
 
 orders = [1, 3, 5]
-num_samples = 15
+num_samples = 500
 fig, axes = plt.subplots(
     ncols=len(orders),
     nrows=2,
@@ -63,7 +63,7 @@ for q, ax in tqdm(zip(orders, axes.T), total=len(orders)):
         # ax[1].set_xlabel("Time, $t$")
 axes[0][0].set_ylabel("Type I Samples")
 axes[1][0].set_ylabel("Type II Samples")
-plt.savefig("./probabilistic-bvp-solver/figures/IBMBridges.pdf")
+plt.savefig("./figures/IBMBridges.pdf")
 plt.show()
 
 # for t, smp in zip(grid, samples):

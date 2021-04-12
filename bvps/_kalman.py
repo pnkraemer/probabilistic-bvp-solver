@@ -87,16 +87,16 @@ class MyKalman(filtsmooth.Kalman):
 
             # print(self.ct)
 
-            # new_initrv = new_posterior[0]
-            # new_mean = new_initrv.mean.copy()
-            # # new_cov_cholesky = utils.linalg.cholesky_update(
-            # #     new_initrv.cov_cholesky, new_mean - self.initrv.mean
-            # # )
+            new_initrv = new_posterior[0]
+            new_mean = new_initrv.mean.copy()
+            new_cov_cholesky = utils.linalg.cholesky_update(
+                new_initrv.cov_cholesky, new_mean - self.initrv.mean
+            )
             # new_cov_cholesky = self.initrv.cov_cholesky.copy()
-            # new_cov = new_cov_cholesky @ new_cov_cholesky.T
-            # self.initrv = randvars.Normal(
-            #     mean=new_mean, cov=new_cov, cov_cholesky=new_cov_cholesky
-            # )
+            new_cov = new_cov_cholesky @ new_cov_cholesky.T
+            self.initrv = randvars.Normal(
+                mean=new_mean, cov=new_cov, cov_cholesky=new_cov_cholesky
+            )
 
             msrvs = _RandomVariableList(
                 [
@@ -195,8 +195,9 @@ class MyKalman(filtsmooth.Kalman):
         # self.initrv.mean = _previous_posterior[0].mean
 
         if measmodL is not None:
+            # print(measmodL.input_dim, measmodL.output_dim, np.zeros(1).shape)
             filtrv, _ = measmodL.backward_realization(
-                realization_obtained=dataset[0], rv=self.initrv, t=times[0]
+                realization_obtained=np.zeros(1), rv=self.initrv, t=times[0]
             )
         else:
             filtrv = self.initrv
@@ -237,7 +238,7 @@ class MyKalman(filtsmooth.Kalman):
 
         if measmodR is not None:
             rvs[-1], _ = measmodR.backward_realization(
-                realization_obtained=dataset[-1], rv=rvs[-1], t=times[-1]
+                realization_obtained=np.zeros(1), rv=rvs[-1], t=times[-1]
             )
 
         ssq = np.mean(sigmas)

@@ -59,6 +59,9 @@ class WrappedIntegrator(statespace.Integrator, statespace.LTISDE):
             backward_implementation="sqrt",
         )
 
+        # print(self.measmod_L.input_dim)
+        # print(self.measmod_L.output_dim)
+
     def __repr__(self):
         return "<WrappedIntegrator object>"
 
