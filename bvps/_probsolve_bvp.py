@@ -132,6 +132,7 @@ def probsolve_bvp(
     bvp_posterior = diffeq.KalmanODESolution(kalman_posterior)
     # sigma_squared = kalman.ssq
     sigma_squared = 1.0
+    sigmas = np.ones_like(bvp_posterior.locations[:-1])
     # kalman_posterior = bvp_posterior.kalman_posterior
 
     # Set up candidates for mesh refinement
@@ -139,21 +140,23 @@ def probsolve_bvp(
     candidate_locations, h = candidate_function(bvp_posterior.locations)
 
     # Estimate errors and choose nodes to refine
-    errors, reference = estimate_errors_function(
+    errors, reference, quotient = estimate_errors_function(
         bvp_posterior,
         kalman_posterior,
         candidate_locations,
         sigma_squared,
         measmod,
+        atol,
+        rtol,
     )
     # errors *= h[:, None]
 
-    print(errors.shape, h.shape)
+    # print(errors.shape, h.shape)
 
-    magnitude = stopcrit_bvp.evaluate_error(error=errors, reference=reference)
-    quotient = stopcrit_bvp.evaluate_quotient(errors, reference)
-    quotient = np.linalg.norm(quotient, axis=1)
-    yield bvp_posterior, sigma_squared, errors, kalman_posterior, candidate_locations, h, quotient
+    # magnitude = stopcrit_bvp.evaluate_error(error=errors, reference=reference)
+    # quotient = stopcrit_bvp.evaluate_quotient(errors, reference)
+    # quotient = np.linalg.norm(quotient, axis=1)
+    yield bvp_posterior, sigma_squared, errors, kalman_posterior, candidate_locations, h, quotient, sigmas
 
     # print(quotient.shape)
     mask = refinement_function(quotient)
@@ -207,21 +210,24 @@ def probsolve_bvp(
             )
         bvp_posterior = diffeq.KalmanODESolution(kalman_posterior)
         sigma_squared = kalman.ssq
+        sigmas = kalman.sigmas
 
         # Set up candidates for mesh refinement
         candidate_locations, h = candidate_function(bvp_posterior.locations)
 
         # Estimate errors and choose nodes to refine
-        errors, reference = estimate_errors_function(
+        errors, reference, quotient = estimate_errors_function(
             bvp_posterior,
             kalman_posterior,
             candidate_locations,
             sigma_squared,
             measmod,
+            atol,
+            rtol,
         )
         # print(h)
         # errors *= h[:, None]
-        print(errors.shape, h.shape)
+        # print(errors.shape, h.shape)
 
         # if which_errors == "defect":
         #     errors, reference = estimate_errors_via_defect(
@@ -244,10 +250,10 @@ def probsolve_bvp(
         #         measmod,
         #     )
 
-        magnitude = stopcrit_bvp.evaluate_error(error=errors, reference=reference)
-        quotient = stopcrit_bvp.evaluate_quotient(errors, reference).squeeze()
-        # print(quotient)
-        quotient = np.linalg.norm(quotient, axis=1)
+        # magnitude = stopcrit_bvp.evaluate_error(error=errors, reference=reference)
+        # quotient = stopcrit_bvp.evaluate_quotient(errors, reference).squeeze()
+        # # print(quotient)
+        # quotient = np.linalg.norm(quotient, axis=1)
 
         mask = refinement_function(quotient)
 
@@ -257,10 +263,12 @@ def probsolve_bvp(
             cov_cholesky=kalman.initrv.cov_cholesky,
         )
 
-        yield bvp_posterior, sigma_squared, errors, kalman_posterior, candidate_locations, h, quotient
+        yield bvp_posterior, sigma_squared, errors, kalman_posterior, candidate_locations, h, quotient, sigmas
 
 
-def estimate_errors_via_std(bvp_posterior, kalman_posterior, grid, ssq, measmod):
+def estimate_errors_via_std(
+    bvp_posterior, kalman_posterior, grid, ssq, measmod, atol, rtol
+):
     evaluated_posterior = bvp_posterior(grid)
     errors = evaluated_posterior.std * np.sqrt(ssq)
     reference = evaluated_posterior.mean
@@ -268,7 +276,9 @@ def estimate_errors_via_std(bvp_posterior, kalman_posterior, grid, ssq, measmod)
     return errors, evaluated_posterior.mean
 
 
-def estimate_errors_via_defect(bvp_posterior, kalman_posterior, grid, ssq, measmod):
+def estimate_errors_via_defect(
+    bvp_posterior, kalman_posterior, grid, ssq, measmod, atol, rtol
+):
     h = np.amax(np.abs(np.diff(grid)))
     # print(h)
     evaluated_kalman_posterior = kalman_posterior(grid)
@@ -287,9 +297,9 @@ def estimate_errors_via_defect(bvp_posterior, kalman_posterior, grid, ssq, measm
 
 
 def estimate_errors_via_probabilistic_defect(
-    bvp_posterior, kalman_posterior, grid, ssq, measmod
+    bvp_posterior, kalman_posterior, grid, ssq, measmod, atol, rtol
 ):
-    h = np.amax(np.abs(np.diff(grid)))
+    h = np.amin(np.abs(np.diff(grid)))
     evaluated_kalman_posterior = kalman_posterior(grid)
     msrvs = _RandomVariableList(
         [
@@ -297,12 +307,20 @@ def estimate_errors_via_probabilistic_defect(
             for rv, t in zip(evaluated_kalman_posterior, grid)
         ]
     )
-    errors = np.sqrt(np.abs(msrvs.mean) ** 2 + np.abs(msrvs.std) ** 2)
+    errors1 = np.abs(msrvs.mean) ** 2
+    errors2 = np.abs(msrvs.std) ** 2
+
     reference = (
         evaluated_kalman_posterior.mean @ kalman_posterior.transition.proj2coord(0).T
     )
-    assert errors.shape == reference.shape
-    return errors, reference
+
+    refs = atol + rtol * np.abs(reference)
+    error_std = np.sum(errors2 / refs ** 2, axis=1)
+    error_mean = np.linalg.norm(errors1 / refs, axis=1) ** 2
+    quotient = np.sqrt((error_std + error_mean) / measmod.output_dim) * h
+
+    assert errors1.shape == reference.shape
+    return None, None, quotient
 
 
 ESTIMATE_ERRORS_OPTIONS = {

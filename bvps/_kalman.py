@@ -242,6 +242,8 @@ class MyKalman(filtsmooth.Kalman):
             )
 
         ssq = np.mean(sigmas)
+
+        self.sigmas = sigmas
         # rvs = [
         #     randvars.Normal(
         #         mean=rv.mean,
@@ -278,6 +280,7 @@ class MyKalman(filtsmooth.Kalman):
             (meas_rv.cov_cholesky, True), meas_rv.mean
         )
         info["current_sigma"] = sigma
+        # print(sigma)
 
         return upd_rv, info
 
@@ -337,6 +340,7 @@ class MyKalman(filtsmooth.Kalman):
             data=data,
             _linearise_at=_linearise_update_at,
         )
+
         return filtrv, info
 
 

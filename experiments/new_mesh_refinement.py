@@ -67,7 +67,7 @@ posterior = probsolve_bvp(
     initial_grid=initial_grid,
     atol=1 * TOL,
     rtol=1 * TOL,
-    insert="double",
+    insert="triple",
     which_method="ekf",
     maxit=10,
     ignore_bridge=False,
@@ -83,7 +83,9 @@ print(
 
 evalgrid = np.linspace(bvp.t0, bvp.tmax, 150, endpoint=True)
 
-for idx, (post, ssq, errors, kalpost, candidates, h, quotient) in enumerate(posterior):
+for idx, (post, ssq, errors, kalpost, candidates, h, quotient, sigmas) in enumerate(
+    posterior
+):
     print(
         "Why is the filtering posterior soooo bad even if the smoothing posterior is alright?"
     )
@@ -101,6 +103,8 @@ for idx, (post, ssq, errors, kalpost, candidates, h, quotient) in enumerate(post
     #         # "./visualization/notebook.mplstyle"
     #     ]
     # )
+
+    print(ssq)
 
     fig, ax = plt.subplots(nrows=3, sharex=True, dpi=200)
     evaluated = post(evalgrid)
@@ -147,6 +151,7 @@ for idx, (post, ssq, errors, kalpost, candidates, h, quotient) in enumerate(post
         color="darksalmon",
         label="Estimated error",
     )
+    ax[1].semilogy(post.locations[:-1], sigmas)
     # ax[1].semilogy(
     #     candidates[np.linalg.norm(errors, axis=1) > np.median(np.linalg.norm(errors, axis=1))],
     #     np.linalg.norm(errors, axis=1)[np.linalg.norm(errors, axis=1) > np.median(np.linalg.norm(errors, axis=1))],
@@ -167,12 +172,10 @@ for idx, (post, ssq, errors, kalpost, candidates, h, quotient) in enumerate(post
     # )
     ax[1].axhline(1, color="black")
 
-    ax[2].semilogy(
-        post.locations[:-1], np.diff(post.locations), ".", color="k", alpha=0.8
-    )
-    ax[2].semilogy(refsol.x[:-1], np.diff(refsol.x), ".", color="steelblue")
+    ax[2].semilogy(post.locations[:-1], np.diff(post.locations), color="k", alpha=0.8)
+    ax[2].semilogy(refsol.x[:-1], np.diff(refsol.x), color="steelblue")
     # ax[0].set_ylim((-1.5, 3.5))
-    ax[1].set_ylim((1e-5, 1e5))
+    ax[1].set_ylim((1e-5, 1e8))
     ax[2].set_ylim((1e-4, 1e0))
     ax[1].legend(frameon=False)
 
