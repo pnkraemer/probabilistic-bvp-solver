@@ -33,7 +33,7 @@ bvp1st = problem_7(xi=XI)
 # bvp1st = problem_7(xi=0.1)
 
 # initial_grid = np.union1d(np.linspace(bvp.t0, 0.3, 200), np.linspace(bvp.t0, bvp.tmax, 20))
-initial_grid = np.linspace(bvp.t0, bvp.tmax, 200)
+initial_grid = np.linspace(bvp.t0, bvp.tmax, 100)
 initial_guess = np.zeros((2, len(initial_grid)))
 refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=TOL)
 # initial_grid = refsol.x.copy()
@@ -67,9 +67,9 @@ posterior = probsolve_bvp(
     initial_grid=initial_grid,
     atol=1 * TOL,
     rtol=1 * TOL,
-    insert="triple",
+    insert="double",
     which_method="ekf",
-    maxit=10,
+    maxit=3,
     ignore_bridge=False,
     which_errors="probabilistic_defect",
     refinement="tolerance",
@@ -104,7 +104,7 @@ for idx, (post, ssq, errors, kalpost, candidates, h, quotient, sigmas) in enumer
     #     ]
     # )
 
-    print(ssq)
+    # print(ssq)
 
     fig, ax = plt.subplots(nrows=3, sharex=True, dpi=200)
     evaluated = post(evalgrid)
@@ -151,7 +151,7 @@ for idx, (post, ssq, errors, kalpost, candidates, h, quotient, sigmas) in enumer
         color="darksalmon",
         label="Estimated error",
     )
-    ax[1].semilogy(post.locations[:-1], sigmas)
+    # ax[1].semilogy(post.locations[:-1], sigmas)
     # ax[1].semilogy(
     #     candidates[np.linalg.norm(errors, axis=1) > np.median(np.linalg.norm(errors, axis=1))],
     #     np.linalg.norm(errors, axis=1)[np.linalg.norm(errors, axis=1) > np.median(np.linalg.norm(errors, axis=1))],
@@ -171,6 +171,7 @@ for idx, (post, ssq, errors, kalpost, candidates, h, quotient, sigmas) in enumer
     #     label="Scipy error",
     # )
     ax[1].axhline(1, color="black")
+    ax[1].axhline(100, color="black")
 
     ax[2].semilogy(post.locations[:-1], np.diff(post.locations), color="k", alpha=0.8)
     ax[2].semilogy(refsol.x[:-1], np.diff(refsol.x), color="steelblue")

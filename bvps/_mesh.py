@@ -77,9 +77,9 @@ def insert_lobatto5_points(mesh):
     mesh_middle = mesh[:-1] + diff * middle
     mesh_right = mesh[:-1] + diff * right
 
-    mesh_left_and_middle = np.append(mesh_left, mesh_middle)
-    lobatto = np.append(mesh_left_and_middle, mesh_right)
-    new_mesh = np.union1d(arr, lobatto)
+    mesh_left_and_middle = np.union1d(mesh_left, mesh_middle)
+    lobatto = np.union1d(mesh_left_and_middle, mesh_right)
+    new_mesh = np.union1d(mesh, lobatto)
 
     return new_mesh, lobatto, np.repeat(diff, 3)
 
@@ -87,7 +87,7 @@ def insert_lobatto5_points(mesh):
 def insert_central_point(mesh):
     diff = np.diff(mesh)
     central = mesh[:-1] + diff * 1.0 / 2.0
-    new_mesh = np.union1d(arr, central)
+    new_mesh = np.union1d(mesh, central)
 
     return new_mesh, central, diff
 

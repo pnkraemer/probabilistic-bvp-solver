@@ -1,6 +1,6 @@
 from ._integrators import WrappedIntegrator
 from ._probsolve_bvp import probsolve_bvp
-from ._mesh import new_grid, new_grid2, split_grid
+from ._mesh import *
 from ._ode_measmods import from_ode, from_second_order_ode
 from ._problems import (
     BoundaryValueProblem,

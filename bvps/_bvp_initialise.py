@@ -3,7 +3,7 @@ import numpy as np
 from probnum import diffeq, randvars, utils, statespace, filtsmooth
 from probnum._randomvariablelist import _RandomVariableList
 
-from ._mesh import insert_single_points, insert_two_points, insert_three_points
+from ._mesh import *
 from ._ode_measmods import from_ode, from_second_order_ode
 from ._problems import SecondOrderBoundaryValueProblem
 from ._kalman import (

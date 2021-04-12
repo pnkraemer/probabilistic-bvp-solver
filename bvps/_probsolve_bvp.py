@@ -3,7 +3,7 @@ import numpy as np
 from probnum import diffeq, randvars, utils
 from probnum._randomvariablelist import _RandomVariableList
 
-from ._mesh import insert_single_points, insert_two_points, insert_three_points
+from ._mesh import *
 from ._ode_measmods import from_ode, from_second_order_ode
 from ._problems import SecondOrderBoundaryValueProblem
 from ._kalman import (
@@ -14,6 +14,8 @@ from ._kalman import (
 )
 
 from ._bvp_initialise import *
+
+from ._control import *
 
 import scipy.linalg
 from ._error_estimates import *
@@ -31,9 +33,9 @@ REFINEMENT_OPTIONS = {"median": refine_median, "tolerance": refine_tolerance}
 
 
 CANDIDATE_LOCATIONS_OPTIONS = {
-    "single": insert_single_points,
-    "double": insert_two_points,
-    "triple": insert_three_points,
+    "single": insert_central_point,
+    "double": insert_two_equispaced_points,
+    "triple": None,
 }
 
 
@@ -138,19 +140,28 @@ def probsolve_bvp(
 
     # Set up candidates for mesh refinement
 
-    candidate_locations, h = candidate_function(bvp_posterior.locations)
-
-    # Estimate errors and choose nodes to refine
-    errors, reference, quotient = estimate_errors_function(
+    new_mesh, integral_error, quotient, candidate_locations, h = control(
         bvp_posterior,
         kalman_posterior,
-        candidate_locations,
         sigma_squared,
         measmod,
         atol,
         rtol,
     )
-    # errors *= h[:, None]
+    errors = None
+    # candidate_locations, h = candidate_function(bvp_posterior.locations)
+
+    # # Estimate errors and choose nodes to refine
+    # errors, reference, quotient = estimate_errors_function(
+    #     bvp_posterior,
+    #     kalman_posterior,
+    #     candidate_locations,
+    #     sigma_squared,
+    #     measmod,
+    #     atol,
+    #     rtol,
+    # )
+    # # errors *= h[:, None]
 
     # print(errors.shape, h.shape)
 
@@ -161,8 +172,8 @@ def probsolve_bvp(
 
     # print(quotient.shape)
     mask = refinement_function(quotient)
-    print(mask)
-    print(quotient)
+    # print(mask)
+    # print(quotient)
     # print(quotient)
     # if refinement == "median":
     #     mask = refine_median(quotient)
@@ -181,7 +192,7 @@ def probsolve_bvp(
         )
 
         # Refine grid
-        print(mask.shape)
+        # print(mask.shape)
         new_points = candidate_locations[mask]
 
         # new_fullgrid = np.union1d(grid, new_points)
@@ -189,7 +200,7 @@ def probsolve_bvp(
         # grid = np.union1d(sparse_fullgrid, grid[[0, -1]])
 
         grid = np.union1d(grid, new_points)
-        print(grid.shape, new_points.shape, candidate_locations.shape)
+        # print(grid.shape, new_points.shape, candidate_locations.shape)
 
         data = np.zeros((len(grid), bvp_dim))
         # Compute new solution
@@ -213,19 +224,29 @@ def probsolve_bvp(
         sigma_squared = kalman.ssq
         sigmas = kalman.sigmas
 
-        # Set up candidates for mesh refinement
-        candidate_locations, h = candidate_function(bvp_posterior.locations)
-
-        # Estimate errors and choose nodes to refine
-        errors, reference, quotient = estimate_errors_function(
+        new_mesh, integral_error, quotient, candidate_locations, h = control(
             bvp_posterior,
             kalman_posterior,
-            candidate_locations,
             sigma_squared,
             measmod,
             atol,
             rtol,
         )
+        errors = None
+
+        # # Set up candidates for mesh refinement
+        # candidate_locations, h = candidate_function(bvp_posterior.locations)
+
+        # # Estimate errors and choose nodes to refine
+        # errors, reference, quotient = estimate_errors_function(
+        #     bvp_posterior,
+        #     kalman_posterior,
+        #     candidate_locations,
+        #     sigma_squared,
+        #     measmod,
+        #     atol,
+        #     rtol,
+        # )
         # print(h)
         # errors *= h[:, None]
         # print(errors.shape, h.shape)
