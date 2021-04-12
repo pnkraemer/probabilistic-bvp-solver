@@ -33,7 +33,7 @@ bvp1st = problem_7(xi=XI)
 # bvp1st = problem_7(xi=0.1)
 
 # initial_grid = np.union1d(np.linspace(bvp.t0, 0.3, 200), np.linspace(bvp.t0, bvp.tmax, 20))
-initial_grid = np.linspace(bvp.t0, bvp.tmax, 20)
+initial_grid = np.linspace(bvp.t0, bvp.tmax, 200)
 initial_guess = np.zeros((2, len(initial_grid)))
 refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=TOL)
 # initial_grid = refsol.x.copy()

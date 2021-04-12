@@ -196,19 +196,20 @@ class MyKalman(filtsmooth.Kalman):
 
         if measmodL is not None:
             # print(measmodL.input_dim, measmodL.output_dim, np.zeros(1).shape)
-            filtrv, _ = measmodL.backward_realization(
+            self.initrv, _ = measmodL.backward_realization(
                 realization_obtained=np.zeros(1), rv=self.initrv, t=times[0]
             )
         else:
-            filtrv = self.initrv
+            self.initrv = self.initrv
 
-        # filtrv = self.initrv
-        filtrv, *_ = self.update(
-            data=dataset[0],
-            rv=self.initrv,
-            time=times[0],
-            _linearise_at=filtrv,
-        )
+        filtrv = self.initrv
+        for _ in range(10):
+            filtrv, *_ = self.update(
+                data=dataset[0],
+                rv=self.initrv,
+                time=times[0],
+                _linearise_at=filtrv,
+            )
 
         rvs.append(filtrv)
         for idx in range(1, len(times)):
