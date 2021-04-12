@@ -86,7 +86,7 @@ ax[0].set_xlabel(r"Time, $t$")
 ax[1].set_xlabel(r"Time, $t$")
 
 
-plt.savefig("./probabilistic-bvp-solver/figures/initialisation_visualisation.pdf")
+plt.savefig("./figures/initialisation_visualisation.pdf")
 
 plt.show()
 
