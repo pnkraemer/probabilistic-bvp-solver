@@ -17,7 +17,7 @@ def from_ode(ode, prior):
         return h1 @ x - ode.f(t, h0 @ x)
 
     def diff_cholesky(t):
-        return 0 * np.eye(spatialdim)
+        return 1e-12 * np.eye(spatialdim)
 
     def jacobian(t, x):
 
@@ -49,7 +49,7 @@ def from_second_order_ode(ode, prior):
         return h2 @ x - ode.f(t, h0 @ x, h1 @ x)
 
     def diff_cholesky(t):
-        return 0 * np.eye(spatialdim)
+        return 1e-12 * np.eye(spatialdim)
 
     def jacobian(t, x):
         return (

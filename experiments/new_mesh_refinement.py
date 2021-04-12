@@ -15,7 +15,7 @@ from probnum import random_variables as randvars
 
 from scipy.integrate import solve_bvp
 
-TOL = 1e-5
+TOL = 1e-4
 
 # bvp = r_example(xi=0.01)
 # # bvp = matlab_example()
@@ -69,7 +69,7 @@ posterior = probsolve_bvp(
     rtol=1 * TOL,
     insert="double",
     which_method="ekf",
-    maxit=3,
+    maxit=5,
     ignore_bridge=False,
     which_errors="probabilistic_defect",
     refinement="tolerance",
@@ -83,12 +83,23 @@ print(
 
 evalgrid = np.linspace(bvp.t0, bvp.tmax, 150, endpoint=True)
 
-for idx, (post, ssq, errors, kalpost, candidates, h, quotient, sigmas) in enumerate(
-    posterior
-):
-    print(
-        "Why is the filtering posterior soooo bad even if the smoothing posterior is alright?"
-    )
+for idx, (
+    post,
+    ssq,
+    integral_error,
+    kalpost,
+    candidates,
+    h,
+    quotient,
+    sigmas,
+    insert_one,
+    insert_two,
+) in enumerate(posterior):
+
+    # print(post.locations[1:][insert_one])
+    # print(
+    #     "Why is the filtering posterior soooo bad even if the smoothing posterior is alright?"
+    # )
     post2 = post.kalman_posterior.filtering_posterior
     # print(post.locations, post2.locations)
     # print(post.states[0].mean)
@@ -145,12 +156,15 @@ for idx, (post, ssq, errors, kalpost, candidates, h, quotient, sigmas) in enumer
 
     # ax[1].semilogy(evalgrid, s, color="k", label="Uncertainty")
     ax[1].semilogy(
-        candidates,
-        quotient,
-        ".",
-        color="darksalmon",
+        post.locations[1:],
+        integral_error,
+        marker=".",
+        color="black",
         label="Estimated error",
     )
+    ax[1].axhspan(0.0, 1.0, color="C0", alpha=0.2)
+    ax[1].axhspan(1.0, 100.0, color="C1", alpha=0.2)
+    ax[1].axhspan(100.0, 10000000000000, color="C2", alpha=0.2)
     # ax[1].semilogy(post.locations[:-1], sigmas)
     # ax[1].semilogy(
     #     candidates[np.linalg.norm(errors, axis=1) > np.median(np.linalg.norm(errors, axis=1))],
@@ -175,7 +189,7 @@ for idx, (post, ssq, errors, kalpost, candidates, h, quotient, sigmas) in enumer
 
     ax[2].semilogy(post.locations[:-1], np.diff(post.locations), color="k", alpha=0.8)
     ax[2].semilogy(refsol.x[:-1], np.diff(refsol.x), color="steelblue")
-    # ax[0].set_ylim((-1.5, 3.5))
+    ax[0].set_ylim((-1.5, 3.5))
     ax[1].set_ylim((1e-5, 1e8))
     ax[2].set_ylim((1e-4, 1e0))
     ax[1].legend(frameon=False)

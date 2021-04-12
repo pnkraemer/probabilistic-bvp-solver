@@ -55,7 +55,7 @@ def estimate_errors_via_probabilistic_defect(
     refs = atol + rtol * np.abs(reference)
     error_std = np.sum(errors2 / refs ** 2, axis=1)
     error_mean = np.linalg.norm(errors1 / refs, axis=1) ** 2
-    quotient = np.sqrt((error_std + error_mean) / measmod.output_dim) * h
+    quotient = np.sqrt((error_std + error_mean) / measmod.output_dim)  # * h
 
     assert errors1.shape == reference.shape
     return None, None, quotient

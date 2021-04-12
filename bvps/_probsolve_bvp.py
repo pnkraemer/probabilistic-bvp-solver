@@ -84,7 +84,9 @@ def probsolve_bvp(
         measmod = MyIteratedDiscreteComponent(measmod, stopcrit=stopcrit_iekf)
 
     rv = randvars.Normal(
-        10 * np.ones(bridge_prior.dimension), 1e6 * np.eye(bridge_prior.dimension)
+        10 * np.ones(bridge_prior.dimension),
+        1e3 * np.eye(bridge_prior.dimension),
+        cov_cholesky=1e2 * np.eye(bridge_prior.dimension),
     )
     initrv, _ = bridge_prior.forward_rv(rv, t=bvp.t0, dt=0.0)
 
@@ -104,7 +106,7 @@ def probsolve_bvp(
     # Call IEKS ##############################
 
     grid = initial_grid
-    # stopcrit_ieks = MyStoppingCriterion(atol=100 * atol, rtol=100 * rtol, maxit=maxit)
+    # stopcrit_ieks = MyStoppingCriterion(atol=atol, rtol=rtol, maxit=maxit)
     stopcrit_ieks = ConstantStopping(maxit=maxit)
 
     # # Initial solve
@@ -140,7 +142,15 @@ def probsolve_bvp(
 
     # Set up candidates for mesh refinement
 
-    new_mesh, integral_error, quotient, candidate_locations, h = control(
+    (
+        new_mesh,
+        integral_error,
+        quotient,
+        candidate_locations,
+        h,
+        insert_one,
+        insert_two,
+    ) = control(
         bvp_posterior,
         kalman_posterior,
         sigma_squared,
@@ -168,7 +178,7 @@ def probsolve_bvp(
     # magnitude = stopcrit_bvp.evaluate_error(error=errors, reference=reference)
     # quotient = stopcrit_bvp.evaluate_quotient(errors, reference)
     # quotient = np.linalg.norm(quotient, axis=1)
-    yield bvp_posterior, sigma_squared, errors, kalman_posterior, candidate_locations, h, quotient, sigmas
+    yield bvp_posterior, sigma_squared, integral_error, kalman_posterior, candidate_locations, h, quotient, sigmas, insert_one, insert_two
 
     # print(quotient.shape)
     mask = refinement_function(quotient)
@@ -181,7 +191,6 @@ def probsolve_bvp(
     #     mask = refine_tolerance(quotient)
     while np.any(mask):
         # while True:
-
         new_initrv = kalman_posterior.states[0]
         new_mean = new_initrv.mean.copy()
         # new_cov_cholesky = utils.linalg.cholesky_update(new_initrv.cov_cholesky, new_mean - kalman.initrv.mean)
@@ -224,7 +233,15 @@ def probsolve_bvp(
         sigma_squared = kalman.ssq
         sigmas = kalman.sigmas
 
-        new_mesh, integral_error, quotient, candidate_locations, h = control(
+        (
+            new_mesh,
+            integral_error,
+            quotient,
+            candidate_locations,
+            h,
+            insert_one,
+            insert_two,
+        ) = control(
             bvp_posterior,
             kalman_posterior,
             sigma_squared,
@@ -285,7 +302,7 @@ def probsolve_bvp(
             cov_cholesky=kalman.initrv.cov_cholesky,
         )
 
-        yield bvp_posterior, sigma_squared, errors, kalman_posterior, candidate_locations, h, quotient, sigmas
+        yield bvp_posterior, sigma_squared, integral_error, kalman_posterior, candidate_locations, h, quotient, sigmas, insert_one, insert_two
 
 
 ESTIMATE_ERRORS_OPTIONS = {

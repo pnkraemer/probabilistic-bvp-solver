@@ -15,7 +15,9 @@ def control(bvp_posterior, kalman_posterior, ssq, measmod, atol, rtol):
         bvp_posterior, kalman_posterior, new_candidates, ssq, measmod, atol, rtol
     )
     per_interval_quotient = quotient.reshape((-1, 3))
-    integral_error = per_interval_quotient @ LOBATTO_WEIGHTS / (bvp_dim * dt[::3])
+    integral_error = np.sqrt(
+        per_interval_quotient @ LOBATTO_WEIGHTS / (bvp_dim * dt[::3])
+    )
 
     print(integral_error.shape)
     acceptable = integral_error < 1
@@ -24,10 +26,18 @@ def control(bvp_posterior, kalman_posterior, ssq, measmod, atol, rtol):
     print(insert_one.shape)
 
     a1, *_ = insert_central_point(bvp_posterior.locations[1:][insert_one])
-    a2, *_ = insert_two_equispaced_points(bvp_posterior.locations[1:][insert_one])
+    a2, *_ = insert_two_equispaced_points(bvp_posterior.locations[1:][insert_two])
 
     new_mesh = np.union1d(a1, a2)
-    return new_mesh, integral_error, quotient, new_candidates, dt
+    return (
+        new_mesh,
+        integral_error,
+        quotient,
+        new_candidates,
+        dt,
+        insert_one,
+        insert_two,
+    )
 
 
 print
