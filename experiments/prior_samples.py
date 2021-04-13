@@ -15,10 +15,10 @@ from tqdm import tqdm
 
 
 bvp = r_example()
-grid = np.linspace(bvp.t0, bvp.tmax, 20)
+grid = np.linspace(bvp.t0, bvp.tmax, 200)
 
-orders = [1, 3, 5]
-num_samples = 500
+orders = [6, 11]
+num_samples = 5
 fig, axes = plt.subplots(
     ncols=len(orders),
     nrows=2,

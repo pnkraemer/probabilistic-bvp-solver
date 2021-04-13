@@ -19,11 +19,14 @@ def control(bvp_posterior, kalman_posterior, ssq, measmod, atol, rtol):
         per_interval_quotient @ LOBATTO_WEIGHTS / (bvp_dim * dt[::3])
     )
 
-    print(integral_error.shape)
+    nu = kalman_posterior.transition.ordint
+    threshold = 3.0 ** (nu + 0.5)
+    # print(threshold)
+    # print(integral_error.shape)
     acceptable = integral_error < 1
-    insert_one = np.logical_and(1 <= integral_error, integral_error < 100)
-    insert_two = 100 <= integral_error
-    print(insert_one.shape)
+    insert_one = np.logical_and(1 <= integral_error, integral_error < threshold)
+    insert_two = threshold <= integral_error
+    # print(insert_one.shape)
 
     a1, *_ = insert_central_point(bvp_posterior.locations[1:][insert_one])
     a2, *_ = insert_two_equispaced_points(bvp_posterior.locations[1:][insert_two])

@@ -38,6 +38,8 @@ class WrappedIntegrator(statespace.Integrator, statespace.LTISDE):
         proj = np.stack(
             (self.integrator.proj2coord(0)[0], self.integrator.proj2coord(1)[0])
         )
+
+        proj = self.integrator.proj2coord(0)
         # print(proj.shape, R.shape)
         Rnew = R @ proj
         Lnew = L @ proj
@@ -46,7 +48,7 @@ class WrappedIntegrator(statespace.Integrator, statespace.LTISDE):
             Rnew,
             -self.bvp.ymax,
             0 * np.eye(len(R)),
-            proc_noise_cov_cholesky=0 * np.eye(len(R)),
+            proc_noise_cov_cholesky=1e-12 * np.eye(len(R)),
             forward_implementation="sqrt",
             backward_implementation="sqrt",
         )
@@ -74,9 +76,12 @@ class WrappedIntegrator(statespace.Integrator, statespace.LTISDE):
         _diffusion=1.0,
         **kwargs,
     ):
+
         if np.abs(dt) == 0.0:
-            rv, _ = self._update_rv_initial_value(rv, t + dt)
-            return rv, _
+            assert t == self.bvp.t0
+
+            rv, _ = self._update_rv_initial_value(rv, t)
+            # return rv, _
 
         if np.abs(dt) > 0.0:
             # Plain old forward rv
@@ -92,11 +97,12 @@ class WrappedIntegrator(statespace.Integrator, statespace.LTISDE):
         dt_tmax = self.bvp.tmax - t
 
         if np.abs(dt_tmax) > 0.0:
-
             # Extrapolate to end point
             final_point_rv, info = self.integrator.forward_rv(rv, t, dt=dt_tmax)
 
         else:
+            assert t == self.bvp.tmax
+
             final_point_rv = rv
 
         # Condition on measurement at endpoint
@@ -111,6 +117,8 @@ class WrappedIntegrator(statespace.Integrator, statespace.LTISDE):
         # print(t)
 
         if np.abs(dt_tmax) > 0.0:
+            print(np.linalg.norm(updated_final_point_rv.cov_cholesky))
+
             # Condition back to plain old forwarded rv
             updated_rv, _ = self.integrator.backward_rv(
                 rv_obtained=updated_final_point_rv, rv=rv, t=t, dt=dt_tmax
@@ -124,7 +132,7 @@ class WrappedIntegrator(statespace.Integrator, statespace.LTISDE):
         dt_t0 = self.bvp.t0 - t
 
         if np.abs(dt_t0) > 0.0:
-
+            raise RuntimeError
             # Extrapolate to initial point
             final_point_rv, info = self.integrator.forward_rv(rv, t, dt=dt_t0)
         else:
@@ -139,7 +147,7 @@ class WrappedIntegrator(statespace.Integrator, statespace.LTISDE):
         )
 
         if np.abs(dt_t0) > 0.0:
-
+            raise RuntimeError
             # Condition back to plain old forwarded rv
             updated_rv, _ = self.integrator.backward_rv(
                 rv_obtained=updated_final_point_rv, rv=rv, t=t, dt=dt_t0
@@ -151,6 +159,9 @@ class WrappedIntegrator(statespace.Integrator, statespace.LTISDE):
 
     def backward_rv(self, *args, **kwargs):
         return self.integrator.backward_rv(*args, **kwargs)
+
+    def backward_realization(self, *args, **kwargs):
+        return self.integrator.backward_realization(*args, **kwargs)
 
     @property
     def ordint(self):

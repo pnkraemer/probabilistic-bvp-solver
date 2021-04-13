@@ -203,7 +203,7 @@ class MyKalman(filtsmooth.Kalman):
             self.initrv = self.initrv
 
         filtrv = self.initrv
-        for _ in range(10):
+        for _ in range(2):
             filtrv, *_ = self.update(
                 data=dataset[0],
                 rv=self.initrv,

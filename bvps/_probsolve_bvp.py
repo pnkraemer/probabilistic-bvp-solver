@@ -85,8 +85,8 @@ def probsolve_bvp(
 
     rv = randvars.Normal(
         10 * np.ones(bridge_prior.dimension),
-        1e3 * np.eye(bridge_prior.dimension),
-        cov_cholesky=1e2 * np.eye(bridge_prior.dimension),
+        1e-6 * np.eye(bridge_prior.dimension),
+        cov_cholesky=1e-3 * np.eye(bridge_prior.dimension),
     )
     initrv, _ = bridge_prior.forward_rv(rv, t=bvp.t0, dt=0.0)
 
@@ -296,11 +296,11 @@ def probsolve_bvp(
 
         mask = refinement_function(quotient)
 
-        kalman.initrv = randvars.Normal(
-            mean=kalman_posterior[0].mean,
-            cov=kalman.initrv.cov,
-            cov_cholesky=kalman.initrv.cov_cholesky,
-        )
+        # kalman.initrv = randvars.Normal(
+        #     mean=kalman_posterior[0].mean,
+        #     cov=kalman.initrv.cov,
+        #     cov_cholesky=kalman.initrv.cov_cholesky,
+        # )
 
         yield bvp_posterior, sigma_squared, integral_error, kalman_posterior, candidate_locations, h, quotient, sigmas, insert_one, insert_two
 

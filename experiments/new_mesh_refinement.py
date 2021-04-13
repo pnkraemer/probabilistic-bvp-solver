@@ -15,27 +15,37 @@ from probnum import random_variables as randvars
 
 from scipy.integrate import solve_bvp
 
-TOL = 1e-4
+TOL = 1e-3
 
 # bvp = r_example(xi=0.01)
 # # bvp = matlab_example()
 
+TMAX = 0.12
+XI = 0.00001
+bvp = problem_7_second_order(xi=XI)
+bvp1st = problem_7(xi=XI)
+
+
 # bvp = bratus_second_order()
 # bvp1st = bratus()
 
-TMAX = 0.5
-XI = 0.0001
-bvp = problem_7_second_order(xi=XI)
-bvp1st = problem_7(xi=XI)
+bvp = matlab_example_second_order(tmax=TMAX)
+bvp1st = matlab_example(tmax=TMAX)
 
 
 # bvp = problem_7_second_order(xi=0.1)
 # bvp1st = problem_7(xi=0.1)
 
-# initial_grid = np.union1d(np.linspace(bvp.t0, 0.3, 200), np.linspace(bvp.t0, bvp.tmax, 20))
+# initial_grid = np.union1d(
+#     np.linspace(bvp.t0, 0.3, 100), np.linspace(bvp.t0, bvp.tmax, 100)
+# )
 initial_grid = np.linspace(bvp.t0, bvp.tmax, 100)
 initial_guess = np.zeros((2, len(initial_grid)))
 refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=TOL)
+refsol_fine = solve_bvp(
+    bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=1e-12
+)
+bvp.solution = refsol_fine.sol
 # initial_grid = refsol.x.copy()
 
 # initial_grid = refsol.x
@@ -45,8 +55,8 @@ refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=T
 # print(refsol.x)
 # assert False
 
+q = 5
 
-q = 3
 
 ibm = statespace.IBM(
     ordint=q,
@@ -69,7 +79,7 @@ posterior = probsolve_bvp(
     rtol=1 * TOL,
     insert="double",
     which_method="ekf",
-    maxit=5,
+    maxit=10,
     ignore_bridge=False,
     which_errors="probabilistic_defect",
     refinement="tolerance",
@@ -119,7 +129,7 @@ for idx, (
 
     fig, ax = plt.subplots(nrows=3, sharex=True, dpi=200)
     evaluated = post(evalgrid)
-    m = evaluated.mean[:, :2]
+    m_ = evaluated.mean[:, :2]
     s = evaluated.std[:, :2] * np.sqrt(ssq)
 
     evaluated2 = post2(evalgrid)
@@ -134,10 +144,12 @@ for idx, (
     m2 = post2.states.mean[:, :2]
     s2 = post2.states.std[:, :2]
 
-    discrepancy = np.abs(refsol.sol(evalgrid).T[:, 0] - post(evalgrid).mean[:, 0])
+    # discrepancy = np.abs(refsol.sol(evalgrid).T[:, 0] - post(evalgrid).mean[:, 0])
     ax[0].plot(t, m, color="k")
     # ax[0].plot(t2, m2, color="orange")
-    ax[0].plot(evalgrid, refsol.sol(evalgrid).T, color="steelblue", linestyle="dashed")
+    ax[0].plot(
+        evalgrid, refsol_fine.sol(evalgrid).T, color="steelblue", linestyle="dashed"
+    )
     # ax[0].plot(
     #     evalgrid, bvp.solution(evalgrid).T[:, 0], color="red", linestyle="dotted"
     # )
@@ -151,20 +163,33 @@ for idx, (
     for t in post.locations:
         ax[0].axvline(t, linewidth=0.1, color="k")
 
-    # discrepancy = np.abs(bvp.solution(evalgrid)[0] - post(evalgrid).mean[:, 0])
+    discrepancy_ = np.abs(bvp.solution(evalgrid).T - post(evalgrid).mean[:, :2])
+
+    # print(bvp.solution(evalgrid).T[0])
+    # print(post(evalgrid).mean[:, :2][0])
+    # print(discrepancy[0])
+
+    discrepancy = discrepancy_ / (TOL * (1.0 + np.abs(m_)))
+    # print(
+    #     discrepancy[0],
+    #     post(evalgrid).mean[:, :2][0],
+    #     (TOL * (1.0 + np.abs(post(evalgrid).mean[:, :2])))[0],
+    # )
+    discrepancy = np.linalg.norm(discrepancy, axis=1)
+    # print(discrepancy[0])
     # scipy_discrepancy = np.abs(refsol.sol(evalgrid)[0] - bvp.solution(evalgrid)[0])
 
     # ax[1].semilogy(evalgrid, s, color="k", label="Uncertainty")
     ax[1].semilogy(
-        post.locations[1:],
+        post.locations[:-1] + 0.5 * np.diff(post.locations),
         integral_error,
-        marker=".",
+        ".",
         color="black",
-        label="Estimated error",
+        label="Estimated",
     )
     ax[1].axhspan(0.0, 1.0, color="C0", alpha=0.2)
-    ax[1].axhspan(1.0, 100.0, color="C1", alpha=0.2)
-    ax[1].axhspan(100.0, 10000000000000, color="C2", alpha=0.2)
+    ax[1].axhspan(1.0, 3.0 ** (q + 0.5), color="C1", alpha=0.2)
+    ax[1].axhspan(3.0 ** (q + 0.5), 10000000000000, color="C2", alpha=0.2)
     # ax[1].semilogy(post.locations[:-1], sigmas)
     # ax[1].semilogy(
     #     candidates[np.linalg.norm(errors, axis=1) > np.median(np.linalg.norm(errors, axis=1))],
@@ -174,9 +199,12 @@ for idx, (
     #     label="Error",
     # )
 
-    # ax[1].semilogy(
-    #     evalgrid, discrepancy, linestyle="dashed", color="steelblue", label="True Error"
-    # )
+    ax[1].semilogy(
+        evalgrid, discrepancy, linestyle="dashed", color="black", label="Truth"
+    )
+    ax[1].semilogy(
+        evalgrid, discrepancy_, linestyle="dashed", color="black", label="Truth2"
+    )
     # ax[1].semilogy(
     #     evalgrid,
     #     scipy_discrepancy,
@@ -185,21 +213,29 @@ for idx, (
     #     label="Scipy error",
     # )
     ax[1].axhline(1, color="black")
-    ax[1].axhline(100, color="black")
+    ax[1].axhline(3.0 ** (q + 0.5), color="black")
 
     ax[2].semilogy(post.locations[:-1], np.diff(post.locations), color="k", alpha=0.8)
     ax[2].semilogy(refsol.x[:-1], np.diff(refsol.x), color="steelblue")
-    ax[0].set_ylim((-1.5, 3.5))
+    ax[0].set_ylim((-112.5, 113.5))
     ax[1].set_ylim((1e-5, 1e8))
     ax[2].set_ylim((1e-4, 1e0))
     ax[1].legend(frameon=False)
 
     ax[2].set_xlabel("Time")
     ax[0].set_ylabel("Solution")
-    ax[1].set_ylabel("Error / Estimation")
+    ax[1].set_ylabel("Error ratio")
     ax[2].set_ylabel("Stepsize")
     ax[0].set_title(
         f"Refinement {idx + 1}: $N={len(post.locations)}$ Points | Scipy {len(refsol.x)}"
     )
     fig.align_ylabels()
     plt.show()
+
+    print(post.kalman_posterior.states[0].mean)
+    print(post.kalman_posterior.states[1].mean)
+    print(post.kalman_posterior.filtering_posterior.states[0].mean)
+    print()
+    print(post.kalman_posterior.states[0].std)
+    print(post.kalman_posterior.states[1].std)
+    print(post.kalman_posterior.filtering_posterior.states[0].std)

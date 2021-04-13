@@ -46,7 +46,7 @@ def estimate_errors_via_probabilistic_defect(
         ]
     )
     errors1 = np.abs(msrvs.mean) ** 2
-    errors2 = np.abs(msrvs.std) ** 2
+    errors2 = np.abs(msrvs.std) ** 2 * ssq
 
     reference = (
         evaluated_kalman_posterior.mean @ kalman_posterior.transition.proj2coord(0).T
