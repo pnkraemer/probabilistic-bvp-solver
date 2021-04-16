@@ -10,7 +10,10 @@ LOBATTO_WEIGHTS = np.array([49.0 / 90.0, 32.0 / 45.0, 49.0 / 90.0])
 def control(bvp_posterior, kalman_posterior, ssq, measmod, atol, rtol):
 
     bvp_dim = measmod.output_dim
-    _, new_candidates, dt = insert_lobatto5_points(bvp_posterior.locations)
+    _, new_candidates, dt = insert_lobatto5_points(
+        bvp_posterior.locations,
+        where=np.ones_like(bvp_posterior.locations[:-1], dtype=bool),
+    )
     _, _, quotient = estimate_errors_via_probabilistic_defect(
         bvp_posterior, kalman_posterior, new_candidates, ssq, measmod, atol, rtol
     )
@@ -28,8 +31,26 @@ def control(bvp_posterior, kalman_posterior, ssq, measmod, atol, rtol):
     insert_two = threshold <= integral_error
     # print(insert_one.shape)
 
-    a1, *_ = insert_central_point(bvp_posterior.locations[1:][insert_one])
-    a2, *_ = insert_two_equispaced_points(bvp_posterior.locations[1:][insert_two])
+    # insert_one_points = np.union1d(
+    #     bvp_posterior.locations[:-1][insert_one], bvp_posterior.locations[-1]
+    # )
+    # insert_two_points = np.union1d(
+    #     bvp_posterior.locations[:-1][insert_two], bvp_posterior.locations[-1]
+    # )
+
+    # print(insert_one_points, insert_two_points)
+
+    # print(insert_one.shape)
+    # print(insert_two.shape)
+    # print(bvp_posterior.locations.shape)
+    # print(insert_one_points.shape)
+    # print(insert_two_points.shape)
+    # print()
+
+    # assert False
+
+    a1, *_ = insert_central_point(bvp_posterior.locations, insert_one)
+    a2, *_ = insert_two_equispaced_points(bvp_posterior.locations, insert_two)
 
     new_mesh = np.union1d(a1, a2)
     return (

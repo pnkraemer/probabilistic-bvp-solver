@@ -6,6 +6,8 @@ import scipy.linalg
 from probnum import filtsmooth, statespace
 from probnum._randomvariablelist import _RandomVariableList
 
+SMALL_VALUE = 0.0
+
 
 def from_ode(ode, prior):
 
@@ -16,8 +18,12 @@ def from_ode(ode, prior):
     def dyna(t, x):
         return h1 @ x - ode.f(t, h0 @ x)
 
+    def diff(t):
+        SQ = diff_cholesky(t)
+        return SQ @ SQ.T
+
     def diff_cholesky(t):
-        return 0.0 * np.eye(spatialdim)
+        return np.sqrt(SMALL_VALUE) * np.eye(spatialdim)
 
     def jacobian(t, x):
 
@@ -27,7 +33,7 @@ def from_ode(ode, prior):
         input_dim=prior.dimension,
         output_dim=spatialdim,
         state_trans_fun=dyna,
-        proc_noise_cov_mat_fun=diff_cholesky,
+        proc_noise_cov_mat_fun=diff,
         jacob_state_trans_fun=jacobian,
         proc_noise_cov_cholesky_fun=diff_cholesky,
     )
@@ -48,8 +54,12 @@ def from_second_order_ode(ode, prior):
     def dyna(t, x):
         return h2 @ x - ode.f(t, h0 @ x, h1 @ x)
 
+    def diff(t):
+        SQ = diff_cholesky(t)
+        return SQ @ SQ.T
+
     def diff_cholesky(t):
-        return 0.0 * np.eye(spatialdim)
+        return np.sqrt(SMALL_VALUE) * np.eye(spatialdim)
 
     def jacobian(t, x):
         return (
@@ -60,7 +70,7 @@ def from_second_order_ode(ode, prior):
         input_dim=prior.dimension,
         output_dim=spatialdim,
         state_trans_fun=dyna,
-        proc_noise_cov_mat_fun=diff_cholesky,
+        proc_noise_cov_mat_fun=diff,
         jacob_state_trans_fun=jacobian,
         proc_noise_cov_cholesky_fun=diff_cholesky,
     )

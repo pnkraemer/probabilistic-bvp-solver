@@ -14,7 +14,7 @@ from ._kalman import (
 )
 
 from ._bvp_initialise import *
-
+from ._integrators import WrappedIntegrator
 from ._control import *
 
 import scipy.linalg
@@ -39,6 +39,9 @@ CANDIDATE_LOCATIONS_OPTIONS = {
 }
 
 
+LARGE_VALUE = 1e5
+
+
 def probsolve_bvp(
     bvp,
     bridge_prior,
@@ -60,6 +63,12 @@ def probsolve_bvp(
     which_method : either "ekf" or "iekf".
     insert : "single" or "double"
     """
+    ibm = bridge_prior.integrator
+    ibm.equivalent_discretisation_preconditioned._proc_noise_cov_cholesky *= np.sqrt(
+        LARGE_VALUE
+    )
+
+    bridge_prior = WrappedIntegrator(ibm, bvp)
 
     refinement_function = REFINEMENT_OPTIONS[refinement]
     estimate_errors_function = ESTIMATE_ERRORS_OPTIONS[which_errors]
@@ -84,9 +93,9 @@ def probsolve_bvp(
         measmod = MyIteratedDiscreteComponent(measmod, stopcrit=stopcrit_iekf)
 
     rv = randvars.Normal(
-        10 * np.ones(bridge_prior.dimension),
-        1e-6 * np.eye(bridge_prior.dimension),
-        cov_cholesky=1e-3 * np.eye(bridge_prior.dimension),
+        0 * np.ones(bridge_prior.dimension),
+        LARGE_VALUE * np.eye(bridge_prior.dimension),
+        cov_cholesky=np.sqrt(LARGE_VALUE) * np.eye(bridge_prior.dimension),
     )
     initrv, _ = bridge_prior.forward_rv(rv, t=bvp.t0, dt=0.0)
 
@@ -160,7 +169,10 @@ def probsolve_bvp(
     )
     errors = None
     # candidate_locations, h = candidate_function(bvp_posterior.locations)
-
+    print(
+        f"Next: go from {len(bvp_posterior.locations)} points to {len(new_mesh)} points."
+    )
+    print(f"SSQ={sigma_squared}")
     # # Estimate errors and choose nodes to refine
     # errors, reference, quotient = estimate_errors_function(
     #     bvp_posterior,
@@ -191,10 +203,23 @@ def probsolve_bvp(
     #     mask = refine_tolerance(quotient)
     while np.any(mask):
         # while True:
+
+        sigma = np.sqrt(sigma_squared)
+
+        ibm = bridge_prior.integrator
+        ibm.equivalent_discretisation_preconditioned._proc_noise_cov_cholesky *= (
+            np.sqrt(sigma)
+        )
+        ibm.equivalent_discretisation_preconditioned.proc_noise_cov_mat *= sigma
+
+        bridge_prior = WrappedIntegrator(ibm, bvp)
+
         new_initrv = kalman_posterior.states[0]
         new_mean = new_initrv.mean.copy()
-        # new_cov_cholesky = utils.linalg.cholesky_update(new_initrv.cov_cholesky, new_mean - kalman.initrv.mean)
-        new_cov_cholesky = kalman.initrv.cov_cholesky
+        new_cov_cholesky = utils.linalg.cholesky_update(
+            sigma * new_initrv.cov_cholesky, new_mean - kalman.initrv.mean
+        )
+        # new_cov_cholesky = kalman.initrv.cov_cholesky
         new_cov = new_cov_cholesky @ new_cov_cholesky.T
         kalman.initrv = randvars.Normal(
             mean=new_mean, cov=new_cov, cov_cholesky=new_cov_cholesky
@@ -202,32 +227,34 @@ def probsolve_bvp(
 
         # Refine grid
         # print(mask.shape)
-        new_points = candidate_locations[mask]
+        # new_points = candidate_locations[mask]
 
         # new_fullgrid = np.union1d(grid, new_points)
         # sparse_fullgrid = np.union1d(new_fullgrid, new_fullgrid[:-1] + 0.5*np.diff(new_fullgrid))[::3]
         # grid = np.union1d(sparse_fullgrid, grid[[0, -1]])
 
-        grid = np.union1d(grid, new_points)
+        # grid = np.union1d(grid, new_mesh)
         # print(grid.shape, new_points.shape, candidate_locations.shape)
 
-        data = np.zeros((len(grid), bvp_dim))
+        data = np.zeros((len(new_mesh), bvp_dim))
         # Compute new solution
         if ignore_bridge:
             kalman_posterior = kalman.iterated_filtsmooth(
                 dataset=data,
-                times=grid,
+                times=new_mesh,
                 stopcrit=stopcrit_ieks,
                 measmodL=bridge_prior.measmod_L,
                 measmodR=bridge_prior.measmod_R,
+                old_posterior=kalman_posterior,
             )
         else:
             kalman_posterior = kalman.iterated_filtsmooth(
                 dataset=data,
-                times=grid,
+                times=new_mesh,
                 stopcrit=stopcrit_ieks,
                 measmodL=None,
                 measmodR=None,
+                old_posterior=kalman_posterior,
             )
         bvp_posterior = diffeq.KalmanODESolution(kalman_posterior)
         sigma_squared = kalman.ssq
@@ -250,6 +277,11 @@ def probsolve_bvp(
             rtol,
         )
         errors = None
+        print(
+            f"Next: go from {len(bvp_posterior.locations)} points to {len(new_mesh)} points."
+        )
+        print(f"SSQ={sigma_squared}")
+        # print(new_mesh)
 
         # # Set up candidates for mesh refinement
         # candidate_locations, h = candidate_function(bvp_posterior.locations)

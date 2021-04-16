@@ -8,7 +8,7 @@ def estimate_errors_via_std(
     bvp_posterior, kalman_posterior, grid, ssq, measmod, atol, rtol
 ):
     evaluated_posterior = bvp_posterior(grid)
-    errors = evaluated_posterior.std * np.sqrt(ssq)
+    errors = evaluated_posterior.std  # * np.sqrt(ssq)
     reference = evaluated_posterior.mean
     assert errors.shape == reference.shape
     return errors, evaluated_posterior.mean
@@ -46,7 +46,7 @@ def estimate_errors_via_probabilistic_defect(
         ]
     )
     errors1 = np.abs(msrvs.mean) ** 2
-    errors2 = np.abs(msrvs.std) ** 2 * ssq
+    errors2 = np.abs(msrvs.std) ** 2 * 0.0
 
     reference = (
         evaluated_kalman_posterior.mean @ kalman_posterior.transition.proj2coord(0).T

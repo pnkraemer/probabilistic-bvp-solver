@@ -2,8 +2,12 @@
 
 import numpy as np
 from probnum import statespace
+from ._problems import SecondOrderBoundaryValueProblem
 
 __all__ = ["WrappedIntegrator"]
+
+
+SMALL_VALUE = 0.0
 
 
 class WrappedIntegrator(statespace.Integrator, statespace.LTISDE):
@@ -35,11 +39,13 @@ class WrappedIntegrator(statespace.Integrator, statespace.LTISDE):
 
         L, R = self.bvp.L, self.bvp.R
 
-        proj = np.stack(
-            (self.integrator.proj2coord(0)[0], self.integrator.proj2coord(1)[0])
-        )
+        if isinstance(bvp, SecondOrderBoundaryValueProblem):
 
-        proj = self.integrator.proj2coord(0)
+            proj = np.stack(
+                (self.integrator.proj2coord(0)[0], self.integrator.proj2coord(1)[0])
+            )
+        else:
+            proj = self.integrator.proj2coord(0)
         # print(proj.shape, R.shape)
         Rnew = R @ proj
         Lnew = L @ proj
@@ -47,16 +53,16 @@ class WrappedIntegrator(statespace.Integrator, statespace.LTISDE):
         self.measmod_R = statespace.DiscreteLTIGaussian(
             Rnew,
             -self.bvp.ymax,
-            0 * np.eye(len(R)),
-            proc_noise_cov_cholesky=1e-12 * np.eye(len(R)),
+            SMALL_VALUE * np.eye(len(R)),
+            proc_noise_cov_cholesky=np.sqrt(SMALL_VALUE) * np.eye(len(R)),
             forward_implementation="sqrt",
             backward_implementation="sqrt",
         )
         self.measmod_L = statespace.DiscreteLTIGaussian(
             Lnew,
             -self.bvp.y0,
-            0 * np.eye(len(L)),
-            proc_noise_cov_cholesky=0 * np.eye(len(L)),
+            SMALL_VALUE * np.eye(len(L)),
+            proc_noise_cov_cholesky=np.sqrt(SMALL_VALUE) * np.eye(len(L)),
             forward_implementation="sqrt",
             backward_implementation="sqrt",
         )
@@ -117,7 +123,7 @@ class WrappedIntegrator(statespace.Integrator, statespace.LTISDE):
         # print(t)
 
         if np.abs(dt_tmax) > 0.0:
-            print(np.linalg.norm(updated_final_point_rv.cov_cholesky))
+            # print(np.linalg.norm(updated_final_point_rv.cov_cholesky))
 
             # Condition back to plain old forwarded rv
             updated_rv, _ = self.integrator.backward_rv(
