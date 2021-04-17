@@ -15,22 +15,25 @@ from probnum import random_variables as randvars
 
 from scipy.integrate import solve_bvp
 
-TOL = 1e-3
+TOL = 1e-2
 
 # bvp = r_example(xi=0.01)
 # # bvp = matlab_example()
 
-TMAX = 0.12
-XI = 0.00001
+TMAX = 0.2
+XI = 0.001
 bvp = problem_7_second_order(xi=XI)
 bvp1st = problem_7(xi=XI)
 
 
-# bvp = bratus_second_order()
+bvp = bratus_second_order()
 # bvp1st = bratus()
 
-bvp = matlab_example_second_order(tmax=TMAX)
-bvp1st = matlab_example(tmax=TMAX)
+# bvp = matlab_example_second_order(tmax=TMAX)
+# bvp1st = matlab_example(tmax=TMAX)
+
+print(bvp1st.y0, bvp1st.ymax)
+print(bvp1st.L, bvp1st.R)
 
 
 # bvp = problem_7_second_order(xi=0.1)
@@ -39,7 +42,7 @@ bvp1st = matlab_example(tmax=TMAX)
 # initial_grid = np.union1d(
 #     np.linspace(bvp.t0, 0.3, 100), np.linspace(bvp.t0, bvp.tmax, 100)
 # )
-initial_grid = np.linspace(bvp.t0, bvp.tmax, 100)
+initial_grid = np.linspace(bvp.t0, bvp.tmax, 25)
 initial_guess = np.zeros((2, len(initial_grid)))
 refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=TOL)
 refsol_fine = solve_bvp(
@@ -64,6 +67,7 @@ ibm = statespace.IBM(
     forward_implementation="sqrt",
     backward_implementation="sqrt",
 )
+# ibm.equivalent_discretisation_preconditioned._proc_noise_cov_cholesky *= 1e5
 
 integ = WrappedIntegrator(ibm, bvp1st)
 
@@ -79,7 +83,7 @@ posterior = probsolve_bvp(
     rtol=1 * TOL,
     insert="double",
     which_method="ekf",
-    maxit=10,
+    maxit=115,
     ignore_bridge=False,
     which_errors="probabilistic_defect",
     refinement="tolerance",
@@ -110,7 +114,7 @@ for idx, (
     # print(
     #     "Why is the filtering posterior soooo bad even if the smoothing posterior is alright?"
     # )
-    post2 = post.kalman_posterior.filtering_posterior
+    post2 = post.filtering_solution
     # print(post.locations, post2.locations)
     # print(post.states[0].mean)
     # print(kalpost.filtering_posterior.states[0].mean)
@@ -130,23 +134,24 @@ for idx, (
     fig, ax = plt.subplots(nrows=3, sharex=True, dpi=200)
     evaluated = post(evalgrid)
     m_ = evaluated.mean[:, :2]
-    s = evaluated.std[:, :2] * np.sqrt(ssq)
+    # s = evaluated.std[:, :2] * np.sqrt(ssq)
 
-    evaluated2 = post2(evalgrid)
-    m2 = evaluated2.mean[:, :2]
-    s2 = evaluated2.std[:, :2] * np.sqrt(ssq)
+    # evaluated2 = post2(evalgrid)
+    # m2 = evaluated2.mean
+    # s2 = evaluated2.std * np.sqrt(ssq)
 
     t = post.locations
-    m = post.states.mean[:, :2]
-    s = post.states.std[:, :2]
+    m = post.states.mean
+    s = post.states.std
 
     t2 = post2.locations
-    m2 = post2.states.mean[:, :2]
-    s2 = post2.states.std[:, :2]
+    m2 = post2.states.mean
+    s2 = post2.states.std
+    # print(m, m2)
 
     # discrepancy = np.abs(refsol.sol(evalgrid).T[:, 0] - post(evalgrid).mean[:, 0])
     ax[0].plot(t, m, color="k")
-    # ax[0].plot(t2, m2, color="orange")
+    ax[0].plot(t2, m2, color="orange")
     ax[0].plot(
         evalgrid, refsol_fine.sol(evalgrid).T, color="steelblue", linestyle="dashed"
     )
@@ -200,10 +205,18 @@ for idx, (
     # )
 
     ax[1].semilogy(
-        evalgrid, discrepancy, linestyle="dashed", color="black", label="Truth"
+        evalgrid,
+        discrepancy,
+        linestyle="dashdot",
+        color="black",
+        label="True quotient",
     )
     ax[1].semilogy(
-        evalgrid, discrepancy_, linestyle="dashed", color="black", label="Truth2"
+        evalgrid,
+        np.linalg.norm(discrepancy_, axis=1),
+        linestyle="dashed",
+        color="black",
+        label="True Error",
     )
     # ax[1].semilogy(
     #     evalgrid,
@@ -217,7 +230,7 @@ for idx, (
 
     ax[2].semilogy(post.locations[:-1], np.diff(post.locations), color="k", alpha=0.8)
     ax[2].semilogy(refsol.x[:-1], np.diff(refsol.x), color="steelblue")
-    ax[0].set_ylim((-112.5, 113.5))
+    # ax[0].set_ylim((-112.5, 113.5))
     ax[1].set_ylim((1e-5, 1e8))
     ax[2].set_ylim((1e-4, 1e0))
     ax[1].legend(frameon=False)
@@ -232,10 +245,10 @@ for idx, (
     fig.align_ylabels()
     plt.show()
 
-    print(post.kalman_posterior.states[0].mean)
-    print(post.kalman_posterior.states[1].mean)
-    print(post.kalman_posterior.filtering_posterior.states[0].mean)
-    print()
-    print(post.kalman_posterior.states[0].std)
-    print(post.kalman_posterior.states[1].std)
-    print(post.kalman_posterior.filtering_posterior.states[0].std)
+    # print(post.kalman_posterior.states[0].mean)
+    # print(post.kalman_posterior.states[1].mean)
+    # print(post.kalman_posterior.filtering_posterior.states[0].mean)
+    # print()
+    # print(post.kalman_posterior.states[0].std)
+    # print(post.kalman_posterior.states[1].std)
+    # print(post.kalman_posterior.filtering_posterior.states[0].std)

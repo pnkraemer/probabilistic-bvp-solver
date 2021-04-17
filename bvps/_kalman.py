@@ -87,16 +87,16 @@ class MyKalman(filtsmooth.Kalman):
 
             # print(self.ct)
 
-            new_initrv = new_posterior[0]
-            new_mean = new_initrv.mean.copy()
-            new_cov_cholesky = utils.linalg.cholesky_update(
-                new_initrv.cov_cholesky, new_mean - self.initrv.mean
-            )
-            # new_cov_cholesky = self.initrv.cov_cholesky.copy()
-            new_cov = new_cov_cholesky @ new_cov_cholesky.T
-            self.initrv = randvars.Normal(
-                mean=new_mean, cov=new_cov, cov_cholesky=new_cov_cholesky
-            )
+            # new_initrv = new_posterior[0]
+            # new_mean = new_initrv.mean.copy()
+            # new_cov_cholesky = utils.linalg.cholesky_update(
+            #     new_initrv.cov_cholesky, new_mean - self.initrv.mean
+            # )
+            # # new_cov_cholesky = self.initrv.cov_cholesky.copy()
+            # new_cov = new_cov_cholesky @ new_cov_cholesky.T
+            # self.initrv = randvars.Normal(
+            #     mean=new_mean, cov=new_cov, cov_cholesky=new_cov_cholesky
+            # )
 
             msrvs = _RandomVariableList(
                 [
@@ -203,7 +203,7 @@ class MyKalman(filtsmooth.Kalman):
             self.initrv = self.initrv
 
         filtrv = self.initrv
-        for _ in range(2):
+        for _ in range(1):
             filtrv, *_ = self.update(
                 data=dataset[0],
                 rv=self.initrv,
