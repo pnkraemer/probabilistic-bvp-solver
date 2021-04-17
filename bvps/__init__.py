@@ -13,6 +13,7 @@ from ._problems import (
     problem_15,
     r_example,
     problem_7_second_order,
+    pendulum,
 )
 from ._kalman import (
     ConstantStopping,

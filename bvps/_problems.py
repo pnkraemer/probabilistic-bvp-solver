@@ -76,6 +76,29 @@ class SecondOrderBoundaryValueProblem:
 ####################################################################################################################
 
 
+def pendulum():
+
+    L = np.eye(1, 2)
+    R = np.eye(1, 2)
+
+    y0 = np.ones(1) * (-np.pi / 2)
+    ymax = np.ones(1) * (np.pi / 2)
+    t0 = 0.0
+    tmax = np.pi / 2.0
+
+    return BoundaryValueProblem(
+        f=pendulum_rhs, t0=t0, tmax=tmax, L=L, R=R, y0=y0, ymax=ymax, df=pendulum_jac
+    )
+
+
+def pendulum_rhs(t, y):
+    return np.array([y[1], -9.81 * np.sin(y[0])])
+
+
+def pendulum_jac(t, y):
+    return np.array([[0.0, 1.0], [-9.81 * np.cos(y[0]), 0.0]])
+
+
 def bratus(tmax=1.0):
 
     L = np.eye(1, 2)
