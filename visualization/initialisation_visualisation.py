@@ -62,17 +62,17 @@ fig, ax = plt.subplots(ncols=2, dpi=350, constrained_layout=True, sharey=True)
 
 
 ax[0].plot(evalgrid, truth, linestyle="dashed", color="gray")
-ax[0].plot(evalgrid, smoother_guesses, color="C0")
+ax[0].plot(evalgrid, smoother_guesses, color="darkorange")
 ax[0].plot(
     initial_grid,
     initial_guess[:, 1],
     linestyle="None",
     marker="o",
-    color="C0",
+    color="darkorange",
     zorder=-1,
 )
 ax[1].plot(evalgrid, truth, linestyle="dashed", color="gray")
-ax[1].plot(evalgrid, smoother_ode, color="C0")
+ax[1].plot(evalgrid, smoother_ode, color="teal")
 
 
 ax[0].set_title("Via Vector")
@@ -81,9 +81,9 @@ ax[0].set_title(r"$\bf A$" + "  ", loc="left", fontweight="bold", ha="right")
 ax[1].set_title("Via ODE")
 ax[1].set_title(r"$\bf B$" + "  ", loc="left", fontweight="bold", ha="right")
 
-ax[0].set_ylabel(r"Derivative, $\dot y(t)$")
-ax[0].set_xlabel(r"Time, $t$")
-ax[1].set_xlabel(r"Time, $t$")
+ax[0].set_ylabel(r"Derivative $\dot y(t)$")
+ax[0].set_xlabel(r"Time $t$")
+ax[1].set_xlabel(r"Time $t$")
 
 
 plt.savefig("./figures/initialisation_visualisation.pdf")

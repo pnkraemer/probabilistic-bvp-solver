@@ -17,8 +17,8 @@ from tqdm import tqdm
 bvp = r_example()
 grid = np.linspace(bvp.t0, bvp.tmax, 200)
 
-orders = [6, 11]
-num_samples = 5
+orders = [1, 5]
+num_samples = 15
 fig, axes = plt.subplots(
     ncols=len(orders),
     nrows=2,

@@ -22,7 +22,7 @@ plt.style.use(
 )
 
 
-fig, ax = plt.subplots(ncols=1, dpi=150, figsize=(2.5, 2.0), constrained_layout=True)
+fig, ax = plt.subplots(ncols=1, dpi=150, figsize=(2.2, 1.5), constrained_layout=True)
 
 
 ax.plot(x, y[1], "--", color="darkorange", linewidth=1.5)
@@ -32,14 +32,14 @@ ax.annotate(
     "Fixed Boundary",
     (x[50] - 0.25, y[0][50]),
     color="teal",
-    bbox={"facecolor": "white", "edgecolor": "white", "pad": 5},
+    bbox={"facecolor": "white", "edgecolor": "white", "pad": 2},
     zorder=10,
 )
 ax.annotate(
-    "Free Boundary",
-    (x[100] - 0.25, y[1][100]),
+    "Any Boundary",
+    (x[100] - 0.3, y[1][100]),
     color="darkorange",
-    bbox={"facecolor": "white", "edgecolor": "white", "pad": 5},
+    bbox={"facecolor": "white", "edgecolor": "white", "pad": 2},
     zorder=10,
 )
 
