@@ -4,8 +4,8 @@ from probnum import diffeq, randvars, utils, statespace, filtsmooth
 from probnum._randomvariablelist import _RandomVariableList
 
 from ._mesh import *
-from ._ode_measmods import from_ode, from_second_order_ode
-from ._problems import SecondOrderBoundaryValueProblem
+from .ode_measmods import from_ode, from_second_order_ode
+from .problems import SecondOrderBoundaryValueProblem
 from ._kalman import (
     ConstantStopping,
     MyIteratedDiscreteComponent,
@@ -16,17 +16,17 @@ from ._kalman import (
 import scipy.linalg
 
 
-__all__ = ["bvp_initialise", "bvp_initialise_ode", "bvp_initialise_guesses"]
+# __all__ = ["bvp_initialise", "bvp_initialise_ode", "bvp_initialise_guesses"]
 
 
-def bvp_initialise(
-    bvp,
-    bridge_prior,
-    initial_grid,
-    initial_guess_vector=None,
-    initial_guess_function=None,
-):
-    return bvp_initialise_ode(bvp, bridge_prior, initial_grid)
+# def bvp_initialise(
+#     bvp,
+#     bridge_prior,
+#     initial_grid,
+#     initial_guess_vector=None,
+#     initial_guess_function=None,
+# ):
+#     return bvp_initialise_ode(bvp, bridge_prior, initial_grid)
 
 
 def bvp_initialise_ode(bvp, bridge_prior, initial_grid):

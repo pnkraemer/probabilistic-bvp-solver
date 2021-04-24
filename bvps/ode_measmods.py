@@ -6,10 +6,11 @@ import scipy.linalg
 from probnum import filtsmooth, statespace
 from probnum._randomvariablelist import _RandomVariableList
 
-SMALL_VALUE = 0.0
+
+from .problems import SecondOrderBoundaryValueProblem
 
 
-def from_ode(ode, prior):
+def from_ode(ode, prior, damping_value=0.0):
 
     spatialdim = prior.spatialdim
     h0 = prior.proj2coord(coord=0)
@@ -23,7 +24,7 @@ def from_ode(ode, prior):
         return SQ @ SQ.T
 
     def diff_cholesky(t):
-        return np.sqrt(SMALL_VALUE) * np.eye(spatialdim)
+        return np.sqrt(dampign_value) * np.eye(spatialdim)
 
     def jacobian(t, x):
 
@@ -44,7 +45,7 @@ def from_ode(ode, prior):
     )
 
 
-def from_second_order_ode(ode, prior):
+def from_second_order_ode(ode, prior, damping_value=0.0):
 
     spatialdim = prior.spatialdim
     h0 = prior.proj2coord(coord=0)
@@ -59,7 +60,7 @@ def from_second_order_ode(ode, prior):
         return SQ @ SQ.T
 
     def diff_cholesky(t):
-        return np.sqrt(SMALL_VALUE) * np.eye(spatialdim)
+        return np.sqrt(damping_value) * np.eye(spatialdim)
 
     def jacobian(t, x):
         return (
@@ -79,3 +80,34 @@ def from_second_order_ode(ode, prior):
         forward_implementation="sqrt",
         backward_implementation="sqrt",
     )
+
+
+def from_boundary_conditions(bvp, prior, damping_value=0.0):
+
+    if isinstance(bvp, SecondOrderBoundaryValueProblem):
+        proj = np.stack((prior.proj2coord(0)[0], prior.proj2coord(1)[0]))
+    else:
+        proj = prior.proj2coord(0)
+
+    L, R = bvp.L, bvp.R
+
+    Rnew = R @ proj
+    Lnew = L @ proj
+
+    measmod_R = statespace.DiscreteLTIGaussian(
+        Rnew,
+        -bvp.ymax,
+        damping_value * np.eye(len(R)),
+        proc_noise_cov_cholesky=np.sqrt(damping_value) * np.eye(len(R)),
+        forward_implementation="sqrt",
+        backward_implementation="sqrt",
+    )
+    measmod_L = statespace.DiscreteLTIGaussian(
+        Lnew,
+        -bvp.y0,
+        damping_value * np.eye(len(L)),
+        proc_noise_cov_cholesky=np.sqrt(damping_value) * np.eye(len(L)),
+        forward_implementation="sqrt",
+        backward_implementation="sqrt",
+    )
+    return measmod_L, measmod_R

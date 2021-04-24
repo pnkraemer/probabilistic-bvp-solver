@@ -4,34 +4,31 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from probnum import statespace, randvars
-from bvps import (
-    bratus,
-    BoundaryValueProblem,
-    WrappedIntegrator,
-    generate_samples,
-    r_example,
-)
 from tqdm import tqdm
 
+from bvps import problem_examples, bridges, generate_samples
 
-bvp = r_example()
-grid = np.linspace(bvp.t0, bvp.tmax, 200)
+SAVE_DATA = False
+PATH = "./data/prior_samples/samples_"
+
+
+bvp = problem_examples.r_example()
+grid = np.linspace(bvp.t0, bvp.tmax, 100)
 
 orders = [1, 5]
 num_samples = 15
 fig, axes = plt.subplots(
     ncols=len(orders),
-    nrows=2,
-    figsize=(len(orders) * 2, 4),
-    sharey="row",
-    sharex="col",
+    nrows=1,
+    figsize=(len(orders) * 2, 2),
     dpi=250,
     constrained_layout=True,
 )
 
 
-path = "./probabilistic-bvp-solver/data/prior_samples/samples_"
-np.save(path + "grid", grid)
+if SAVE_DATA:
+    np.save(PATH + "grid", grid)
+
 for q, ax in tqdm(zip(orders, axes.T), total=len(orders)):
     ibm = statespace.IBM(
         ordint=q,
@@ -40,31 +37,27 @@ for q, ax in tqdm(zip(orders, axes.T), total=len(orders)):
         backward_implementation="sqrt",
     )
 
-    integ = WrappedIntegrator(ibm, bvp)
+    prior = bridges.GaussMarkovBridge(ibm, bvp)
 
-    rv = randvars.Normal(np.zeros(ibm.dimension), 2.0 * np.eye(ibm.dimension))
-    rv2 = randvars.Normal(np.zeros(ibm.dimension), 2.0 * np.eye(ibm.dimension))
+    initrv_not_initialised = randvars.Normal(
+        np.zeros(ibm.dimension), np.eye(ibm.dimension)
+    )
+    initrv = prior.initialise_boundary_conditions(initrv_not_initialised)
 
     base_measure_samples = np.random.randn(num_samples, len(grid), ibm.dimension)
-    base_measure_samples2 = np.random.randn(num_samples, len(grid), ibm.dimension)
 
-    for idx, (smp, smp2) in enumerate(zip(base_measure_samples, base_measure_samples2)):
-        samples = np.array(list(generate_samples(grid, integ, rv, smp)))
-        np.save(path + str(q) + str(idx), samples)
-        samples2 = np.array(list(generate_samples(grid, integ, rv2, smp2, fix=False)))
-        ax[0].plot(
+    for idx, smp in enumerate(base_measure_samples):
+        sample_generator = generate_samples.generate_samples(grid, prior, initrv, smp)
+        samples = np.array(list(sample_generator))
+
+        if SAVE_DATA:
+            np.save(PATH + str(q) + str(idx), samples)
+
+        ax.plot(
             grid, samples[:, 0], color="darkorange", linestyle="dashed", linewidth=0.75
         )
-        ax[0].set_title(f"Order: $\\nu={q}$")
+        ax.set_title(f"Order: $\\nu={q}$")
 
-        # ax[1].plot(
-        #     grid, samples2[:, 0], color="teal", linestyle="dashed", linewidth=0.75
-        # )
-        # ax[1].set_xlabel("Time, $t$")
-axes[0][0].set_ylabel("Type I Samples")
-axes[1][0].set_ylabel("Type II Samples")
+axes[0].set_ylabel("Samples")
 plt.savefig("./figures/IBMBridges.pdf")
 plt.show()
-
-# for t, smp in zip(grid, samples):
-#     pass

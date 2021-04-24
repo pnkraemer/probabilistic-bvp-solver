@@ -62,6 +62,3 @@ def control(bvp_posterior, kalman_posterior, ssq, measmod, atol, rtol):
         insert_one,
         insert_two,
     )
-
-
-print
