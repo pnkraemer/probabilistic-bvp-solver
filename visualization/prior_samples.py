@@ -9,25 +9,25 @@ import numpy as np
 
 plt.style.use(
     [
-        "./probabilistic-bvp-solver/visualization/science.mplstyle",
-        "./probabilistic-bvp-solver/visualization/misc/grid.mplstyle",
-        "./probabilistic-bvp-solver/visualization/color/high-contrast.mplstyle",
-        "./probabilistic-bvp-solver/stylesheets/13_tile_jmlr.mplstyle",
-        "./probabilistic-bvp-solver/stylesheets/10pt.mplstyle",
-        "./probabilistic-bvp-solver/stylesheets/hollow_markers.mplstyle",
-        # "./stylesheets/probnum_colors.mplstyle"
+        "./visualization/stylesheets/science.mplstyle",
+        "./visualization/stylesheets/misc/grid.mplstyle",
+        "./visualization/stylesheets/13_tile_jmlr.mplstyle",
+        "./visualization/stylesheets/10pt.mplstyle",
+        "./visualization/stylesheets/probnum_colors.mplstyle",
     ]
 )
+
 orders = [1, 5]
 num_samples = 15
-colors = ["teal", "darkorange"]
-path = "./probabilistic-bvp-solver/data/prior_samples/samples_"
-grid = np.load(path + "grid.npy")
+colors = ["C0", "C1"]
+
+PATH = "./data/prior_samples/samples_"
+grid = np.load(PATH + "grid.npy")
 fig, axes = plt.subplots(ncols=2, dpi=350, constrained_layout=True, sharey=True)
 for q, ax, col in zip(orders, axes, colors):
 
-    for idx in range(num_samples // 3):
-        samples = np.load(path + str(q) + str(idx) + ".npy")
+    for idx in range(num_samples):
+        samples = np.load(PATH + str(q) + str(idx) + ".npy")
 
         ax.plot(grid, samples[:, 0], color=col)
         ax.set_xlabel(r"Time, $t$")
@@ -35,32 +35,7 @@ for q, ax, col in zip(orders, axes, colors):
 
 axes[0].set_title(r"$\bf A$" + "  ", loc="left", fontweight="bold", ha="right")
 axes[1].set_title(r"$\bf B$" + "  ", loc="left", fontweight="bold", ha="right")
-# axes[2].set_title(r"$\bf C$" + "  ", loc="left", fontweight="bold", ha="right")
 axes[0].set_ylabel(r"Prior, $Y_0(t)$")
-
-# ax[0].plot(evalgrid, truth, linestyle="dashed", color="gray")
-# ax[0].plot(evalgrid, smoother_guesses)
-# ax[0].plot(
-#     initial_grid,
-#     initial_guess[:, 1],
-#     linestyle="None",
-#     marker="o",
-#     color="C0",
-#     zorder=-1,
-# )
-# ax[1].plot(evalgrid, truth, linestyle="dashed", color="gray")
-# ax[1].plot(evalgrid, smoother_ode)
-
-
-# ax[0].set_title("Via Vector")
-# ax[0].set_title(r"$\bf A$" + "  ", loc="left", fontweight="bold", ha="right")
-
-# ax[1].set_title("Via ODE")
-# ax[1].set_title(r"$\bf B$" + "  ", loc="left", fontweight="bold", ha="right")
-
-# ax[0].set_ylabel(r"Derivative, $\dot y(t)$")
-# ax[0].set_xlabel(r"Time, $t$")
-# ax[1].set_xlabel(r"Time, $t$")
 
 
 plt.savefig("./figures/prior_samples.pdf")

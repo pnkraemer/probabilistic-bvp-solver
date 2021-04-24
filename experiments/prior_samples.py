@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from bvps import problem_examples, bridges, generate_samples
 
-SAVE_DATA = False
+SAVE_DATA = True
 PATH = "./data/prior_samples/samples_"
 
 
