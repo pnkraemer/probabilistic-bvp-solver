@@ -4,7 +4,7 @@ from typing import Callable, Optional, Union
 import numpy as np
 from probnum.type import FloatArgType
 from .problems import BoundaryValueProblem, SecondOrderBoundaryValueProblem
-
+import probnum.problems
 
 # Check out: https://uk.mathworks.com/help/matlab/ref/bvp4c.html
 # and: http://www.orcca.on.ca/TechReports/TechReports/2001/TR-01-02.pdf
@@ -320,3 +320,79 @@ def p7_jacobian_second_order_dy(t, y, dy, xi):
 
 def p7_jacobian_second_order_ddy(t, y, dy, xi):
     return np.ones((1, 1))
+
+
+###################################################
+
+
+def seir(t0=0.0, tmax=55.0, y0=(97.0, 1.0, 1.0, 1.0), params=(0.3, 0.3, 0.1)):
+    y0 = np.asarray(y0)
+    population_count = np.sum(y0)
+    params_and_population_count = (*params, population_count)
+
+    def rhs(t, y):
+        return seir_rhs(t, y, params_and_population_count)
+
+    def jac(t, y):
+        return seir_jac(t, y, params_and_population_count)
+
+    return probnum.problems.InitialValueProblem(t0=t0, tmax=tmax, y0=y0, f=rhs, df=jac)
+
+
+def seir_as_bvp(
+    t0=0.0,
+    tmax=55.0,
+    IR0=(1.0, 1.0),
+    IRmax=(10.0, 10.0),
+    population_count=100,
+    params=(0.3, 0.3, 0.1),
+):
+
+    # Projection to I & R
+    L = np.flip(np.eye(2, 4))
+    R = np.flip(np.eye(2, 4))
+
+    y0 = np.asarray(IR0)
+    ymax = np.asarray(IRmax)
+    t0 = t0
+    tmax = tmax
+
+    params_and_population_count = (*params, population_count)
+
+    def rhs(t, y):
+        return seir_rhs(t, y, params_and_population_count)
+
+    def jac(t, y):
+        return seir_jac(t, y, params_and_population_count)
+
+    return BoundaryValueProblem(
+        f=rhs, t0=t0, tmax=tmax, L=L, R=R, y0=y0, ymax=ymax, df=jac
+    )
+
+
+def seir_rhs(t, y, params):
+    """RHS for SEIR model."""
+    alpha, beta, gamma, population_count = params
+    y1, y2, y3, y4 = y
+    y1_next = -beta * y1 * y3 / population_count
+    y2_next = beta * y1 * y3 / population_count - alpha * y2
+    y3_next = alpha * y2 - gamma * y3
+    y4_next = gamma * y3
+
+    return np.array([y1_next, y2_next, y3_next, y4_next])
+
+
+def seir_jac(t, y, params):
+    """Jacobian for SEIR model."""
+    alpha, beta, gamma, population_count = params
+    y1, y2, y3, y4 = y
+    d_dy1 = np.array(
+        [-beta * y3 / population_count, 0.0, -beta * y1 / population_count, 0.0]
+    )
+    d_dy2 = np.array(
+        [beta * y3 / population_count, -alpha, beta * y1 / population_count, 0.0]
+    )
+    d_dy3 = np.array([0.0, alpha, -gamma, 0.0])
+    d_dy4 = np.array([0.0, 0.0, gamma, 0.0])
+    jac_matrix = np.array([d_dy1, d_dy2, d_dy3, d_dy4])
+    return jac_matrix

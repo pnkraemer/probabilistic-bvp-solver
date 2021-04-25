@@ -6,84 +6,72 @@ from _styles import LINESTYLES, MARKERS
 
 import numpy as np
 
-evalgrid = np.load(
-    "./probabilistic-bvp-solver/data/initialisation_visualisation/evalgrid.npy"
-)
+evalgrid = np.load("./data/initialisation_visualisation/evalgrid.npy")
 
 
-initial_grid = np.load(
-    "./probabilistic-bvp-solver/data/initialisation_visualisation/initial_grid.npy"
-)
+initial_grid = np.load("./data/initialisation_visualisation/initial_grid.npy")
 
 
 initial_guess = np.load(
-    "./probabilistic-bvp-solver/data/initialisation_visualisation/initial_guess.npy",
+    "./data/initialisation_visualisation/initial_guess.npy",
 )
 
 
-truth = np.load(
-    "./probabilistic-bvp-solver/data/initialisation_visualisation/truth.npy"
-)
+truth = np.load("./data/initialisation_visualisation/truth.npy")
 
 
-smoother_ode = np.load(
-    "./probabilistic-bvp-solver/data/initialisation_visualisation/smoother_ode.npy"
-)
+smoother_ode = np.load("./data/initialisation_visualisation/smoother_ode.npy")
 
 
-filter_ode = np.load(
-    "./probabilistic-bvp-solver/data/initialisation_visualisation/filter_ode.npy"
-)
+filter_ode = np.load("./data/initialisation_visualisation/filter_ode.npy")
 
 
-smoother_guesses = np.load(
-    "./probabilistic-bvp-solver/data/initialisation_visualisation/smoother_guesses.npy"
-)
+smoother_guesses = np.load("./data/initialisation_visualisation/smoother_guesses.npy")
 
 
-filter_guesses = np.load(
-    "./probabilistic-bvp-solver/data/initialisation_visualisation/filter_guesses.npy"
-)
+filter_guesses = np.load("./data/initialisation_visualisation/filter_guesses.npy")
 
 
 plt.style.use(
     [
-        "./probabilistic-bvp-solver/visualization/science.mplstyle",
-        "./probabilistic-bvp-solver/visualization/misc/grid.mplstyle",
-        "./probabilistic-bvp-solver/visualization/color/high-contrast.mplstyle",
-        "./probabilistic-bvp-solver/stylesheets/13_tile_jmlr.mplstyle",
-        "./probabilistic-bvp-solver/stylesheets/10pt.mplstyle",
-        "./probabilistic-bvp-solver/stylesheets/hollow_markers.mplstyle",
-        # "./stylesheets/probnum_colors.mplstyle"
+        "./visualization/stylesheets/science.mplstyle",
+        "./visualization/stylesheets/misc/grid.mplstyle",
+        # "./visualization/stylesheets/color/high-contrast.mplstyle",
+        "./visualization/stylesheets/one_of_12_tile.mplstyle",
+        "./visualization/stylesheets/9pt.mplstyle",
+        "./visualization/stylesheets/hollow_markers.mplstyle",
+        "./visualization/stylesheets/probnum_colors.mplstyle",
     ]
 )
 
-fig, ax = plt.subplots(ncols=2, dpi=350, constrained_layout=True, sharey=True)
+fig, ax = plt.subplots(ncols=1, constrained_layout=True, sharey=True)
 
 
-ax[0].plot(evalgrid, truth, linestyle="dashed", color="gray")
-ax[0].plot(evalgrid, smoother_guesses, color="darkorange")
-ax[0].plot(
+ax.plot(evalgrid, truth, linestyle="dashed", color="gray")
+ax.plot(
+    evalgrid, smoother_guesses, color="C1", label="Via Vector", linewidth=2, alpha=0.5
+)
+ax.plot(
     initial_grid,
     initial_guess[:, 1],
     linestyle="None",
-    marker="o",
-    color="darkorange",
+    marker=".",
+    color="C1",
     zorder=-1,
 )
-ax[1].plot(evalgrid, truth, linestyle="dashed", color="gray")
-ax[1].plot(evalgrid, smoother_ode, color="teal")
+ax.plot(evalgrid, smoother_ode, color="C0", label="Via ODE", linewidth=2, alpha=0.5)
 
 
-ax[0].set_title("Via Vector")
-ax[0].set_title(r"$\bf A$" + "  ", loc="left", fontweight="bold", ha="right")
+# # ax.set_title("Via Vector")
+# ax.set_title(r"$\bf A$" + "  ", loc="left", fontweight="bold", ha="right")
 
-ax[1].set_title("Via ODE")
-ax[1].set_title(r"$\bf B$" + "  ", loc="left", fontweight="bold", ha="right")
+# # ax[1].set_title("Via ODE")
+# ax.set_title(r"$\bf B$" + "  ", loc="left", fontweight="bold", ha="right")
 
-ax[0].set_ylabel(r"Derivative $\dot y(t)$")
-ax[0].set_xlabel(r"Time $t$")
-ax[1].set_xlabel(r"Time $t$")
+ax.set_ylabel(r"Derivative $\dot y(t)$")
+ax.set_xlabel(r"Time $t$")
+ax.set_ylim((-1.5, 3.5))
+plt.legend(fancybox=False, edgecolor="black").get_frame().set_linewidth(0.5)
 
 
 plt.savefig("./figures/initialisation_visualisation.pdf")

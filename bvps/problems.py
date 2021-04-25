@@ -28,8 +28,8 @@ class BoundaryValueProblem:
     @property
     def scipy_bc(self):
         def bc(ya, yb):
-
-            return np.array([self.L @ ya - self.y0, self.R @ yb - self.ymax]).squeeze()
+            X = np.array([self.L @ ya - self.y0, self.R @ yb - self.ymax]).flatten()
+            return X
 
         return bc
 

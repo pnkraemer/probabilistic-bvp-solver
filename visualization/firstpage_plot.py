@@ -6,46 +6,48 @@ from _styles import LINESTYLES, MARKERS
 
 import numpy as np
 
-x = np.load("./probabilistic-bvp-solver/data/firstpage_plot/x.npy")
-y = np.load("./probabilistic-bvp-solver/data/firstpage_plot/y.npy")
+x = np.load("./data/firstpage_plot/x.npy")
+y = np.load("./data/firstpage_plot/y.npy")
 
 
 plt.style.use(
     [
-        "./probabilistic-bvp-solver/visualization/science.mplstyle",
-        "./probabilistic-bvp-solver/visualization/misc/grid.mplstyle",
-        "./probabilistic-bvp-solver/visualization/color/high-contrast.mplstyle",
-        "./probabilistic-bvp-solver/stylesheets/10pt.mplstyle",
-        # "./probabilistic-bvp-solver/stylesheets/hollow_markers.mplstyle",
+        "./visualization/stylesheets/science.mplstyle",
+        "./visualization/stylesheets/misc/grid.mplstyle",
+        "./visualization/stylesheets/color/high-contrast.mplstyle",
+        "./visualization/stylesheets/9pt.mplstyle",
+        "./visualization/stylesheets/one_of_13_tile.mplstyle",
+        # "./stylesheets/hollow_markers.mplstyle",
         # "./stylesheets/probnum_colors.mplstyle"
     ]
 )
 
 
-fig, ax = plt.subplots(ncols=1, dpi=150, figsize=(2.2, 1.5), constrained_layout=True)
+fig, ax = plt.subplots(ncols=1, constrained_layout=True)
 
 
-ax.plot(x, y[1], "--", color="darkorange", linewidth=1.5)
-ax.plot(x[[0, -1]], y[0][[0, -1]], "o", color="teal")
-ax.plot(x, y[0], color="teal", linewidth=1.5)
+ax.plot(x, y[1], "--", color="C1", linewidth=1.5)
+ax.plot(x[[0, -1]], y[0][[0, -1]], "o", color="C0")
+ax.plot(x, y[0], color="C0", linewidth=1.5)
 ax.annotate(
     "Fixed Boundary",
     (x[50] - 0.25, y[0][50]),
-    color="teal",
+    color="C0",
     bbox={"facecolor": "white", "edgecolor": "white", "pad": 2},
     zorder=10,
 )
 ax.annotate(
     "Any Boundary",
-    (x[100] - 0.3, y[1][100]),
-    color="darkorange",
+    (x[100] - 0.7, y[1][100]),
+    color="C1",
     bbox={"facecolor": "white", "edgecolor": "white", "pad": 2},
     zorder=10,
 )
+ax.set_title(r"$\bf A$" + "  ", loc="left", fontweight="bold", ha="right")
 
 ax.set_xlabel("Time $t$")
 ax.set_ylabel(r"Solution $y(t)$")
-plt.savefig("firstpage.pdf")
+plt.savefig("./figures/firstpage.pdf")
 plt.show()
 
 # ax[0].plot(evalgrid, truth, linestyle="dashed", color="gray")
