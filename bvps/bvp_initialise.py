@@ -3,15 +3,14 @@ import numpy as np
 from probnum import diffeq, randvars, utils, statespace, filtsmooth
 from probnum._randomvariablelist import _RandomVariableList
 
-from ._mesh import *
+from .mesh import *
 from .ode_measmods import from_ode, from_second_order_ode
 from .problems import SecondOrderBoundaryValueProblem
-from ._kalman import (
-    ConstantStopping,
+from .kalman import (
     MyIteratedDiscreteComponent,
     MyKalman,
-    MyStoppingCriterion,
 )
+from .stopcrit import ConstantStopping, MyStoppingCriterion
 
 import scipy.linalg
 
@@ -29,7 +28,7 @@ import scipy.linalg
 #     return bvp_initialise_ode(bvp, bridge_prior, initial_grid)
 
 
-def bvp_initialise_ode(bvp, bridge_prior, initial_grid):
+def bvp_initialise_ode(bvp, bridge_prior, initial_grid, initrv):
 
     if isinstance(bvp, SecondOrderBoundaryValueProblem):
         print("Recognised a 2nd order BVP")
@@ -41,10 +40,10 @@ def bvp_initialise_ode(bvp, bridge_prior, initial_grid):
         measmod = from_ode(bvp, bridge_prior)
         bvp_dim = len(bvp.R.T)
 
-    rv = randvars.Normal(
-        np.zeros(bridge_prior.dimension), 1e5 * np.eye(bridge_prior.dimension)
-    )
-    initrv, _ = bridge_prior.forward_rv(rv, t=bvp.t0, dt=0.0)
+    # rv = randvars.Normal(
+    #     np.zeros(bridge_prior.dimension), 1e5 * np.eye(bridge_prior.dimension)
+    # )
+    # initrv = bridge_prior.initialise_boundary_conditions(rv)
 
     kalman = MyKalman(
         dynamics_model=bridge_prior, measurement_model=measmod, initrv=initrv

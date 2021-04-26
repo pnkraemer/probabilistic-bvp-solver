@@ -24,7 +24,7 @@ def from_ode(ode, prior, damping_value=0.0):
         return SQ @ SQ.T
 
     def diff_cholesky(t):
-        return np.sqrt(dampign_value) * np.eye(spatialdim)
+        return np.sqrt(damping_value) * np.eye(spatialdim)
 
     def jacobian(t, x):
 

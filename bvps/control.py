@@ -1,7 +1,7 @@
 """Mesh refinement and error control."""
 import numpy as np
-from ._error_estimates import *
-from ._mesh import *
+from .error_estimates import *
+from .mesh import *
 
 
 LOBATTO_WEIGHTS = np.array([49.0 / 90.0, 32.0 / 45.0, 49.0 / 90.0])

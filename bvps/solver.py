@@ -3,22 +3,19 @@ import numpy as np
 from probnum import diffeq, randvars, utils
 from probnum._randomvariablelist import _RandomVariableList
 
-from ._mesh import *
-from ._ode_measmods import from_ode, from_second_order_ode
-from ._problems import SecondOrderBoundaryValueProblem
-from ._kalman import (
-    ConstantStopping,
-    MyIteratedDiscreteComponent,
-    MyKalman,
-    MyStoppingCriterion,
+from bvps import (
+    mesh,
+    ode_measmods,
+    problems,
+    kalman,
+    bvp_initialise,
+    bridges,
+    control,
+    error_estimates,
+    stopcrit,
 )
 
-from ._bvp_initialise import *
-from ._integrators import WrappedIntegrator
-from ._control import *
-
 import scipy.linalg
-from ._error_estimates import *
 
 
 def refine_median(quotient):
@@ -33,8 +30,8 @@ REFINEMENT_OPTIONS = {"median": refine_median, "tolerance": refine_tolerance}
 
 
 CANDIDATE_LOCATIONS_OPTIONS = {
-    "single": insert_central_point,
-    "double": insert_two_equispaced_points,
+    "single": mesh.insert_central_point,
+    "double": mesh.insert_two_equispaced_points,
     "triple": None,
 }
 
@@ -68,55 +65,55 @@ def probsolve_bvp(
         LARGE_VALUE
     )
 
-    bridge_prior = WrappedIntegrator(ibm, bvp)
+    bridge_prior = bridges.GaussMarkovBridge(ibm, bvp)
 
     refinement_function = REFINEMENT_OPTIONS[refinement]
     estimate_errors_function = ESTIMATE_ERRORS_OPTIONS[which_errors]
     candidate_function = CANDIDATE_LOCATIONS_OPTIONS[insert]
     # Construct Kalman object ##############################
 
-    if isinstance(bvp, SecondOrderBoundaryValueProblem):
+    if isinstance(bvp, problems.SecondOrderBoundaryValueProblem):
         print("Recognised a 2nd order BVP")
-        measmod = from_second_order_ode(bvp, bridge_prior)
+        measmod = ode_measmods.from_second_order_ode(bvp, bridge_prior)
 
         bvp_dim = len(bvp.R.T) // 2
 
     else:
-        measmod = from_ode(bvp, bridge_prior)
+        measmod = ode_measmods.from_ode(bvp, bridge_prior)
         bvp_dim = len(bvp.R.T)
 
     if which_method == "iekf":
-        stopcrit_iekf = ConstantStopping(maxit=maxit)
+        stopcrit_iekf = stopcrit.ConstantStopping(maxit=maxit)
         # stopcrit_iekf = MyStoppingCriterion(
         #     atol=100 * atol, rtol=100 * rtol, maxit=maxit
         # )
-        measmod = MyIteratedDiscreteComponent(measmod, stopcrit=stopcrit_iekf)
+        measmod = kalman.MyIteratedDiscreteComponent(measmod, stopcrit=stopcrit_iekf)
 
     rv = randvars.Normal(
         0 * np.ones(bridge_prior.dimension),
         LARGE_VALUE * np.eye(bridge_prior.dimension),
         cov_cholesky=np.sqrt(LARGE_VALUE) * np.eye(bridge_prior.dimension),
     )
-    initrv, _ = bridge_prior.forward_rv(rv, t=bvp.t0, dt=0.0)
+    initrv = bridge_prior.initialise_boundary_conditions(rv)
 
     if ignore_bridge:
         print("No bridge detected.")
-        kalman = MyKalman(
+        kalman_filtsmooth = kalman.MyKalman(
             dynamics_model=bridge_prior.integrator, measurement_model=measmod, initrv=rv
         )
     else:
-        kalman = MyKalman(
+        kalman_filtsmooth = kalman.MyKalman(
             dynamics_model=bridge_prior, measurement_model=measmod, initrv=initrv
         )
 
-    stopcrit_bvp = MyStoppingCriterion(atol=atol, rtol=rtol, maxit=maxit)
+    stopcrit_bvp = stopcrit.MyStoppingCriterion(atol=atol, rtol=rtol, maxit=maxit)
     # stopcrit_bvp = ConstantStopping(maxit=maxit)
 
     # Call IEKS ##############################
 
     grid = initial_grid
     # stopcrit_ieks = MyStoppingCriterion(atol=atol, rtol=rtol, maxit=maxit)
-    stopcrit_ieks = ConstantStopping(maxit=maxit)
+    stopcrit_ieks = stopcrit.ConstantStopping(maxit=maxit)
 
     # # Initial solve
     # data = np.zeros((len(grid), bvp_dim))
@@ -137,10 +134,8 @@ def probsolve_bvp(
     #         measmodR=None,
     #     )
 
-    kalman_posterior = bvp_initialise_ode(
-        bvp=bvp,
-        bridge_prior=bridge_prior,
-        initial_grid=initial_grid,
+    kalman_posterior = bvp_initialise.bvp_initialise_ode(
+        bvp=bvp, bridge_prior=bridge_prior, initial_grid=initial_grid, initrv=initrv
     )
 
     bvp_posterior = diffeq.KalmanODESolution(kalman_posterior)
@@ -159,7 +154,7 @@ def probsolve_bvp(
         h,
         insert_one,
         insert_two,
-    ) = control(
+    ) = control.control(
         bvp_posterior,
         kalman_posterior,
         sigma_squared,
@@ -212,18 +207,26 @@ def probsolve_bvp(
         )
         ibm.equivalent_discretisation_preconditioned.proc_noise_cov_mat *= sigma
 
-        bridge_prior = WrappedIntegrator(ibm, bvp)
+        bridge_prior = bridges.GaussMarkovBridge(ibm, bvp)
 
         new_initrv = kalman_posterior.states[0]
         new_mean = new_initrv.mean.copy()
-        new_cov_cholesky = utils.linalg.cholesky_update(
-            sigma * new_initrv.cov_cholesky, new_mean - kalman.initrv.mean
+
+        # The damping value is added, because we initialise the bridge again right after (and Dirac-Dirac does not work)
+        new_cov_cholesky = (
+            utils.linalg.cholesky_update(
+                sigma * new_initrv.cov_cholesky,
+                new_mean - kalman_filtsmooth.initrv.mean,
+            )
+            + np.eye(len(new_mean)) * 1e-6
         )
         # new_cov_cholesky = kalman.initrv.cov_cholesky
         new_cov = new_cov_cholesky @ new_cov_cholesky.T
-        kalman.initrv = randvars.Normal(
+        initrv_not_initialised = randvars.Normal(
             mean=new_mean, cov=new_cov, cov_cholesky=new_cov_cholesky
         )
+        initrv = bridge_prior.initialise_boundary_conditions(initrv_not_initialised)
+        kalman.initrv = initrv
 
         # Refine grid
         # print(mask.shape)
@@ -239,7 +242,7 @@ def probsolve_bvp(
         data = np.zeros((len(new_mesh), bvp_dim))
         # Compute new solution
         if ignore_bridge:
-            kalman_posterior = kalman.iterated_filtsmooth(
+            kalman_posterior = kalman_filtsmooth.iterated_filtsmooth(
                 dataset=data,
                 times=new_mesh,
                 stopcrit=stopcrit_ieks,
@@ -248,7 +251,7 @@ def probsolve_bvp(
                 old_posterior=kalman_posterior,
             )
         else:
-            kalman_posterior = kalman.iterated_filtsmooth(
+            kalman_posterior = kalman_filtsmooth.iterated_filtsmooth(
                 dataset=data,
                 times=new_mesh,
                 stopcrit=stopcrit_ieks,
@@ -257,8 +260,8 @@ def probsolve_bvp(
                 old_posterior=kalman_posterior,
             )
         bvp_posterior = diffeq.KalmanODESolution(kalman_posterior)
-        sigma_squared = kalman.ssq
-        sigmas = kalman.sigmas
+        sigma_squared = kalman_filtsmooth.ssq
+        sigmas = kalman_filtsmooth.sigmas
 
         (
             new_mesh,
@@ -268,7 +271,7 @@ def probsolve_bvp(
             h,
             insert_one,
             insert_two,
-        ) = control(
+        ) = control.control(
             bvp_posterior,
             kalman_posterior,
             sigma_squared,
@@ -338,7 +341,7 @@ def probsolve_bvp(
 
 
 ESTIMATE_ERRORS_OPTIONS = {
-    "std": estimate_errors_via_std,
-    "defect": estimate_errors_via_defect,
-    "probabilistic_defect": estimate_errors_via_probabilistic_defect,
+    "std": error_estimates.estimate_errors_via_std,
+    "defect": error_estimates.estimate_errors_via_defect,
+    "probabilistic_defect": error_estimates.estimate_errors_via_probabilistic_defect,
 }

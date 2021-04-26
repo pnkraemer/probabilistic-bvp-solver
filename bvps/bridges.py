@@ -72,7 +72,7 @@ class GaussMarkovBridge(statespace.Integrator, statespace.LTISDE):
 
     def initialise_boundary_conditions(self, initrv):
         if self.boundary_conditions_initialised:
-            raise RuntimeError
+            raise RuntimeError("Already done")
         self.boundary_conditions_initialised = True
 
         initrv_updated, _ = self._update_rv_initial_value(initrv)

@@ -5,7 +5,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from probnum import statespace, randvars, filtsmooth, diffeq
 from probnum._randomvariablelist import _RandomVariableList
-from bvps import *
+from bvps import problem_examples, bridges, solver
 from tqdm import tqdm
 import pandas as pd
 
@@ -22,12 +22,12 @@ TOL = 1e-2
 
 TMAX = 0.2
 XI = 0.001
-bvp = problem_7_second_order(xi=XI)
-bvp1st = problem_7(xi=XI)
+bvp = problem_examples.problem_7_second_order(xi=XI)
+bvp1st = problem_examples.problem_7(xi=XI)
 
 
-bvp = bratus_second_order()
-# bvp1st = bratus()
+# bvp = bratus_second_order()
+# # bvp1st = bratus()
 
 # bvp = matlab_example_second_order(tmax=TMAX)
 # bvp1st = matlab_example(tmax=TMAX)
@@ -42,7 +42,7 @@ print(bvp1st.L, bvp1st.R)
 # initial_grid = np.union1d(
 #     np.linspace(bvp.t0, 0.3, 100), np.linspace(bvp.t0, bvp.tmax, 100)
 # )
-initial_grid = np.linspace(bvp.t0, bvp.tmax, 25)
+initial_grid = np.linspace(bvp.t0, bvp.tmax, 5)
 initial_guess = np.zeros((2, len(initial_grid)))
 refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=TOL)
 refsol_fine = solve_bvp(
@@ -58,7 +58,7 @@ bvp.solution = refsol_fine.sol
 # print(refsol.x)
 # assert False
 
-q = 5
+q = 3
 
 
 ibm = statespace.IBM(
@@ -69,13 +69,13 @@ ibm = statespace.IBM(
 )
 # ibm.equivalent_discretisation_preconditioned._proc_noise_cov_cholesky *= 1e5
 
-integ = WrappedIntegrator(ibm, bvp1st)
+integ = bridges.GaussMarkovBridge(ibm, bvp1st)
 
 
 # initial_grid = np.linspace(bvp.t0, bvp.tmax, 2)
 
 
-posterior = probsolve_bvp(
+posterior = solver.probsolve_bvp(
     bvp=bvp1st,
     bridge_prior=integ,
     initial_grid=initial_grid,
@@ -83,7 +83,7 @@ posterior = probsolve_bvp(
     rtol=1 * TOL,
     insert="double",
     which_method="ekf",
-    maxit=115,
+    maxit=15,
     ignore_bridge=False,
     which_errors="probabilistic_defect",
     refinement="tolerance",
