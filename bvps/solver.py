@@ -137,7 +137,7 @@ def probsolve_bvp(
         atol,
         rtol,
     )
-    errors = None
+    errors = None   
     # candidate_locations, h = candidate_function(bvp_posterior.locations)
     print(
         f"Next: go from {len(bvp_posterior.locations)} points to {len(new_mesh)} points."
