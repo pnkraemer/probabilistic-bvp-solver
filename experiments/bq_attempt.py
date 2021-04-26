@@ -3,10 +3,12 @@
 import numpy as np
 from probnum import quad, kernels
 
+SCALE = 1e-3
+
 
 def fun(x):
     """f(x) = sin(x) -- this function will be approximated with BQ."""
-    return np.sin(x)
+    return SCALE * np.sin(x)
 
 
 # Construct objects
@@ -16,15 +18,16 @@ kernel_embedding = quad.KernelEmbedding(gaussian_kernel, lebesgue_measure)
 
 
 # Choose grid and compute kernel embeddings
-grid = np.array([0.0, 0.33, 0.5, 0.67, 1.0]).reshape((-1, 1))
-mu = kernel_embedding.kernel_mean(grid)
-Sigma = kernel_embedding.kernel_variance()
+grid = np.array([0.0, 2.0 / 6.0, 3.0 / 6.0, 4.0 / 6.0, 1.0]).reshape((-1, 1))
+mean_embedding = kernel_embedding.kernel_mean(grid)
+variance_embedding = kernel_embedding.kernel_variance()
 
 # Compute weights and (uncalibrated) posterior variance
 K = gaussian_kernel(grid, grid)
 Kinv = np.linalg.inv(K)
-weights = mu @ Kinv
-variance = Sigma - mu @ Kinv @ mu
+weights = mean_embedding @ Kinv
+variance = np.abs(variance_embedding - weights @ mean_embedding)
+
 
 # Approximate a function: sin(x)
 fx = fun(grid).squeeze()
@@ -32,14 +35,18 @@ sigma_squared = fx @ Kinv @ fx / grid.size
 approx = weights @ fx
 calibrated_variance = sigma_squared * variance
 
-
 # Evaluate error and compare with calibrated standard deviation.
-truth = -(np.cos(1) - np.cos(0))
+truth = -SCALE * (np.cos(1) - np.cos(0))
 abs_error = approx - truth
 rel_error = np.abs(abs_error / truth)
 
 
 # Print result
 print("Relative error:", rel_error)
+print("Absolute error:", abs_error)
+print("Truth:", truth)
+print("Approximation:", approx)
 print()
-print("Posterior standard deviation:", np.sqrt(calibrated_variance))
+print("Calibrated posterior standard deviation:", np.sqrt(calibrated_variance))
+print("Uncalibrated posterior standard deviation:", np.sqrt(variance))
+print("Calibrated diffusion:", np.sqrt(sigma_squared))
