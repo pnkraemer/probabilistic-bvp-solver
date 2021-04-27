@@ -15,13 +15,13 @@ from probnum import random_variables as randvars
 
 from scipy.integrate import solve_bvp
 
-TOL = 1e-5
+TOL = 1e-12
 
 # bvp = r_example(xi=0.01)
 # # bvp = matlab_example()
 
 TMAX = 0.2
-XI = 0.001
+XI = 0.0005
 bvp = problem_examples.problem_7_second_order(xi=XI)
 bvp1st = problem_examples.problem_7(xi=XI)
 
@@ -58,7 +58,7 @@ bvp.solution = refsol_fine.sol
 # print(refsol.x)
 # assert False
 
-q = 3
+q = 4
 
 
 ibm = statespace.IBM(
@@ -99,7 +99,7 @@ print(
 )
 
 
-evalgrid = np.linspace(bvp.t0, bvp.tmax, 150, endpoint=True)
+evalgrid = np.linspace(bvp.t0, bvp.tmax, 250, endpoint=True)
 
 for idx, (
     post,
@@ -125,7 +125,7 @@ for idx, (
     t = evalgrid
     m = evaluated.mean
     s = evaluated.std
-
+    print(s)
     ax[0].plot(t, m[:, 1], color="k")
     ax[0].plot(
         evalgrid,
@@ -151,13 +151,13 @@ for idx, (
             for rv, t in zip(kalpost.states, kalpost.locations)
         ]
     )
-    r = evals.mean / (TOL * (1.0 + np.abs(m_)))
-    R = evals.std / (TOL * (1.0 + np.abs(m_))) ** 2
+    r = evals.mean  # / (TOL * (1.0 + np.abs(m_)))
+    R = evals.std  # / (TOL * (1.0 + np.abs(m_))) ** 2
 
     ax[1].plot(evalgrid, r[:, 1], color="k")
-    # ax[1].fill_between(
-    #     evalgrid, r[:, 1] - 2 * R[:, 1], r[:, 1] + 2 * R[:, 1], color="k", alpha=0.2
-    # )
+    ax[1].fill_between(
+        evalgrid, r[:, 1] - 2 * R[:, 1], r[:, 1] + 2 * R[:, 1], color="k", alpha=0.2
+    )
     ax[1].plot(kalpost.locations, evals2.mean[:, 1], ".", color="black")
     ax[1].axhline(0.0, color="k", linestyle="dashed")
 
@@ -230,6 +230,7 @@ for idx, (
 
     # ax[2].set_xlabel("Time")
     ax[0].set_ylabel("Solution")
+    ax[1].set_ylabel("Residual")
     ax[2].set_ylabel("Error ratio")
     # ax[2].set_ylabel("Stepsize")
     ax[0].set_title(
