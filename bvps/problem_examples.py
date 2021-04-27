@@ -85,11 +85,11 @@ def bratus_second_order_rhs(t, y, dy):
 
 
 def bratus_second_order_jacobian_y(t, y, dy):
-    return -np.exp(y) * np.eye(1)
+    return -np.exp(y) * np.ones((1, 1))
 
 
 def bratus_second_order_jacobian_dy(t, y, dy):
-    return 0.0 * np.eye(1)
+    return 0.0 * np.ones((1, 1))
 
 
 def matlab_example(tmax=1.0):
@@ -314,12 +314,12 @@ def p7_rhs_second_order(t, y, dy, xi):
     ) / xi
 
 
-def p7_jacobian_second_order_dy(t, y, dy, xi):
-    return np.ones((1, 1)) * -t
-
-
 def p7_jacobian_second_order_ddy(t, y, dy, xi):
-    return np.ones((1, 1))
+    return np.ones((1, 1)) * -t / xi
+
+
+def p7_jacobian_second_order_dy(t, y, dy, xi):
+    return np.ones((1, 1)) / xi
 
 
 ###################################################

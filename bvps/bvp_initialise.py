@@ -59,7 +59,9 @@ def bvp_initialise_ode(bvp, bridge_prior, initial_grid, initrv):
     #     dataset=data, times=grid, measmodL=None, measmodR=None, stopcrit=stopcrit_ieks
     # )
 
-    return kalman.filtsmooth(dataset=data, times=grid)
+    posterior = kalman.filtsmooth(dataset=data, times=grid)
+    sigma_squared = kalman.ssq
+    return posterior, sigma_squared
 
 
 def bvp_initialise_guesses(bvp, bridge_prior, initial_grid, initial_guesses):
@@ -84,4 +86,6 @@ def bvp_initialise_guesses(bvp, bridge_prior, initial_grid, initial_guesses):
     grid = initial_grid
     data = initial_guesses
 
-    return kalman.filtsmooth(dataset=data, times=grid)
+    posterior = kalman.filtsmooth(dataset=data, times=grid)
+    sigma_squared = kalman.ssq
+    return posterior, sigma_squared
