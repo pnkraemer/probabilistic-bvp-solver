@@ -15,13 +15,13 @@ from probnum import random_variables as randvars
 
 from scipy.integrate import solve_bvp
 
-TOL = 1e-2
+TOL = 1e-5
 
 # bvp = r_example(xi=0.01)
 # # bvp = matlab_example()
 
-TMAX = 0.2
-XI = 0.0001
+TMAX = 2.2
+XI = 0.001
 bvp = problem_examples.problem_7_second_order(xi=XI)
 bvp1st = problem_examples.problem_7(xi=XI)
 
@@ -29,8 +29,8 @@ bvp1st = problem_examples.problem_7(xi=XI)
 # bvp = bratus_second_order()
 # # bvp1st = bratus()
 
-# bvp = matlab_example_second_order(tmax=TMAX)
-# bvp1st = matlab_example(tmax=TMAX)
+bvp = problem_examples.matlab_example_second_order(tmax=TMAX)
+bvp1st = problem_examples.matlab_example(tmax=TMAX)
 
 print(bvp1st.y0, bvp1st.ymax)
 print(bvp1st.L, bvp1st.R)
@@ -42,7 +42,7 @@ print(bvp1st.L, bvp1st.R)
 # initial_grid = np.union1d(
 #     np.linspace(bvp.t0, 0.3, 100), np.linspace(bvp.t0, bvp.tmax, 100)
 # )
-initial_grid = np.linspace(bvp.t0, bvp.tmax, 15)
+initial_grid = np.linspace(bvp.t0, bvp.tmax, 50)
 initial_guess = np.zeros((2, len(initial_grid)))
 refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=TOL)
 refsol_fine = solve_bvp(
@@ -58,7 +58,7 @@ bvp.solution = refsol_fine.sol
 # print(refsol.x)
 # assert False
 
-q = 5
+q = 4
 
 
 ibm = statespace.IBM(
@@ -83,11 +83,11 @@ posterior_generator = solver.probsolve_bvp(
     rtol=1 * TOL,
     insert="double",
     which_method="ekf",
-    maxit=3,
+    maxit=5,
     ignore_bridge=False,
     which_errors="probabilistic_defect",
     refinement="tolerance",
-    initial_sigma_squared=1,
+    initial_sigma_squared=1.0,
 )
 
 # for idx, x in enumerate(posterior_generator):
@@ -128,7 +128,6 @@ for idx, (
     t = evalgrid
     m = full_evaluated.mean
     s = full_evaluated.std
-    print(m.shape, s.shape)
 
     # print(s)
     ax[0].plot(t, m[:, 1], color="k")
@@ -149,8 +148,10 @@ for idx, (
     )
     # ax[0].fill_between(t2, m2 - 3 * s2, m2 + 3 * s2)
 
-    for t in post.locations:
+    for t in refsol.x:
         ax[0].axvline(t, linewidth=0.1, color="k")
+    for t in post.locations:
+        ax[1].axvline(t, linewidth=0.1, color="k")
 
     evals = _RandomVariableList(
         [measmod.forward_rv(rv, t)[0] for rv, t in zip(full_evaluated, evalgrid)]
@@ -163,15 +164,15 @@ for idx, (
     )
     r = evals.mean.squeeze()  # / (TOL * (1.0 + np.abs(m_)))
     R = evals.std.squeeze()  # / (TOL * (1.0 + np.abs(m_))) ** 2
-    print(r.shape)
+
     ax[1].plot(evalgrid, r, color="k")
-    ax[1].fill_between(
-        evalgrid,
-        r - 3 * sigma * R,
-        r + 3 * sigma * R,
-        color="k",
-        alpha=0.2,
-    )
+    # ax[1].fill_between(
+    #     evalgrid,
+    #     r - 3 * sigma * R,
+    #     r + 3 * sigma * R,
+    #     color="k",
+    #     alpha=0.2,
+    # )
     ax[1].plot(kalpost.locations, evals2.mean, ".", color="black")
     ax[1].axhline(0.0, color="k", linestyle="dashed")
 
@@ -250,7 +251,9 @@ for idx, (
     # ax[0].set_title(
     #     f"Refinement {idx + 1}: $N={len(post.locations)}$ Points | Scipy {len(refsol.x)}"
     # )
-    ax[0].set_title(f"Iteration {idx + 1}")
+    ax[0].set_title(
+        f"Iteration {idx + 1}:\n $N={len(post.locations)}$ Points| Scipy {len(refsol.x)}"
+    )
     # fig.align_ylabels()
     plt.savefig(f"./figures/errorest{idx}.pdf")
     plt.show()

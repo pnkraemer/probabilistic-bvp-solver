@@ -172,28 +172,30 @@ def probsolve_bvp(
     # else:
     #     mask = refine_tolerance(quotient)
     while np.any(mask):
-        # while True:
 
-        sigma = np.sqrt(sigma_squared)
-
-        ibm = bridge_prior.integrator
-        ibm.equivalent_discretisation_preconditioned._proc_noise_cov_cholesky *= sigma
-        ibm.equivalent_discretisation_preconditioned.proc_noise_cov_mat *= sigma_squared
-
-        bridge_prior = bridges.GaussMarkovBridge(ibm, bvp)
-
+        # Update initial distribution
+        # The damping value is added, because we initialise
+        # the bridge again right after (and Dirac-Dirac does not work)
         new_initrv = kalman_posterior.states[0]
         new_mean = new_initrv.mean.copy()
-
-        # The damping value is added, because we initialise the bridge again right after (and Dirac-Dirac does not work)
+        old_cov_cholesky = new_initrv.cov_cholesky.copy()
         new_cov_cholesky = (
             utils.linalg.cholesky_update(
-                sigma * new_initrv.cov_cholesky,
-                (new_mean - kalman_filtsmooth.initrv.mean),
+                old_cov_cholesky,
+                new_mean - kalman_filtsmooth.initrv.mean,
             )
             + np.eye(len(new_mean)) * 1e-12
         )
         new_cov = new_cov_cholesky @ new_cov_cholesky.T
+
+        # Update sigma
+        sigma = np.sqrt(sigma_squared)
+        ibm = bridge_prior.integrator
+        ibm.equivalent_discretisation_preconditioned._proc_noise_cov_cholesky *= sigma
+        ibm.equivalent_discretisation_preconditioned.proc_noise_cov_mat *= sigma_squared
+        bridge_prior = bridges.GaussMarkovBridge(ibm, bvp)
+        new_cov_cholesky *= sigma
+        new_cov *= sigma_squared
 
         # discrepancy = np.linalg.norm(
         #     new_cov
@@ -242,6 +244,7 @@ def probsolve_bvp(
                 measmodR=None,
                 old_posterior=kalman_posterior,
             )
+
         bvp_posterior = diffeq.KalmanODESolution(kalman_posterior)
         sigma_squared = kalman_filtsmooth.ssq
         sigmas = kalman_filtsmooth.sigmas

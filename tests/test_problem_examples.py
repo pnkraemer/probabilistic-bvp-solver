@@ -102,7 +102,6 @@ def test_jacobians_2nd_ddy(bvp2nd, dt, rtol):
 
     assert f1.ndim == 1
     assert f2.ndim == 1
-
     assert true_df.ndim == 2
 
     np.testing.assert_allclose(

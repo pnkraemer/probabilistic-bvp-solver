@@ -45,17 +45,18 @@ def estimate_errors_via_probabilistic_defect(
             for rv, t in zip(evaluated_kalman_posterior, grid)
         ]
     )
-    errors1 = np.abs(msrvs.mean) ** 2
-    errors2 = np.abs(msrvs.std) ** 2 * ssq
 
     reference = (
-        evaluated_kalman_posterior.mean @ kalman_posterior.transition.proj2coord(0).T
+        evaluated_kalman_posterior.mean @ kalman_posterior.transition.proj2coord(1).T
     )
-
     refs = atol + rtol * np.abs(reference)
-    error_std = np.sum(errors2 / refs ** 2, axis=1)
-    error_mean = np.linalg.norm(errors1 / refs, axis=1) ** 2
-    quotient = np.sqrt((error_std + error_mean) / measmod.output_dim)  # * h
+
+    errors1 = np.abs(msrvs.mean) ** 2 / (refs ** 2)
+    errors2 = 0.0 * np.abs(msrvs.std) ** 2 / (refs ** 2)
+
+    error_std = np.sum(errors2, axis=1)
+    error_mean = np.sum(errors1, axis=1)
+    quotient = error_std + error_mean  # * h
 
     assert errors1.shape == reference.shape
     return None, None, quotient
