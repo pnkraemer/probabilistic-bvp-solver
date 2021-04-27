@@ -15,7 +15,7 @@ from probnum import random_variables as randvars
 
 from scipy.integrate import solve_bvp
 
-TOL = 1e-2
+TOL = 1e-5
 
 # bvp = r_example(xi=0.01)
 # # bvp = matlab_example()
@@ -75,7 +75,7 @@ integ = bridges.GaussMarkovBridge(ibm, bvp1st)
 # initial_grid = np.linspace(bvp.t0, bvp.tmax, 2)
 
 
-posterior = solver.probsolve_bvp(
+posterior_generator = solver.probsolve_bvp(
     bvp=bvp1st,
     bridge_prior=integ,
     initial_grid=initial_grid,
@@ -83,12 +83,16 @@ posterior = solver.probsolve_bvp(
     rtol=1 * TOL,
     insert="double",
     which_method="ekf",
-    maxit=15,
+    maxit=5,
     ignore_bridge=False,
     which_errors="probabilistic_defect",
     refinement="tolerance",
 )
 
+# for idx, x in enumerate(posterior_generator):
+#     print(x)
+#     if idx > 1:
+#         assert False
 
 print(
     "Current information: EM in the filter sucks, EM on iterated filtsmooth level is okay, no EM is fine too."
@@ -108,65 +112,54 @@ for idx, (
     sigmas,
     insert_one,
     insert_two,
-) in enumerate(posterior):
+    measmod,
+) in enumerate(posterior_generator):
 
-    # print(post.locations[1:][insert_one])
-    # print(
-    #     "Why is the filtering posterior soooo bad even if the smoothing posterior is alright?"
-    # )
     post2 = post.filtering_solution
-    # print(post.locations, post2.locations)
-    # print(post.states[0].mean)
-    # print(kalpost.filtering_posterior.states[0].mean)
-    # post = post.filtering_solution
-    # print(kalpost.states[0].mean)
-    # print(kalpost.states[0].std)
-    # print()
-    # plt.style.use(
-    #     [
-    #         "./visualization/science.mplstyle",
-    #         # "./visualization/notebook.mplstyle"
-    #     ]
-    # )
-
-    # print(ssq)
 
     fig, ax = plt.subplots(nrows=3, sharex=True, dpi=200)
+    full_evaluated = kalpost(evalgrid)
     evaluated = post(evalgrid)
     m_ = evaluated.mean[:, :2]
-    # s = evaluated.std[:, :2] * np.sqrt(ssq)
 
-    # evaluated2 = post2(evalgrid)
-    # m2 = evaluated2.mean
-    # s2 = evaluated2.std * np.sqrt(ssq)
+    t = evalgrid
+    m = evaluated.mean
+    s = evaluated.std
 
-    t = post.locations
-    m = post.states.mean
-    s = post.states.std
-
-    t2 = post2.locations
-    m2 = post2.states.mean
-    s2 = post2.states.std
-    # print(m, m2)
-
-    # discrepancy = np.abs(refsol.sol(evalgrid).T[:, 0] - post(evalgrid).mean[:, 0])
-    ax[0].plot(t, m, color="k")
-    ax[0].plot(t2, m2, color="orange")
+    ax[0].plot(t, m[:, 1], color="k")
     ax[0].plot(
-        evalgrid, refsol_fine.sol(evalgrid).T, color="steelblue", linestyle="dashed"
+        evalgrid,
+        refsol_fine.sol(evalgrid).T[:, 1],
+        color="k",
+        linestyle="dashed",
     )
-    # ax[0].plot(
-    #     evalgrid, bvp.solution(evalgrid).T[:, 0], color="red", linestyle="dotted"
-    # )
 
-    # print(s)
-    # print(s2)
-
-    # ax[0].fill_between(t, m - 3 * s, m + 3 * s)
+    ax[0].fill_between(
+        t, m[:, 1] - 2 * s[:, 1], m[:, 1] + 2 * s[:, 1], color="k", alpha=0.2
+    )
     # ax[0].fill_between(t2, m2 - 3 * s2, m2 + 3 * s2)
 
     for t in post.locations:
         ax[0].axvline(t, linewidth=0.1, color="k")
+
+    evals = _RandomVariableList(
+        [measmod.forward_rv(rv, t)[0] for rv, t in zip(full_evaluated, evalgrid)]
+    )
+    evals2 = _RandomVariableList(
+        [
+            measmod.forward_rv(rv, t)[0]
+            for rv, t in zip(kalpost.states, kalpost.locations)
+        ]
+    )
+    r = evals.mean / (TOL * (1.0 + np.abs(m_)))
+    R = evals.std / (TOL * (1.0 + np.abs(m_))) ** 2
+
+    ax[1].plot(evalgrid, r[:, 1], color="k")
+    # ax[1].fill_between(
+    #     evalgrid, r[:, 1] - 2 * R[:, 1], r[:, 1] + 2 * R[:, 1], color="k", alpha=0.2
+    # )
+    ax[1].plot(kalpost.locations, evals2.mean[:, 1], ".", color="black")
+    ax[1].axhline(0.0, color="k", linestyle="dashed")
 
     discrepancy_ = np.abs(bvp.solution(evalgrid).T - post(evalgrid).mean[:, :2])
 
@@ -185,16 +178,16 @@ for idx, (
     # scipy_discrepancy = np.abs(refsol.sol(evalgrid)[0] - bvp.solution(evalgrid)[0])
 
     # ax[1].semilogy(evalgrid, s, color="k", label="Uncertainty")
-    ax[1].semilogy(
+    ax[2].semilogy(
         post.locations[:-1] + 0.5 * np.diff(post.locations),
         integral_error,
         ".",
         color="black",
         label="Estimated",
     )
-    ax[1].axhspan(0.0, 1.0, color="C0", alpha=0.2)
-    ax[1].axhspan(1.0, 3.0 ** (q + 0.5), color="C1", alpha=0.2)
-    ax[1].axhspan(3.0 ** (q + 0.5), 10000000000000, color="C2", alpha=0.2)
+    ax[2].axhspan(0.0, 1.0, color="C0", alpha=0.2)
+    ax[2].axhspan(1.0, 3.0 ** (q + 0.5), color="C1", alpha=0.2)
+    ax[2].axhspan(3.0 ** (q + 0.5), 10000000000000, color="C2", alpha=0.2)
     # ax[1].semilogy(post.locations[:-1], sigmas)
     # ax[1].semilogy(
     #     candidates[np.linalg.norm(errors, axis=1) > np.median(np.linalg.norm(errors, axis=1))],
@@ -204,14 +197,14 @@ for idx, (
     #     label="Error",
     # )
 
-    ax[1].semilogy(
+    ax[2].semilogy(
         evalgrid,
         discrepancy,
         linestyle="dashdot",
         color="black",
         label="True quotient",
     )
-    ax[1].semilogy(
+    ax[2].semilogy(
         evalgrid,
         np.linalg.norm(discrepancy_, axis=1),
         linestyle="dashed",
@@ -225,20 +218,20 @@ for idx, (
     #     linestyle="dotted",
     #     label="Scipy error",
     # )
-    ax[1].axhline(1, color="black")
-    ax[1].axhline(3.0 ** (q + 0.5), color="black")
+    ax[2].axhline(1, color="black")
+    ax[2].axhline(3.0 ** (q + 0.5), color="black")
 
-    ax[2].semilogy(post.locations[:-1], np.diff(post.locations), color="k", alpha=0.8)
-    ax[2].semilogy(refsol.x[:-1], np.diff(refsol.x), color="steelblue")
-    # ax[0].set_ylim((-112.5, 113.5))
-    ax[1].set_ylim((1e-5, 1e8))
-    ax[2].set_ylim((1e-4, 1e0))
-    ax[1].legend(frameon=False)
+    # ax[2].semilogy(post.locations[:-1], np.diff(post.locations), color="k", alpha=0.8)
+    # ax[2].semilogy(refsol.x[:-1], np.diff(refsol.x), color="steelblue")
+    # # ax[0].set_ylim((-112.5, 113.5))
+    ax[2].set_ylim((1e-5, 1e8))
+    # ax[2].set_ylim((1e-4, 1e0))
+    ax[2].legend(frameon=False)
 
-    ax[2].set_xlabel("Time")
+    # ax[2].set_xlabel("Time")
     ax[0].set_ylabel("Solution")
-    ax[1].set_ylabel("Error ratio")
-    ax[2].set_ylabel("Stepsize")
+    ax[2].set_ylabel("Error ratio")
+    # ax[2].set_ylabel("Stepsize")
     ax[0].set_title(
         f"Refinement {idx + 1}: $N={len(post.locations)}$ Points | Scipy {len(refsol.x)}"
     )

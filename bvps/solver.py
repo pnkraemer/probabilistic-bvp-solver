@@ -137,7 +137,7 @@ def probsolve_bvp(
         atol,
         rtol,
     )
-    errors = None   
+    errors = None
     # candidate_locations, h = candidate_function(bvp_posterior.locations)
     print(
         f"Next: go from {len(bvp_posterior.locations)} points to {len(new_mesh)} points."
@@ -160,7 +160,7 @@ def probsolve_bvp(
     # magnitude = stopcrit_bvp.evaluate_error(error=errors, reference=reference)
     # quotient = stopcrit_bvp.evaluate_quotient(errors, reference)
     # quotient = np.linalg.norm(quotient, axis=1)
-    yield bvp_posterior, sigma_squared, integral_error, kalman_posterior, candidate_locations, h, quotient, sigmas, insert_one, insert_two
+    yield bvp_posterior, sigma_squared, integral_error, kalman_posterior, candidate_locations, h, quotient, sigmas, insert_one, insert_two, measmod
 
     # print(quotient.shape)
     mask = refinement_function(quotient)
@@ -312,7 +312,7 @@ def probsolve_bvp(
         #     cov_cholesky=kalman.initrv.cov_cholesky,
         # )
 
-        yield bvp_posterior, sigma_squared, integral_error, kalman_posterior, candidate_locations, h, quotient, sigmas, insert_one, insert_two
+        yield bvp_posterior, sigma_squared, integral_error, kalman_posterior, candidate_locations, h, quotient, sigmas, insert_one, insert_two, measmod
 
 
 ESTIMATE_ERRORS_OPTIONS = {
