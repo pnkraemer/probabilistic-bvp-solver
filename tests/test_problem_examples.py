@@ -51,6 +51,9 @@ def test_jacobians_1st(bvp1st, dt, rtol):
 
     true_df = bvp1st.df(bvp1st.t0, random_point)
 
+    assert f1.ndim == 1
+    assert f2.ndim == 1
+
     assert true_df.ndim == 2
     np.testing.assert_allclose(
         true_df @ random_direction,
@@ -71,6 +74,9 @@ def test_jacobians_2nd_dy(bvp2nd, dt, rtol):
     fd_approx = (f1 - f2) / (2 * dt)
 
     true_df = bvp2nd.df_dy(bvp2nd.t0, random_point, random_point)
+
+    assert f1.ndim == 1
+    assert f2.ndim == 1
 
     assert true_df.ndim == 2
 
@@ -93,6 +99,9 @@ def test_jacobians_2nd_ddy(bvp2nd, dt, rtol):
     fd_approx = (f1 - f2) / (2 * dt)
 
     true_df = bvp2nd.df_ddy(bvp2nd.t0, random_point, random_point)
+
+    assert f1.ndim == 1
+    assert f2.ndim == 1
 
     assert true_df.ndim == 2
 
