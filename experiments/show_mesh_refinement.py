@@ -63,20 +63,20 @@ q = 5
 
 ibm = statespace.IBM(
     ordint=q,
-    spatialdim=2,
+    spatialdim=1,
     forward_implementation="sqrt",
     backward_implementation="sqrt",
 )
 # ibm.equivalent_discretisation_preconditioned._proc_noise_cov_cholesky *= 1e5
 
-integ = bridges.GaussMarkovBridge(ibm, bvp1st)
+integ = bridges.GaussMarkovBridge(ibm, bvp)
 
 
 # initial_grid = np.linspace(bvp.t0, bvp.tmax, 2)
 
 
 posterior_generator = solver.probsolve_bvp(
-    bvp=bvp1st,
+    bvp=bvp,
     bridge_prior=integ,
     initial_grid=initial_grid,
     atol=1 * TOL,
@@ -126,8 +126,10 @@ for idx, (
     m_ = evaluated.mean[:, :2]
 
     t = evalgrid
-    m = evaluated.mean
-    s = evaluated.std
+    m = full_evaluated.mean
+    s = full_evaluated.std
+    print(m.shape, s.shape)
+
     # print(s)
     ax[0].plot(t, m[:, 1], color="k")
     ax[0].plot(
@@ -159,18 +161,18 @@ for idx, (
             for rv, t in zip(kalpost.states, kalpost.locations)
         ]
     )
-    r = evals.mean  # / (TOL * (1.0 + np.abs(m_)))
-    R = evals.std  # / (TOL * (1.0 + np.abs(m_))) ** 2
-
-    ax[1].plot(evalgrid, r[:, 1], color="k")
+    r = evals.mean.squeeze()  # / (TOL * (1.0 + np.abs(m_)))
+    R = evals.std.squeeze()  # / (TOL * (1.0 + np.abs(m_))) ** 2
+    print(r.shape)
+    ax[1].plot(evalgrid, r, color="k")
     ax[1].fill_between(
         evalgrid,
-        r[:, 1] - 3 * sigma * R[:, 1],
-        r[:, 1] + 3 * sigma * R[:, 1],
+        r - 3 * sigma * R,
+        r + 3 * sigma * R,
         color="k",
         alpha=0.2,
     )
-    ax[1].plot(kalpost.locations, evals2.mean[:, 1], ".", color="black")
+    ax[1].plot(kalpost.locations, evals2.mean, ".", color="black")
     ax[1].axhline(0.0, color="k", linestyle="dashed")
 
     discrepancy_ = np.abs(bvp.solution(evalgrid).T - post(evalgrid).mean[:, :2])
