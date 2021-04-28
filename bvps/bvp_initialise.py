@@ -1,6 +1,6 @@
 """Initialise a BVP solver."""
 import numpy as np
-from probnum import diffeq, randvars, utils, statespace, filtsmooth
+from probnum import diffeq, randvars, utils, statespace, filtsmooth, problems
 from probnum._randomvariablelist import _RandomVariableList
 
 from .mesh import *
@@ -64,7 +64,7 @@ def bvp_initialise_ode(bvp, bridge_prior, initial_grid, initrv):
     return posterior, sigma_squared
 
 
-def bvp_initialise_guesses(bvp, bridge_prior, initial_grid, initial_guesses):
+def bvp_initialise_guesses(bvp, bridge_prior, initial_grid, initial_guesses, initrv):
 
     d = len(initial_guesses[0])
     measmod = statespace.DiscreteLTIGaussian(
@@ -74,12 +74,12 @@ def bvp_initialise_guesses(bvp, bridge_prior, initial_grid, initial_guesses):
         proc_noise_cov_cholesky=1e-3 * np.eye(d),
     )
 
-    rv = randvars.Normal(
-        np.ones(bridge_prior.dimension), 1e2 * np.eye(bridge_prior.dimension)
-    )
+    # rv = randvars.Normal(
+    #     np.ones(bridge_prior.dimension), 1e2 * np.eye(bridge_prior.dimension)
+    # )
 
-    kalman = filtsmooth.Kalman(
-        dynamics_model=bridge_prior, measurement_model=measmod, initrv=rv
+    kalman = MyKalman(
+        dynamics_model=bridge_prior, measurement_model=measmod, initrv=initrv
     )
 
     # Initial solve

@@ -59,7 +59,7 @@ def probsolve_bvp(
     insert : "single" or "double"
     """
     # Set up a bridge prior with the correct sigma scaling
-    m0 = np.zeros(bridge_prior.dimension)
+    m0 = np.ones(bridge_prior.dimension)
     c0 = initial_sigma_squared * np.ones(bridge_prior.dimension)
     C0 = np.diag(c0)
     initrv_not_bridged = randvars.Normal(m0, C0, cov_cholesky=np.sqrt(C0))
@@ -109,8 +109,16 @@ def probsolve_bvp(
     stopcrit_ieks = stopcrit.ConstantStopping(maxit=maxit)
 
     # Initialise
-    kalman_posterior, sigma_squared = bvp_initialise.bvp_initialise_ode(
-        bvp=bvp, bridge_prior=bridge_prior, initial_grid=initial_grid, initrv=initrv
+    # kalman_posterior, sigma_squared = bvp_initialise.bvp_initialise_ode(
+    #     bvp=bvp, bridge_prior=bridge_prior, initial_grid=initial_grid, initrv=initrv
+    # )
+
+    kalman_posterior, sigma_squared = bvp_initialise.bvp_initialise_guesses(
+        bvp=bvp,
+        bridge_prior=bridge_prior,
+        initial_grid=initial_grid,
+        initial_guesses=np.zeros((len(initial_grid), bvp_dim)),
+        initrv=initrv,
     )
 
     bvp_posterior = diffeq.KalmanODESolution(kalman_posterior)
@@ -186,6 +194,7 @@ def probsolve_bvp(
             )
             + np.eye(len(new_mean)) * 1e-12
         )
+        # new_cov_cholesky = old_cov_cholesky
         new_cov = new_cov_cholesky @ new_cov_cholesky.T
 
         # Update sigma
@@ -193,6 +202,7 @@ def probsolve_bvp(
         ibm = bridge_prior.integrator
         ibm.equivalent_discretisation_preconditioned._proc_noise_cov_cholesky *= sigma
         ibm.equivalent_discretisation_preconditioned.proc_noise_cov_mat *= sigma_squared
+
         bridge_prior = bridges.GaussMarkovBridge(ibm, bvp)
         new_cov_cholesky *= sigma
         new_cov *= sigma_squared

@@ -15,12 +15,12 @@ from probnum import random_variables as randvars
 
 from scipy.integrate import solve_bvp
 
-TOL = 1e-5
+TOL = 1e-12
 
 # bvp = r_example(xi=0.01)
 # # bvp = matlab_example()
 
-TMAX = 2.2
+TMAX = 1.0
 XI = 0.001
 bvp = problem_examples.problem_7_second_order(xi=XI)
 bvp1st = problem_examples.problem_7(xi=XI)
@@ -29,8 +29,8 @@ bvp1st = problem_examples.problem_7(xi=XI)
 # bvp = bratus_second_order()
 # # bvp1st = bratus()
 
-bvp = problem_examples.matlab_example_second_order(tmax=TMAX)
-bvp1st = problem_examples.matlab_example(tmax=TMAX)
+# bvp = problem_examples.matlab_example_second_order(tmax=TMAX)
+# bvp1st = problem_examples.matlab_example(tmax=TMAX)
 
 print(bvp1st.y0, bvp1st.ymax)
 print(bvp1st.L, bvp1st.R)
@@ -42,7 +42,7 @@ print(bvp1st.L, bvp1st.R)
 # initial_grid = np.union1d(
 #     np.linspace(bvp.t0, 0.3, 100), np.linspace(bvp.t0, bvp.tmax, 100)
 # )
-initial_grid = np.linspace(bvp.t0, bvp.tmax, 50)
+initial_grid = np.linspace(bvp.t0, bvp.tmax, 15)
 initial_guess = np.zeros((2, len(initial_grid)))
 refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=TOL)
 refsol_fine = solve_bvp(
@@ -58,7 +58,7 @@ bvp.solution = refsol_fine.sol
 # print(refsol.x)
 # assert False
 
-q = 4
+q = 9
 
 
 ibm = statespace.IBM(
@@ -87,7 +87,7 @@ posterior_generator = solver.probsolve_bvp(
     ignore_bridge=False,
     which_errors="probabilistic_defect",
     refinement="tolerance",
-    initial_sigma_squared=1.0,
+    initial_sigma_squared=1e10,
 )
 
 # for idx, x in enumerate(posterior_generator):
@@ -139,13 +139,13 @@ for idx, (
     )
 
     sigma = np.sqrt(ssq)
-    ax[0].fill_between(
-        t,
-        m[:, 1] - 3 * sigma * s[:, 1],
-        m[:, 1] + 3 * sigma * s[:, 1],
-        color="k",
-        alpha=0.2,
-    )
+    # ax[0].fill_between(
+    #     t,
+    #     m[:, 1] - 3 * sigma * s[:, 1],
+    #     m[:, 1] + 3 * sigma * s[:, 1],
+    #     color="k",
+    #     alpha=0.2,
+    # )
     # ax[0].fill_between(t2, m2 - 3 * s2, m2 + 3 * s2)
 
     for t in refsol.x:
@@ -173,10 +173,13 @@ for idx, (
     #     color="k",
     #     alpha=0.2,
     # )
-    ax[1].plot(kalpost.locations, evals2.mean, ".", color="black")
+    ax[1].plot(kalpost.locations, evals2.mean, ".", color="black", alpha=0.5)
     ax[1].axhline(0.0, color="k", linestyle="dashed")
 
-    discrepancy_ = np.abs(bvp.solution(evalgrid).T - post(evalgrid).mean[:, :2])
+    discrepancy_ = np.abs(
+        bvp.solution(evalgrid).T[:, :2] - kalpost(evalgrid).mean[:, :2]
+    )
+    ax[1].plot(evalgrid, discrepancy_)
 
     # print(bvp.solution(evalgrid).T[0])
     # print(post(evalgrid).mean[:, :2][0])
