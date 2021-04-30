@@ -11,32 +11,52 @@ plt.style.use(
     [
         "./visualization/stylesheets/science.mplstyle",
         "./visualization/stylesheets/misc/grid.mplstyle",
-        "./visualization/stylesheets/13_tile_jmlr.mplstyle",
-        "./visualization/stylesheets/10pt.mplstyle",
-        "./visualization/stylesheets/probnum_colors.mplstyle",
+        "./visualization/stylesheets/one_of_12_tile.mplstyle",
+        "./visualization/stylesheets/8pt.mplstyle",
+        "./visualization/stylesheets/color/muted.mplstyle",
     ]
 )
 
 orders = [1, 5]
-num_samples = 15
-colors = ["C0", "C1"]
+num_samples = 10
+colors = ["C1", "C0"]
+styles = ["--", "-"]
 
 PATH = "./data/prior_samples/samples_"
 grid = np.load(PATH + "grid.npy")
-fig, axes = plt.subplots(ncols=2, dpi=350, constrained_layout=True, sharey=True)
-for q, ax, col in zip(orders, axes, colors):
+fig, axes = plt.subplots(ncols=1, dpi=200, constrained_layout=True)
+for q, col, linestyle in zip(orders, colors, styles):
+    # for q, ax, col in zip(orders, axes, colors):
 
     for idx in range(num_samples):
         samples = np.load(PATH + str(q) + str(idx) + ".npy")
 
-        ax.plot(grid, samples[:, 0], color=col)
-        ax.set_xlabel(r"Time, $t$")
-        ax.set_title(f"Order, $\\nu = {q}$")
+        if idx == 0:
+            axes.plot(
+                grid,
+                samples[:, 0],
+                color=col,
+                alpha=0.95,
+                linestyle=linestyle,
+                label=f"$\\nu = {q}$",
+            )
+        else:
+            axes.plot(
+                grid,
+                samples[:, 0],
+                color=col,
+                alpha=0.95,
+                linestyle=linestyle,
+                label=f"_$\\nu={q}$",
+            )
+axes.set_xlabel(r"Time $t$")
+# axes.set_title(f"Order $\\nu = {q}$")
 
-axes[0].set_title(r"$\bf A$" + "  ", loc="left", fontweight="bold", ha="right")
-axes[1].set_title(r"$\bf B$" + "  ", loc="left", fontweight="bold", ha="right")
-axes[0].set_ylabel(r"Prior, $Y_0(t)$")
+# axes.set_title(r"$\bf A$" + "  ", loc="left", fontweight="bold", ha="right")
+# axes.set_title(r"$\bf B$" + "  ", loc="left", fontweight="bold", ha="right")
+axes.set_ylabel(r"Prior $Y_0(t)$")
 
+plt.legend(fancybox=False, edgecolor="black").get_frame().set_linewidth(0.5)
 
 plt.savefig("./figures/prior_samples.pdf")
 

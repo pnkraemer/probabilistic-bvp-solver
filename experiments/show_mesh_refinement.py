@@ -58,7 +58,7 @@ bvp.solution = refsol_fine.sol
 # print(refsol.x)
 # assert False
 
-q = 9
+q = 7
 
 
 ibm = statespace.IBM(
