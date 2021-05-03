@@ -13,13 +13,13 @@ plt.style.use(
         "./visualization/stylesheets/misc/grid.mplstyle",
         "./visualization/stylesheets/one_of_12_tile.mplstyle",
         "./visualization/stylesheets/8pt.mplstyle",
-        "./visualization/stylesheets/color/muted.mplstyle",
+        "./visualization/stylesheets/color/vibrant.mplstyle",
     ]
 )
 
 orders = [1, 5]
-num_samples = 10
-colors = ["C1", "C0"]
+num_samples = 5
+colors = ["forestgreen", "blue"]
 styles = ["--", "-"]
 
 PATH = "./data/prior_samples/samples_"
@@ -36,7 +36,7 @@ for q, col, linestyle in zip(orders, colors, styles):
                 grid,
                 samples[:, 0],
                 color=col,
-                alpha=0.95,
+                alpha=0.75,
                 linestyle=linestyle,
                 label=f"$\\nu = {q}$",
             )
@@ -45,7 +45,7 @@ for q, col, linestyle in zip(orders, colors, styles):
                 grid,
                 samples[:, 0],
                 color=col,
-                alpha=0.95,
+                alpha=0.75,
                 linestyle=linestyle,
                 label=f"_$\\nu={q}$",
             )
