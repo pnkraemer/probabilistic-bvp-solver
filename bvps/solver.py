@@ -49,6 +49,7 @@ def probsolve_bvp(
     ignore_bridge=False,
     refinement="median",
     initial_sigma_squared=1,
+    initialise="ode",
 ):
     """Solve a BVP.
 
@@ -72,7 +73,7 @@ def probsolve_bvp(
 
     # Choose a measurement model
     if isinstance(bvp, problems.SecondOrderBoundaryValueProblem):
-        print("Recognised a 2nd order BVP")
+        # print("Recognised a 2nd order BVP")
         measmod = ode_measmods.from_second_order_ode(bvp, bridge_prior)
 
         bvp_dim = len(bvp.R.T) // 2
@@ -109,17 +110,19 @@ def probsolve_bvp(
     stopcrit_ieks = stopcrit.ConstantStopping(maxit=maxit)
 
     # Initialise
-    # kalman_posterior, sigma_squared = bvp_initialise.bvp_initialise_ode(
-    #     bvp=bvp, bridge_prior=bridge_prior, initial_grid=initial_grid, initrv=initrv
-    # )
 
-    kalman_posterior, sigma_squared = bvp_initialise.bvp_initialise_guesses(
-        bvp=bvp,
-        bridge_prior=bridge_prior,
-        initial_grid=initial_grid,
-        initial_guesses=np.zeros((len(initial_grid), bvp_dim)),
-        initrv=initrv,
-    )
+    if initialise == "ode":
+        kalman_posterior, sigma_squared = bvp_initialise.bvp_initialise_ode(
+            bvp=bvp, bridge_prior=bridge_prior, initial_grid=initial_grid, initrv=initrv
+        )
+    else:
+        kalman_posterior, sigma_squared = bvp_initialise.bvp_initialise_guesses(
+            bvp=bvp,
+            bridge_prior=bridge_prior,
+            initial_grid=initial_grid,
+            initial_guesses=np.zeros((len(initial_grid), bvp_dim)),
+            initrv=initrv,
+        )
 
     bvp_posterior = diffeq.KalmanODESolution(kalman_posterior)
     # sigma_squared = kalman.ssq
@@ -147,10 +150,10 @@ def probsolve_bvp(
     )
     errors = None
     # candidate_locations, h = candidate_function(bvp_posterior.locations)
-    print(
-        f"Next: go from {len(bvp_posterior.locations)} points to {len(new_mesh)} points."
-    )
-    print(f"SSQ={sigma_squared}")
+    # print(
+    #     f"Next: go from {len(bvp_posterior.locations)} points to {len(new_mesh)} points."
+    # )
+    # print(f"SSQ={sigma_squared}")
     # # Estimate errors and choose nodes to refine
     # errors, reference, quotient = estimate_errors_function(
     #     bvp_posterior,
@@ -276,10 +279,10 @@ def probsolve_bvp(
             rtol,
         )
         errors = None
-        print(
-            f"Next: go from {len(bvp_posterior.locations)} points to {len(new_mesh)} points."
-        )
-        print(f"SSQ={sigma_squared}")
+        # print(
+        #     f"Next: go from {len(bvp_posterior.locations)} points to {len(new_mesh)} points."
+        # )
+        # print(f"SSQ={sigma_squared}")
         # print(new_mesh)
 
         # # Set up candidates for mesh refinement

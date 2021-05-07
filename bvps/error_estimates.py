@@ -52,7 +52,7 @@ def estimate_errors_via_probabilistic_defect(
     refs = atol + rtol * np.abs(reference)
 
     errors1 = np.abs(msrvs.mean) ** 2 / (refs ** 2)
-    errors2 = np.abs(msrvs.std) ** 2 / (refs ** 2) * ssq
+    errors2 = np.abs(msrvs.std) ** 2 / (refs ** 2) * ssq * 0.0
 
     error_std = np.sum(errors2, axis=1)
     error_mean = np.sum(errors1, axis=1)

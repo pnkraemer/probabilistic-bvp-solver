@@ -31,7 +31,6 @@ import scipy.linalg
 def bvp_initialise_ode(bvp, bridge_prior, initial_grid, initrv):
 
     if isinstance(bvp, SecondOrderBoundaryValueProblem):
-        print("Recognised a 2nd order BVP")
         measmod = from_second_order_ode(bvp, bridge_prior)
 
         bvp_dim = len(bvp.R.T) // 2
