@@ -47,7 +47,7 @@ def estimate_errors_via_probabilistic_defect(
     )
 
     reference = (
-        evaluated_kalman_posterior.mean @ kalman_posterior.transition.proj2coord(1).T
+        evaluated_kalman_posterior.mean @ kalman_posterior.transition.proj2coord(0).T
     )
     refs = atol + rtol * np.abs(reference)
 
@@ -56,7 +56,7 @@ def estimate_errors_via_probabilistic_defect(
 
     error_std = np.sum(errors2, axis=1)
     error_mean = np.sum(errors1, axis=1)
-    quotient = error_std + error_mean  # * h
+    quotient = error_mean  # * h
 
     assert errors1.shape == reference.shape
     return None, None, quotient

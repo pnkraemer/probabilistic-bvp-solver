@@ -183,7 +183,7 @@ def probsolve_bvp(
     # else:
     #     mask = refine_tolerance(quotient)
     while np.any(mask):
-
+        print(mask.nonzero())
         # Update initial distribution
         # The damping value is added, because we initialise
         # the bridge again right after (and Dirac-Dirac does not work)

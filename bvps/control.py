@@ -18,9 +18,7 @@ def control(bvp_posterior, kalman_posterior, ssq, measmod, atol, rtol):
         bvp_posterior, kalman_posterior, new_candidates, ssq, measmod, atol, rtol
     )
     per_interval_quotient = quotient.reshape((-1, 3))
-    integral_error = np.sqrt(
-        per_interval_quotient @ LOBATTO_WEIGHTS / (bvp_dim * dt[::3])
-    )
+    integral_error = np.sqrt(per_interval_quotient @ LOBATTO_WEIGHTS / (bvp_dim))
 
     nu = kalman_posterior.transition.ordint
     threshold = 3.0 ** (nu + 0.5)
