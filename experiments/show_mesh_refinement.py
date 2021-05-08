@@ -42,7 +42,7 @@ print(bvp1st.L, bvp1st.R)
 # initial_grid = np.union1d(
 #     np.linspace(bvp.t0, 0.3, 100), np.linspace(bvp.t0, bvp.tmax, 100)
 # )
-initial_grid = np.linspace(bvp.t0, bvp.tmax, 100)
+initial_grid = np.linspace(bvp.t0, bvp.tmax, 3)
 initial_guess = np.zeros((2, len(initial_grid)))
 refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=TOL)
 refsol_fine = solve_bvp(
@@ -101,7 +101,6 @@ print(
 
 
 evalgrid = np.linspace(bvp.t0, bvp.tmax, 250, endpoint=True)
-
 for idx, (
     post,
     ssq,
@@ -116,160 +115,260 @@ for idx, (
     measmod,
 ) in enumerate(posterior_generator):
 
-    post2 = post.filtering_solution
-
+    # Set up all 7 subplots
     fig, ax = plt.subplots(
-        nrows=3, sharex=True, dpi=200, figsize=(3, 3), constrained_layout=True
+        nrows=7,
+        sharex=True,
+        dpi=200,
+        figsize=(3, 3),
+        constrained_layout=True,
+        gridspec_kw={"height_ratios": [1, 5, 5, 5, 5, 1, 1]},
     )
-    full_evaluated = kalpost(evalgrid)
-    evaluated = post(evalgrid)
-    m_ = evaluated.mean[:, :2]
 
-    t = evalgrid
-    m = full_evaluated.mean
-    s = full_evaluated.std
+    # Evaluate the posterior at the grid
+    posterior_evaluations = kalpost(evalgrid)
+    posterior_mean = posterior_evaluations.mean
+    posterior_std = posterior_evaluations.std
 
-    # print(s)
-    ax[0].plot(t, m[:, 1], color="k")
-    ax[0].plot(
+    # Evaluate the residual
+    residual_evaluations = _RandomVariableList(
+        [measmod.forward_rv(rv, t)[0] for rv, t in zip(posterior_evaluations, evalgrid)]
+    )
+    residual_mean = residual_evaluations.mean
+    residual_std = residual_evaluations.std
+
+    # Extract plotting residuals and uncertainties
+    error_estimates_std = np.abs(posterior_std[:, 1])
+    error_estimates_res_mean = np.abs(residual_mean)
+    error_estimates_res_std = np.abs(residual_std)
+
+    # Select grids to be plotted
+    grid_refine_via_std = post.locations  # dummy
+    grid_refine_via_prob_res = post.locations  # dummy
+    grid_refine_via_res = post.locations
+
+    # First row: std-refinement grid
+    for t in grid_refine_via_std:
+        ax[0].axvline(t, color="black", linewidth="1")
+
+    # Second row: uncertainties derived from std
+    ax[1].semilogy(evalgrid, error_estimates_std, ":")
+    ax[1].semilogy(evalgrid, np.sqrt(ssq) * error_estimates_std, ":")
+
+    # Third row: Solution and uncertainties
+    ax[2].plot(evalgrid, posterior_mean[:, 1])
+    ax[2].fill_between(
         evalgrid,
-        refsol_fine.sol(evalgrid).T[:, 1],
-        color="k",
-        linestyle="dashed",
-    )
-
-    sigma = np.sqrt(ssq)
-    ax[0].fill_between(
-        t,
-        m[:, 1] - 3 * sigma * s[:, 1],
-        m[:, 1] + 3 * sigma * s[:, 1],
-        color="k",
+        posterior_mean[:, 1] - 2 * np.sqrt(ssq) * posterior_std[:, 1],
+        posterior_mean[:, 1] + 2 * np.sqrt(ssq) * posterior_std[:, 1],
         alpha=0.2,
     )
-    # ax[0].fill_between(t2, m2 - 3 * s2, m2 + 3 * s2)
 
-    # for t in refsol.x:
-    #     ax[0].axvline(t, linewidth=0.1, color="k")
-    for t in post.locations:
-        ax[0].axvline(t, linewidth=0.1, color="k")
-
-    evals = _RandomVariableList(
-        [measmod.forward_rv(rv, t)[0] for rv, t in zip(full_evaluated, evalgrid)]
+    # Fourth row: Residual and uncertainties
+    ax[3].plot(evalgrid, residual_mean[:, 0])
+    ax[3].fill_between(
+        evalgrid,
+        residual_mean[:, 0] - 2 * np.sqrt(ssq) * residual_std[:, 0],
+        residual_mean[:, 0] + 2 * np.sqrt(ssq) * residual_std[:, 0],
+        alpha=0.2,
     )
-    evals2 = _RandomVariableList(
-        [
-            measmod.forward_rv(rv, t)[0]
-            for rv, t in zip(kalpost.states, kalpost.locations)
-        ]
-    )
-    r = evals.mean.squeeze()  # / (TOL * (1.0 + np.abs(m_)))
-    R = evals.std.squeeze()  # / (TOL * (1.0 + np.abs(m_))) ** 2
 
-    ax[1].plot(evalgrid, r, color="k")
-    # ax[1].fill_between(
+    # Fifth row: Log-residual and uncertainties
+    ax[4].semilogy(evalgrid, error_estimates_res_mean[:, 0])
+    ax[4].fill_between(
+        evalgrid,
+        error_estimates_res_mean[:, 0],
+        error_estimates_res_mean[:, 0] + error_estimates_res_std[:, 0],
+        alpha=0.2,
+    )
+    ax[4].fill_between(
+        evalgrid,
+        error_estimates_res_mean[:, 0] + error_estimates_res_std[:, 0],
+        error_estimates_res_mean[:, 0] + np.sqrt(ssq) * error_estimates_res_std[:, 0],
+        alpha=0.2,
+    )
+
+    # Sixth row: steps from refinement with residual only
+    for t in grid_refine_via_res:
+        ax[5].axvline(t, color="black", linewidth="1")
+
+    # Seventh row: steps from refinement with residual only
+    for t in grid_refine_via_prob_res:
+        ax[6].axvline(t, color="black", linewidth="1")
+
+    # Clean up: remove all ticks for now and show the plot
+    for a in ax:
+        a.set_xticks([])
+        a.set_yticks([])
+        a.set_xlim((bvp.t0, bvp.tmax))
+
+    plt.show()
+    # #
+    # #
+    # #
+    # #
+    # #
+    # #
+    # #
+    # #
+    # #
+    # #
+    # #
+    # #
+    # #
+    # # full_evaluated = kalpost(evalgrid)
+    # # evaluated = post(evalgrid)
+
+    # m_ = evaluated.mean[:, :2]
+
+    # t = evalgrid
+    # m = full_evaluated.mean
+    # s = full_evaluated.std
+
+    # # print(s)
+    # ax[2].plot(t, m[:, 1], color="k")
+    # ax[2].plot(
     #     evalgrid,
-    #     r - 3 * sigma * R,
-    #     r + 3 * sigma * R,
+    #     refsol_fine.sol(evalgrid).T[:, 1],
+    #     color="k",
+    #     linestyle="dashed",
+    # )
+
+    # sigma = np.sqrt(ssq)
+    # ax[2].fill_between(
+    #     t,
+    #     m[:, 1] - 3 * sigma * s[:, 1],
+    #     m[:, 1] + 3 * sigma * s[:, 1],
     #     color="k",
     #     alpha=0.2,
     # )
-    ax[1].plot(kalpost.locations, evals2.mean, ".", color="black", alpha=0.5)
-    ax[1].axhline(0.0, color="k", linestyle="dashed")
+    # # ax[0].fill_between(t2, m2 - 3 * s2, m2 + 3 * s2)
 
-    ax[2].semilogy(
-        kalpost.locations, np.abs(evals2.mean), ".", color="black", alpha=0.5
-    )
-    ax[2].semilogy(evalgrid, np.abs(r), color="k")
+    # for t in refsol.x:
+    #     ax[0].axvline(t, linewidth=0.1, color="k")
+    # for t in post.locations:
+    #     ax[3].axvline(t, linewidth=0.1, color="k")
 
-    # discrepancy_ = np.abs(
-    #     bvp.solution(evalgrid).T[:, :2] - kalpost(evalgrid).mean[:, :2]
+    # evals = _RandomVariableList(
+    #     [measmod.forward_rv(rv, t)[0] for rv, t in zip(full_evaluated, evalgrid)]
     # )
-    # ax[1].plot(evalgrid, discrepancy_)
+    # evals2 = _RandomVariableList(
+    #     [
+    #         measmod.forward_rv(rv, t)[0]
+    #         for rv, t in zip(kalpost.states, kalpost.locations)
+    #     ]
+    # )
+    # r = evals.mean.squeeze()  # / (TOL * (1.0 + np.abs(m_)))
+    # R = evals.std.squeeze()  # / (TOL * (1.0 + np.abs(m_))) ** 2
 
-    # print(bvp.solution(evalgrid).T[0])
-    # print(post(evalgrid).mean[:, :2][0])
-    # print(discrepancy[0])
-
-    # discrepancy = discrepancy_ / (TOL * (1.0 + np.abs(m_)))
-    # # print(
-    # #     discrepancy[0],
-    # #     post(evalgrid).mean[:, :2][0],
-    # #     (TOL * (1.0 + np.abs(post(evalgrid).mean[:, :2])))[0],
+    # ax[3].plot(evalgrid, r, color="k")
+    # # ax[1].fill_between(
+    # #     evalgrid,
+    # #     r - 3 * sigma * R,
+    # #     r + 3 * sigma * R,
+    # #     color="k",
+    # #     alpha=0.2,
     # # )
-    # discrepancy = np.linalg.norm(discrepancy, axis=1)
+    # ax[3].plot(kalpost.locations, evals2.mean, ".", color="black", alpha=0.5)
+    # ax[3].axhline(0.0, color="k", linestyle="dashed")
+
+    # ax[4].semilogy(
+    #     kalpost.locations, np.abs(evals2.mean), ".", color="black", alpha=0.5
+    # )
+    # ax[4].semilogy(evalgrid, np.abs(r), color="k")
+
+    # # discrepancy_ = np.abs(
+    # #     bvp.solution(evalgrid).T[:, :2] - kalpost(evalgrid).mean[:, :2]
+    # # )
+    # # ax[1].plot(evalgrid, discrepancy_)
+
+    # # print(bvp.solution(evalgrid).T[0])
+    # # print(post(evalgrid).mean[:, :2][0])
     # # print(discrepancy[0])
-    # # scipy_discrepancy = np.abs(refsol.sol(evalgrid)[0] - bvp.solution(evalgrid)[0])
 
-    # # ax[1].semilogy(evalgrid, s, color="k", label="Uncertainty")
-    # ax[2].semilogy(
-    #     post.locations[:-1] + 0.5 * np.diff(post.locations),
-    #     integral_error,
-    #     ".",
-    #     color="black",
-    #     label="Estimated",
-    # )
-    # ax[2].axhspan(0.0, 1.0, color="C0", alpha=0.2)
-    # ax[2].axhspan(1.0, 3.0 ** (q + 0.5), color="C1", alpha=0.2)
-    # ax[2].axhspan(3.0 ** (q + 0.5), 10000000000000, color="C2", alpha=0.2)
-    # ax[1].semilogy(post.locations[:-1], sigmas)
-    # ax[1].semilogy(
-    #     candidates[np.linalg.norm(errors, axis=1) > np.median(np.linalg.norm(errors, axis=1))],
-    #     np.linalg.norm(errors, axis=1)[np.linalg.norm(errors, axis=1) > np.median(np.linalg.norm(errors, axis=1))],
-    #     "+",
-    #     color="green",
-    #     label="Error",
-    # )
+    # # discrepancy = discrepancy_ / (TOL * (1.0 + np.abs(m_)))
+    # # # print(
+    # # #     discrepancy[0],
+    # # #     post(evalgrid).mean[:, :2][0],
+    # # #     (TOL * (1.0 + np.abs(post(evalgrid).mean[:, :2])))[0],
+    # # # )
+    # # discrepancy = np.linalg.norm(discrepancy, axis=1)
+    # # # print(discrepancy[0])
+    # # # scipy_discrepancy = np.abs(refsol.sol(evalgrid)[0] - bvp.solution(evalgrid)[0])
 
-    # ax[2].semilogy(
-    #     evalgrid,
-    #     discrepancy,
-    #     linestyle="dashdot",
-    #     color="black",
-    #     label="True quotient",
-    # )
-    # ax[2].semilogy(
-    #     evalgrid,
-    #     np.linalg.norm(discrepancy_, axis=1),
-    #     linestyle="dashed",
-    #     color="black",
-    #     label="True Error",
-    # )
-    # ax[1].semilogy(
-    #     evalgrid,
-    #     scipy_discrepancy,
-    #     color="gray",
-    #     linestyle="dotted",
-    #     label="Scipy error",
+    # # # ax[1].semilogy(evalgrid, s, color="k", label="Uncertainty")
+    # # ax[2].semilogy(
+    # #     post.locations[:-1] + 0.5 * np.diff(post.locations),
+    # #     integral_error,
+    # #     ".",
+    # #     color="black",
+    # #     label="Estimated",
     # # )
-    # ax[2].axhline(1, color="black")
-    # # ax[2].axhline(3.0 ** (q + 0.5), color="black")
+    # # ax[2].axhspan(0.0, 1.0, color="C0", alpha=0.2)
+    # # ax[2].axhspan(1.0, 3.0 ** (q + 0.5), color="C1", alpha=0.2)
+    # # ax[2].axhspan(3.0 ** (q + 0.5), 10000000000000, color="C2", alpha=0.2)
+    # # ax[1].semilogy(post.locations[:-1], sigmas)
+    # # ax[1].semilogy(
+    # #     candidates[np.linalg.norm(errors, axis=1) > np.median(np.linalg.norm(errors, axis=1))],
+    # #     np.linalg.norm(errors, axis=1)[np.linalg.norm(errors, axis=1) > np.median(np.linalg.norm(errors, axis=1))],
+    # #     "+",
+    # #     color="green",
+    # #     label="Error",
+    # # )
 
-    # # ax[2].semilogy(post.locations[:-1], np.diff(post.locations), color="k", alpha=0.8)
-    # # ax[2].semilogy(refsol.x[:-1], np.diff(refsol.x), color="steelblue")
-    # # # ax[0].set_ylim((-112.5, 113.5))
-    # ax[2].set_ylim((1e-5, 1e8))
-    # # ax[2].set_ylim((1e-4, 1e0))
-    # ax[2].legend(frameon=False)
+    # # ax[2].semilogy(
+    # #     evalgrid,
+    # #     discrepancy,
+    # #     linestyle="dashdot",
+    # #     color="black",
+    # #     label="True quotient",
+    # # )
+    # # ax[2].semilogy(
+    # #     evalgrid,
+    # #     np.linalg.norm(discrepancy_, axis=1),
+    # #     linestyle="dashed",
+    # #     color="black",
+    # #     label="True Error",
+    # # )
+    # # ax[1].semilogy(
+    # #     evalgrid,
+    # #     scipy_discrepancy,
+    # #     color="gray",
+    # #     linestyle="dotted",
+    # #     label="Scipy error",
+    # # # )
+    # # ax[2].axhline(1, color="black")
+    # # # ax[2].axhline(3.0 ** (q + 0.5), color="black")
 
-    # ax[2].set_xlabel("Time")
-    ax[0].set_ylabel("Solution")
-    ax[1].set_ylabel("Residual")
-    # ax[2].set_ylabel("Error ratio")
-    # ax[2].set_ylabel("Stepsize")
+    # # # ax[2].semilogy(post.locations[:-1], np.diff(post.locations), color="k", alpha=0.8)
+    # # # ax[2].semilogy(refsol.x[:-1], np.diff(refsol.x), color="steelblue")
+    # # # # ax[0].set_ylim((-112.5, 113.5))
+    # # ax[2].set_ylim((1e-5, 1e8))
+    # # # ax[2].set_ylim((1e-4, 1e0))
+    # # ax[2].legend(frameon=False)
+
+    # # ax[2].set_xlabel("Time")
+    # # ax[0].set_ylabel("Solution")
+    # # ax[1].set_ylabel("Residual")
+    # # ax[2].set_ylabel("Error ratio")
+    # # ax[2].set_ylabel("Stepsize")
+    # # ax[0].set_title(
+    # #     f"Refinement {idx + 1}: $N={len(post.locations)}$ Points | Scipy {len(refsol.x)}"
+    # # )
     # ax[0].set_title(
-    #     f"Refinement {idx + 1}: $N={len(post.locations)}$ Points | Scipy {len(refsol.x)}"
+    #     f"Iteration {idx + 1}:\n $N={len(post.locations)}$ Points| Scipy {len(refsol.x)}"
     # )
-    ax[0].set_title(
-        f"Iteration {idx + 1}:\n $N={len(post.locations)}$ Points| Scipy {len(refsol.x)}"
-    )
-    # fig.align_ylabels()
-    plt.savefig(f"./figures/errorest{idx}.pdf")
-    plt.show()
 
-    # print(post.kalman_posterior.states[0].mean)
-    # print(post.kalman_posterior.states[1].mean)
-    # print(post.kalman_posterior.filtering_posterior.states[0].mean)
-    # print()
-    # print(post.kalman_posterior.states[0].std)
-    # print(post.kalman_posterior.states[1].std)
-    # print(post.kalman_posterior.filtering_posterior.states[0].std)
+    # for a in ax:
+    #     a.set_yticks([])
+    # # fig.align_ylabels()
+    # plt.savefig(f"./figures/errorest{idx}.pdf")
+    # plt.show()
+
+    # # print(post.kalman_posterior.states[0].mean)
+    # # print(post.kalman_posterior.states[1].mean)
+    # # print(post.kalman_posterior.filtering_posterior.states[0].mean)
+    # # print()
+    # # print(post.kalman_posterior.states[0].std)
+    # # print(post.kalman_posterior.states[1].std)
+    # # print(post.kalman_posterior.filtering_posterior.states[0].std)

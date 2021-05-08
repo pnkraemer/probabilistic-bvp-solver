@@ -10,16 +10,16 @@ import numpy as np
 plt.style.use(
     [
         "./visualization/stylesheets/science.mplstyle",
-        "./visualization/stylesheets/misc/grid.mplstyle",
+        # "./visualization/stylesheets/misc/grid.mplstyle",
         "./visualization/stylesheets/one_of_12_tile.mplstyle",
         "./visualization/stylesheets/8pt.mplstyle",
         "./visualization/stylesheets/color/vibrant.mplstyle",
     ]
 )
 
-orders = [1, 5]
-num_samples = 5
-colors = ["forestgreen", "blue"]
+orders = [3]
+num_samples = 10
+colors = ["black", "blue"]
 styles = ["--", "-"]
 
 PATH = "./data/prior_samples/samples_"
@@ -51,13 +51,15 @@ for q, col, linestyle in zip(orders, colors, styles):
             )
 axes.set_xlabel(r"Time $t$")
 # axes.set_title(f"Order $\\nu = {q}$")
-
-# axes.set_title(r"$\bf A$" + "  ", loc="left", fontweight="bold", ha="right")
+axes.set_xticks([])
+axes.set_yticks([])
+axes.set_title(r"$\bf D$", loc="left", fontweight="bold")
 # axes.set_title(r"$\bf B$" + "  ", loc="left", fontweight="bold", ha="right")
 axes.set_ylabel(r"Prior $Y_0(t)$")
 
-plt.legend(fancybox=False, edgecolor="black").get_frame().set_linewidth(0.5)
+# plt.legend(fancybox=False, edgecolor="black").get_frame().set_linewidth(0.5)
 
-plt.savefig("./figures/prior_samples.pdf")
+
+plt.savefig("./figures/prior_samples2.pdf")
 
 plt.show()
