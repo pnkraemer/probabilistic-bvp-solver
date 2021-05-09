@@ -12,6 +12,7 @@ class QuadratureRule:
 
     nodes: np.ndarray
     weights: np.ndarray
+    order: int
     info: Dict = None
 
 
@@ -24,7 +25,11 @@ def gauss_lobatto_interior_only():
             (np.sqrt(7.0) + np.sqrt(3)) / np.sqrt(28),
         ]
     )
-    return QuadratureRule(nodes=LOBATTO_NODES, weights=LOBATTO_WEIGHTS)
+    return QuadratureRule(
+        nodes=LOBATTO_NODES,
+        weights=LOBATTO_WEIGHTS,
+        order=5,
+    )
 
 
 def expquad_interior_only(expquad_lengthscale=1.0):
@@ -45,5 +50,8 @@ def expquad_interior_only(expquad_lengthscale=1.0):
     weights = mean_embedding @ Kinv
     variance = np.abs(variance_embedding - weights @ mean_embedding)
     return QuadratureRule(
-        nodes=grid[1:-1, 0], weights=weights[1:-1], info={"variance": variance}
+        nodes=grid[1:-1, 0],
+        weights=weights[1:-1],
+        info={"variance": variance},
+        order=5,
     )

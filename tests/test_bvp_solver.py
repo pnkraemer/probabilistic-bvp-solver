@@ -136,7 +136,7 @@ def test_insert_quadrature_nodes_lobatto():
     quadrule = quadrature.gauss_lobatto_interior_only()
     where = np.ones_like(mesh[:-1], dtype=bool)
 
-    new_mesh = bvp_solver.insert_quadrature_nodes(mesh, quadrule, where)
+    new_mesh, _ = bvp_solver.insert_quadrature_nodes(mesh, quadrule, where)
 
     # Sanity check: mesh is as expected
     np.testing.assert_allclose(mesh[0], 0.0)
@@ -154,7 +154,7 @@ def test_insert_quadrature_nodes_expquad():
     quadrule = quadrature.expquad_interior_only()
     where = np.ones_like(mesh[:-1], dtype=bool)
 
-    new_mesh = bvp_solver.insert_quadrature_nodes(mesh, quadrule, where)
+    new_mesh, _ = bvp_solver.insert_quadrature_nodes(mesh, quadrule, where)
 
     # Sanity check: mesh is as expected
     np.testing.assert_allclose(mesh[0], 0.0)

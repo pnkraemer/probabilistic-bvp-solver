@@ -46,7 +46,7 @@ class BVPSolver:
         return cls(
             dynamics_model=dynamics_model,
             error_estimator=error_estimates.estimate_errors_via_probabilistic_defect,
-            quadrature_rule=quadrature.gauss_lobatto_interior_only(),
+            quadrature_rule=quadrature.expquad_interior_only(),
             initialisation_strategy=bvp_initialise.bvp_initialise_ode,
             initial_sigma_squared=initial_sigma_squared,
             use_bridge=use_bridge,
@@ -113,8 +113,35 @@ class BVPSolver:
             initrv = self.update_covariances_with_sigma_squared(initrv, sigma_squared)
 
             # Compute errors
+            new_mesh, mesh_candidates = insert_quadrature_nodes(
+                mesh=times,
+                quadrule=self.quadrule,
+                where=np.ones_like(times[:-1], dtype=bool),
+            )
+            non_integrated_squared_error, reference, info = self.estimate_squared_error(
+                kalman_posterior, mesh_candidates
+            )
+            normalised_squared_error = non_integrated_squared_error / (
+                atol + rtol * reference
+            )
+            integrand = (
+                np.linalg.norm(normalised_squared_error, axis=1) ** 2 / bvp.dimension
+            )
+
+            per_interval_error = (
+                integrand.reshape((-1, self.quadrule.order - 2)) @ self.quadrule.weights
+            )
 
             # Refine mesh wherever appropriate
+            nu = self.dynamics_model.ordint
+            threshold_two = 3.0 ** (nu + 0.5)
+            acceptable = per_interval_error < 1.0
+            insert_one = np.logical_and(
+                1.0 < per_interval_error, per_interval_error < threshold_two
+            )
+            insert_two = threshold_two <= per_interval_error
+
+            raise RuntimeError("Continue with inserting the proper nodes here!")
 
     #
     #
@@ -215,6 +242,14 @@ class BVPSolver:
             mean=new_mean, cov=new_cov, cov_cholesky=new_cov_cholesky
         )
 
+    def estimate_squared_error(self, kalman_posterior, mesh_candidates, sigma_squared):
+        evaluated_posterior = kalman_posterior(mesh_candidates)
+
+        squared_error = evaluated_posterior.var * sigma_squared
+        reference = evaluated_posterior.mean
+        info = {"evaluated_posterior": evaluated_posterior}
+        return squared_error, reference, info
+
 
 def insert_quadrature_nodes(mesh, quadrule, where):
     """Insert 5-pt Lobatto points into a mesh."""
@@ -227,17 +262,5 @@ def insert_quadrature_nodes(mesh, quadrule, where):
         new_pts = mesh[:-1] + diff * node
         new_mesh = np.union1d(new_mesh, new_pts[where])
 
-    return new_mesh
-    # left = (np.sqrt(7.0) - np.sqrt(3)) / np.sqrt(28)
-    # middle = 1.0 / 2.0
-    # right = (np.sqrt(7.0) + np.sqrt(3)) / np.sqrt(28)
-
-    # mesh_left = mesh[:-1] + diff * left
-    # mesh_middle = mesh[:-1] + diff * middle
-    # mesh_right = mesh[:-1] + diff * right
-
-    # mesh_left_and_middle = np.union1d(mesh_left[where], mesh_middle[where])
-    # lobatto = np.union1d(mesh_left_and_middle, mesh_right[where])
-    # new_mesh = np.union1d(mesh, lobatto)
-
-    # return new_mesh, lobatto, np.repeat(diff, 3)
+    mesh_candidates = np.setdiff1d(new_mesh, mesh)
+    return new_mesh, mesh_candidates
