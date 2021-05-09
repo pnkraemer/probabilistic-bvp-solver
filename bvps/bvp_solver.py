@@ -12,6 +12,7 @@ from bvps import (
     control,
     error_estimates,
     stopcrit,
+    quadrature,
 )
 
 import scipy.linalg
@@ -33,6 +34,16 @@ class BVPSolver:
         self.initialisation_strategy = initialisation_strategy
         self.initial_sigma_squared = initial_sigma_squared
         self.use_bridge = use_bridge
+
+    @classmethod
+    def from_default_values(cls, dynamics_model):
+
+        return cls(
+            dynamics_model=dynamics_model,
+            error_estimator=error_estimates.estimate_errors_via_probabilistic_defect,
+            quadrature_rule=quadrature.gauss_lobatto_interior_only(),
+            initialisation_strategy=bvp_initialise.bvp_initialise_ode,
+        )
 
     def solve(self, *args, **kwargs):
         raise NotImplementedError

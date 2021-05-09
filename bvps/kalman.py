@@ -10,7 +10,7 @@ class MyKalman(filtsmooth.Kalman):
     """Kalman filtering with calibration"""
 
     def iterated_filtsmooth(
-        self, dataset, times, measmodL, measmodR, stopcrit=None, old_posterior=None
+        self, dataset, times, measmod_list, init_posterior, stopcrit
     ):
         """Compute an iterated smoothing estimate with repeated posterior linearisation.
 
@@ -19,111 +19,34 @@ class MyKalman(filtsmooth.Kalman):
         posteriori estimate.
         """
 
-        self.ct = 0
+        new_posterior = init_posterior
 
-        if stopcrit is None:
-            stopcrit = MyStoppingCriterion()
-
-        # Initialise iterated smoother
-        if old_posterior is None:
-            old_posterior = self.filtsmooth(
-                dataset=dataset,
-                times=times,
-                measmodL=measmodL,
-                measmodR=measmodR,
-                _previous_posterior=None,
-            )
-        new_posterior = old_posterior
         new_mean = new_posterior.states.mean
         old_mean = np.inf * np.ones(new_mean.shape)
         errors = np.inf * np.ones(new_mean.shape)
         while not stopcrit.terminate(error=errors, reference=new_mean):
+
             old_posterior = new_posterior
             old_mean = old_posterior.states.mean.copy()
 
-            # print("BEFORE", new_posterior.states.mean)
+            # Linearise the nonlinear measurement models
+            for idx, (t, y, mm) in enumerate(times, old_mean, measmod_list):
+                try:
+                    measmod_list[idx] = mm.linearize_at(y)
+                except RuntimeError:
+                    pass
 
             new_posterior = self.filtsmooth(
-                dataset=dataset,
-                times=times,
-                measmodR=measmodR,
-                measmodL=measmodL,
-                _previous_posterior=old_posterior,
+                dataset=dataset, times=times, measmod_list=measmod_list
             )
-            # print("AFTER", new_posterior.states.mean)
 
-            # #
-            # current_best_loss = np.inf
-            # current_best_alpha = np.inf
-            # # old_mean = old_posterior.states.mean
-            # new_mean = new_posterior.states.mean
-            # old_cov_cholesky = old_posterior.states.cov
-            # new_cov_cholesky = new_posterior.states.cov
-            # for alpha in 0.9 ** (np.arange(5)):
-            #     new_state_mean = (1-alpha) * old_mean + alpha * new_mean
-            #     # new_state_cov_cholesky = utils.linalg.cholesky_update(              (1-alpha) * old_cov_cholesky, alpha * new_cov_cholesky)
-            #     # print(old_mean[:, 0])
-            #     # print(new_mean[:, 0])
-            #     # print(new_state_mean[:, 0])
-            #     loss_rvs = _RandomVariableList(
-            #         [
-            #             self.measurement_model.forward_realization(m, t=t)[0]
-            #             for t, m in zip(new_posterior.locations, new_state_mean)
-            #         ]
-            #     )
-            #     # print(loss_rvs.mean)
-            #     loss = np.linalg.norm(loss_rvs.mean)
-            #     if loss < current_best_loss:
-            #         current_best_loss = loss
-            #         current_best_alpha = alpha
+            new_mean = new_posterior.states.mean
 
-            # # Use new best alpha for update
-            # new_state_means = (1-current_best_alpha) * old_mean + current_best_alpha * new_mean
-            # new_state_covs = (1-current_best_alpha) * old_cov_cholesky + current_best_alpha * new_cov_cholesky
-            # new_posterior.states = _RandomVariableList([randvars.Normal(mean=m, cov=S) for m, S in zip(new_state_means, new_state_covs)])
-            # print("BEST LOSS", current_best_loss / len(loss_rvs), "BEST ALPHA:", current_best_alpha)
-
-            # self.ct += 1
-
-            # print(self.ct)
-
-            # new_initrv = new_posterior[0]
-            # new_mean = new_initrv.mean.copy()
-            # new_cov_cholesky = utils.linalg.cholesky_update(
-            #     new_initrv.cov_cholesky, new_mean - self.initrv.mean
-            # )
-            # # new_cov_cholesky = self.initrv.cov_cholesky.copy()
-            # new_cov = new_cov_cholesky @ new_cov_cholesky.T
-            # self.initrv = randvars.Normal(
-            #     mean=new_mean, cov=new_cov, cov_cholesky=new_cov_cholesky
-            # )
-
-            msrvs = _RandomVariableList(
-                [
-                    self.measurement_model.forward_realization(x.mean, t=t)[0]
-                    for t, x in zip(new_posterior.locations, new_posterior.states)
-                ]
-            )
-            errors = np.abs(msrvs.mean)
-            # print(errors)
-            new_mean = new_posterior.states.mean @ self.dynamics_model.proj2coord(1).T
-            # new_mean = np.ones((len(msrvs), len(msrvs[0].mean)))
-            # print(errors)
-            old_mean = old_posterior(new_posterior.locations).mean
-
-            # errors = new_mean - old_mean
-            # print(stopcrit.evaluate_error(errors, new_mean))
+            errors = new_mean - old_mean
 
         return new_posterior
 
-    def filtsmooth(
-        self,
-        dataset: np.ndarray,
-        times: np.ndarray,
-        measmodL=None,
-        measmodR=None,
-        _previous_posterior=None,
-    ):
+    def filtsmooth(self, *args, **kwargs):
         """Apply Gaussian filtering and smoothing to a data set.
 
         Parameters
@@ -143,14 +66,7 @@ class MyKalman(filtsmooth.Kalman):
         KalmanPosterior
             Posterior distribution of the filtered output
         """
-        dataset, times = np.asarray(dataset), np.asarray(times)
-        filter_posterior = self.filter(
-            dataset,
-            times,
-            measmodL=measmodL,
-            measmodR=measmodR,
-            _previous_posterior=_previous_posterior,
-        )
+        filter_posterior = self.filter(*args, **kwargs)
         smooth_posterior = self.smooth(filter_posterior)
         return smooth_posterior
 
@@ -158,9 +74,7 @@ class MyKalman(filtsmooth.Kalman):
         self,
         dataset: np.ndarray,
         times: np.ndarray,
-        measmodL=None,
-        measmodR=None,
-        _previous_posterior=None,
+        measmod_list,
     ):
         """Apply Gaussian filtering (no smoothing!) to a data set.
 
@@ -180,86 +94,103 @@ class MyKalman(filtsmooth.Kalman):
         KalmanPosterior
             Posterior distribution of the filtered output
         """
+        if not isinstance(measmod_list, list):
+            raise RuntimeError
         dataset, times = np.asarray(dataset), np.asarray(times)
+
         rvs = []
         sigmas = []
-        # print(times[0])
-        _linearise_update_at = (
-            None if _previous_posterior is None else _previous_posterior(times[0])
-        )
-        # if _previous_posterior is not None:
-        #     new_initrv = _previous_posterior[0]
 
-        #     self.initrv = randvars.Normal(mean=new_initrv.mean, cov=new_initrv.cov, cov_cholesky=new_initrv.cov_cholesky)
+        rv = self.initrv
+        t_old = times[0]
 
-        # self.initrv.mean = _previous_posterior[0].mean
-
-        if measmodL is not None:
-            # print(measmodL.input_dim, measmodL.output_dim, np.zeros(1).shape)
-            self.initrv, _ = measmodL.backward_realization(
-                realization_obtained=np.zeros(1), rv=self.initrv, t=times[0]
-            )
-        else:
-            self.initrv = self.initrv
-
-        filtrv = self.initrv
-        for _ in range(1):
-            filtrv, *_ = self.update(
-                data=dataset[0],
-                rv=self.initrv,
-                time=times[0],
-                _linearise_at=filtrv,
-            )
-
-        rvs.append(filtrv)
-        for idx in range(1, len(times)):
-            _linearise_predict_at = (
-                None
-                if _previous_posterior is None
-                else _previous_posterior(times[idx - 1])
-            )
-            _linearise_update_at = (
-                None if _previous_posterior is None else _previous_posterior(times[idx])
-            )
-
-            filtrv, info = self.filter_step(
-                start=times[idx - 1],
-                stop=times[idx],
-                current_rv=filtrv,
-                data=dataset[idx],
-                _linearise_predict_at=_linearise_predict_at,
-                _linearise_update_at=_linearise_update_at,
-            )
-
-            sigma = info["info_upd"]["current_sigma"]
-            sigmas.append(sigma)
-            # print(sigma)
-
-            rvs.append(filtrv)
-
-        if measmodR is not None:
-            rvs[-1], _ = measmodR.backward_realization(
-                realization_obtained=np.zeros(1), rv=rvs[-1], t=times[-1]
-            )
-
-        ssq = np.mean(sigmas)
-
-        self.sigmas = sigmas
-        # rvs = [
-        #     randvars.Normal(
-        #         mean=rv.mean,
-        #         cov=ssq * rv.cov,
-        #         cov_cholesky=np.sqrt(ssq) * rv.cov_cholesky,
-        #     )
-        #     for rv in rvs
-        # ]
-        # print("Warning: what about IEKF with the update?")
-        # print("global sigma", ssq)
-        self.ssq = ssq
-        # print()
+        for t, y, mm in zip(times, dataset, measmod_list):
+            dt = t - t_old
+            if dt > 0:
+                rv, info = self.dynamics_model.forward_rv(rv=rv, t=t_old, dt=dt)
+            rv, info = mm.backward_realization(y, rv, t=t)
+            rvs.append(rv)
         return filtsmooth.FilteringPosterior(
             locations=times, states=rvs, transition=self.dynamics_model
         )
+
+        # # print(times[0])
+        # _linearise_update_at = (
+        #     None if _previous_posterior is None else _previous_posterior(times[0])
+        # )
+        # # if _previous_posterior is not None:
+        # #     new_initrv = _previous_posterior[0]
+
+        # #     self.initrv = randvars.Normal(mean=new_initrv.mean, cov=new_initrv.cov, cov_cholesky=new_initrv.cov_cholesky)
+
+        # # self.initrv.mean = _previous_posterior[0].mean
+
+        # if measmodL is not None:
+        #     # print(measmodL.input_dim, measmodL.output_dim, np.zeros(1).shape)
+        #     self.initrv, _ = measmodL.backward_realization(
+        #         realization_obtained=np.zeros(1), rv=self.initrv, t=times[0]
+        #     )
+        # else:
+        #     self.initrv = self.initrv
+
+        # filtrv = self.initrv
+        # for _ in range(1):
+        #     filtrv, *_ = self.update(
+        #         data=dataset[0],
+        #         rv=self.initrv,
+        #         time=times[0],
+        #         _linearise_at=filtrv,
+        #     )
+
+        # rvs.append(filtrv)
+        # for idx in range(1, len(times)):
+        #     _linearise_predict_at = (
+        #         None
+        #         if _previous_posterior is None
+        #         else _previous_posterior(times[idx - 1])
+        #     )
+        #     _linearise_update_at = (
+        #         None if _previous_posterior is None else _previous_posterior(times[idx])
+        #     )
+
+        #     filtrv, info = self.filter_step(
+        #         start=times[idx - 1],
+        #         stop=times[idx],
+        #         current_rv=filtrv,
+        #         data=dataset[idx],
+        #         _linearise_predict_at=_linearise_predict_at,
+        #         _linearise_update_at=_linearise_update_at,
+        #     )
+
+        #     sigma = info["info_upd"]["current_sigma"]
+        #     sigmas.append(sigma)
+        #     # print(sigma)
+
+        #     rvs.append(filtrv)
+
+        # if measmodR is not None:
+        #     rvs[-1], _ = measmodR.backward_realization(
+        #         realization_obtained=np.zeros(1), rv=rvs[-1], t=times[-1]
+        #     )
+
+        # ssq = np.mean(sigmas)
+
+        # self.sigmas = sigmas
+        # # rvs = [
+        # #     randvars.Normal(
+        # #         mean=rv.mean,
+        # #         cov=ssq * rv.cov,
+        # #         cov_cholesky=np.sqrt(ssq) * rv.cov_cholesky,
+        # #     )
+        # #     for rv in rvs
+        # # ]
+        # # print("Warning: what about IEKF with the update?")
+        # # print("global sigma", ssq)
+        # self.ssq = ssq
+        # # print()
+        # return filtsmooth.FilteringPosterior(
+        #     locations=times, states=rvs, transition=self.dynamics_model
+        # )
 
     def update(self, rv, time, data, _linearise_at=None):
 
