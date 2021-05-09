@@ -1,6 +1,6 @@
 """Try out probsolve_bvp."""
 import numpy as np
-
+import warnings
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from probnum import statespace, randvars, filtsmooth, diffeq
@@ -19,7 +19,7 @@ TOL = 1e-2
 
 
 TMAX = 1.0
-XI = 1e-7
+XI = 1e-3
 bvp = problem_examples.problem_7_second_order(xi=XI)
 bvp1st = problem_examples.problem_7(xi=XI)
 
@@ -35,7 +35,7 @@ refsol_fine = solve_bvp(
 )
 bvp.solution = refsol_fine.sol
 
-q = 6
+q = 4
 
 
 ibm = statespace.IBM(
@@ -60,7 +60,7 @@ posterior_generator = solver.probsolve_bvp(
     ignore_bridge=False,
     which_errors="probabilistic_defect",
     refinement="tolerance",
-    initial_sigma_squared=1e1,
+    initial_sigma_squared=1e10,
 )
 
 # Thin lines everywhere -- lots of plots to show!
@@ -128,6 +128,7 @@ for iteration, (
     reference_evaluated = refsol_fine.sol(evalgrid).T
     reference_color = "crimson"
     reference_linestyle = "dotted"
+    warnings.warn("Use the truth residual here!")
     true_error_dy = np.abs(reference_evaluated[:, 1] - posterior_mean[:, 1])
 
     # Extract plotting residuals and uncertainties
