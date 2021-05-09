@@ -24,7 +24,15 @@ def pendulum():
     tmax = np.pi / 2.0
 
     return BoundaryValueProblem(
-        f=pendulum_rhs, t0=t0, tmax=tmax, L=L, R=R, y0=y0, ymax=ymax, df=pendulum_jac
+        f=pendulum_rhs,
+        t0=t0,
+        tmax=tmax,
+        L=L,
+        R=R,
+        y0=y0,
+        ymax=ymax,
+        df=pendulum_jac,
+        dimension=2,
     )
 
 
@@ -46,7 +54,15 @@ def bratus(tmax=1.0):
     tmax = tmax
 
     return BoundaryValueProblem(
-        f=bratus_rhs, t0=t0, tmax=tmax, L=L, R=R, y0=y0, ymax=ymax, df=bratus_jacobian
+        f=bratus_rhs,
+        t0=t0,
+        tmax=tmax,
+        L=L,
+        R=R,
+        y0=y0,
+        ymax=ymax,
+        df=bratus_jacobian,
+        dimension=2,
     )
 
 
@@ -77,6 +93,7 @@ def bratus_second_order(tmax=1.0):
         ymax=ymax,
         df_dy=bratus_second_order_jacobian_y,
         df_ddy=bratus_second_order_jacobian_dy,
+        dimension=1,
     )
 
 
@@ -115,6 +132,7 @@ def matlab_example(tmax=1.0):
         ymax=ymax,
         df=matlab_jacobian,
         solution=matlab_solution,
+        dimension=2,
     )
 
 
@@ -156,6 +174,7 @@ def matlab_example_second_order(tmax=1.0):
         df_dy=matlab_jacobian_dy,
         df_ddy=matlab_jacobian_ddy,
         solution=matlab_solution,
+        dimension=1,
     )
 
 
@@ -191,6 +210,7 @@ def r_example(y0=None, ymax=None, xi=0.01):
         y0=y0,
         ymax=ymax,
         df=lambda t, y: r_jacobian(t, y, xi=xi),
+        dimension=2,
     )
 
 
@@ -226,6 +246,7 @@ def problem_7(xi=0.01):
         y0=y0,
         ymax=ymax,
         df=lambda t, y: p7_jacobian(t, y, xi=xi),
+        dimension=2,
     )
 
 
@@ -266,6 +287,7 @@ def problem_15(xi=0.01):
         y0=y0,
         ymax=ymax,
         df=lambda t, y: p15_jacobian(t, y, xi=xi),
+        dimension=2,
     )
 
 
@@ -301,6 +323,7 @@ def problem_7_second_order(xi=0.01):
         ymax=ymax,
         df_dy=lambda t, y, dy: p7_jacobian_second_order_dy(t, y, dy, xi=xi),
         df_ddy=lambda t, y, dy: p7_jacobian_second_order_ddy(t, y, dy, xi=xi),
+        dimension=1,
     )
 
 
@@ -366,7 +389,7 @@ def seir_as_bvp(
         return seir_jac(t, y, params_and_population_count)
 
     return BoundaryValueProblem(
-        f=rhs, t0=t0, tmax=tmax, L=L, R=R, y0=y0, ymax=ymax, df=jac
+        f=rhs, t0=t0, tmax=tmax, L=L, R=R, y0=y0, ymax=ymax, df=jac, dimension=4
     )
 
 

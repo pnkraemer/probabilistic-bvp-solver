@@ -56,21 +56,27 @@ class BVPSolver:
         raise NotImplementedError
 
     def solution_generator(
-        self, bvp, atol, rtol, maxit=10, initial_grid=None, initial_guess=None
+        self, bvp, atol, rtol, initial_grid, maxit=10, initial_guess=None
     ):
 
-        initrv_not_bridged = self.initial_sigma_squared()
+        # Set up filter object
+        initrv_not_bridged = self.initialise_sigma_squared()
         prior, initrv = self.initialise_bridge(bvp, initrv_not_bridged)
-        measmod = self.choose_measurement_model(bvp)
-        kalman = kalman.MyKalman(prior, measmod, initrv)
+        filter_object = kalman.MyKalman(prior, None, initrv)
 
-        kalman_posterior, sigma_squared = self.initialisation_strategy(
-            bvp=bvp,
-            prior=prior,
-            initial_grid=initial_grid,
-            initrv=initrv,
-            use_bridge=self.use_bridge,
+        # Create data and measmods
+        dataset = np.zeros((len(initial_grid), bvp.dimension))
+        times = initial_grid
+        ode_measmod, left_measmod, right_measmod = self.choose_measurement_model(bvp)
+        measmod_list = self.create_measmod_list(
+            ode_measmod, left_measmod, right_measmod, times
         )
+
+        # Initialise with ODE
+        kalman_posterior = filter_object.filtsmooth(
+            dataset=dataset, times=times, measmod_list=measmod_list
+        )
+        sigma_squared = np.inf
         yield kalman_posterior, sigma_squared
 
     #
@@ -128,3 +134,15 @@ class BVPSolver:
             measmod_list.extend([ode_measmod] * (N - 2))
             measmod_list.append(right_measmod)
             return measmod_list
+
+    def linearise_measmod_list(self, measmod_list, states, times):
+
+        if self.use_bridge:
+            for idx, (mm, state, time) in enumerate(zip(measmod_list, states, times)):
+                measmod_list[idx] = mm.linearize(state)
+        else:
+            for idx, (mm, state, time) in enumerate(
+                zip(measmod_list[1:-1], states[1:-1], times[1:-1]), start=1
+            ):
+                measmod_list[idx] = mm.linearize(state)
+        return measmod_list

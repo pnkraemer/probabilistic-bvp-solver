@@ -109,6 +109,7 @@ class MyKalman(filtsmooth.Kalman):
             if dt > 0:
                 rv, info = self.dynamics_model.forward_rv(rv=rv, t=t_old, dt=dt)
             rv, info = mm.backward_realization(y, rv, t=t)
+            t_old = t
             rvs.append(rv)
         return filtsmooth.FilteringPosterior(
             locations=times, states=rvs, transition=self.dynamics_model

@@ -17,6 +17,7 @@ class BoundaryValueProblem:
 
     L: np.ndarray  # projection to initial boundary value
     R: np.ndarray  # projection to final boundary value
+    dimension: int
 
     y0: Union[FloatArgType, np.ndarray]
     ymax: Union[FloatArgType, np.ndarray]
@@ -44,6 +45,8 @@ class SecondOrderBoundaryValueProblem:
 
     L: np.ndarray  # projection from y to initial boundary value
     R: np.ndarray  # projection from y to final boundary value
+
+    dimension: int
 
     y0: Union[FloatArgType, np.ndarray]
     ymax: Union[FloatArgType, np.ndarray]
