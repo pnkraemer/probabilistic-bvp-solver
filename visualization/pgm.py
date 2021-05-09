@@ -4,35 +4,47 @@ import matplotlib.pyplot as plt
 plt.style.use(
     [
         "./visualization/stylesheets/science.mplstyle",
+        # "./visualization/stylesheets/misc/grid.mplstyle",
+        "./visualization/stylesheets/one_of_12_tile.mplstyle",
+        "./visualization/stylesheets/8pt.mplstyle",
         "./visualization/stylesheets/probnum_colors.mplstyle",
-        "./visualization/stylesheets/9pt.mplstyle",
     ]
 )
 
 
-pgm = daft.PGM(dpi=300)
+pgm = daft.PGM(dpi=300, aspect=1.0, shape=(5.3, 3.3), grid_unit=1.41)
+
+# Bridge prior
 pgm.add_plate(
-    [-0.5, -1.5, 5, 2],
-    rect_params={"ec": "None"},
+    [-0.5, -1.5, 5.0, 2.0],
+    rect_params={"ec": "C0", "linewidth": 2},
 )
+
+# Classic prior
 pgm.add_plate(
-    [-0.5, -0.5, 5, 1],
-    rect_params={"ec": "C1"},
+    [-0.55, -0.55, 5.10, 1.10],
+    rect_params={"ec": "C1", "linewidth": 2},
+)
+
+# Placeholder for space reasons
+pgm.add_plate(
+    [-0.55, -1.85, 5.0, 2.0],
+    rect_params={"ec": "None", "linewidth": 2},
 )
 
 
 pgm.add_node("y0", r"$Y(t_0)$", 0, 0)
-pgm.add_node("y1", r"...", 1, 0)
+pgm.add_node("y1", r"...", 1.0, 0, plot_params={"ec": "None"})
 pgm.add_node("y2", r"$Y(t_n)$", 2, 0)
-pgm.add_node("y3", r"...", 3, 0)
+pgm.add_node("y3", r"...", 3, 0, plot_params={"ec": "None"})
 pgm.add_node("y4", r"$Y(t_N)$", 4, 0)
 
-pgm.add_node("ell0", r"$\ell_0$", 0, 1, alternate=True)
-pgm.add_node("ell2", r"$\ell_n$", 2, 1, alternate=True)
-pgm.add_node("ell4", r"$\ell_N$", 4, 1, alternate=True)
+pgm.add_node("ell0", r"$\ell_0$", 0, 1.0, alternate=True)
+pgm.add_node("ell2", r"$\ell_n$", 2, 1.0, alternate=True)
+pgm.add_node("ell4", r"$\ell_N$", 4, 1.0, alternate=True)
 
-pgm.add_node("ellL", r"$\ell_L$", 0, -1, alternate=True)
-pgm.add_node("ellR", r"$\ell_R$", 4, -1, alternate=True)
+pgm.add_node("ellL", r"$\ell_L$", 0, -1.0, alternate=True)
+pgm.add_node("ellR", r"$\ell_R$", 4, -1.0, alternate=True)
 
 pgm.add_edge("y0", "y1")
 pgm.add_edge("y1", "y2")
@@ -48,9 +60,14 @@ pgm.add_edge("y4", "ellR")
 
 
 ax = pgm.render()
-ax.set_title(
-    r"$\bf A$" + "  ", loc="left", fontweight="bold", ha="right", fontsize="x-large"
-)
+# ax.set_title(
+#     r"$\bf A$" + "  ",
+#     loc="left",
+#     fontweight="bold",
+#     ha="right",
+#     fontsize="x-large",
+#     pad=-20,
+# )
 
-plt.savefig("./figures/pgm_attempt.pdf")
+plt.savefig("./figures/pgm.pdf")
 plt.show()
