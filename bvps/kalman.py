@@ -99,7 +99,7 @@ class MyKalman(filtsmooth.Kalman):
         dataset, times = np.asarray(dataset), np.asarray(times)
 
         rvs = []
-        sigmas = []
+        self.sigmas = []
 
         rv = self.initrv
         t_old = times[0]
@@ -108,9 +108,22 @@ class MyKalman(filtsmooth.Kalman):
             dt = t - t_old
             if dt > 0:
                 rv, info = self.dynamics_model.forward_rv(rv=rv, t=t_old, dt=dt)
-            rv, info = mm.backward_realization(y, rv, t=t)
+
+            # Split up update in forward and backward to get access to the marginal likelihoods
+            forwarded_rv, info = mm.forward_rv(rv, t=t, compute_gain=True)
+
+            intermediate = scipy.linalg.solve_triangular(
+                forwarded_rv.cov_cholesky, forwarded_rv.mean, lower=True
+            )
+            current_sigma = intermediate.T @ intermediate
+            self.sigmas.append(current_sigma)
+
+            rv, info = mm.backward_realization(
+                y, rv, t=t, rv_forwarded=forwarded_rv, gain=info["gain"]
+            )
             t_old = t
             rvs.append(rv)
+
         return filtsmooth.FilteringPosterior(
             locations=times, states=rvs, transition=self.dynamics_model
         )
@@ -193,88 +206,88 @@ class MyKalman(filtsmooth.Kalman):
         #     locations=times, states=rvs, transition=self.dynamics_model
         # )
 
-    def update(self, rv, time, data, _linearise_at=None):
+    # def update(self, rv, time, data, _linearise_at=None):
 
-        meas_rv, _ = self.measurement_model.forward_rv(
-            rv, t=time, _linearise_at=_linearise_at, compute_gain=True
-        )
-        # upd_rv, info2 = self.measurement_model.backward_realization(
-        #     data,
-        #     rv,
-        #     t=time,
-        #     _linearise_at=_linearise_at,
-        #     forwarded_rv=meas_rv,
-        #     gain=info["gain"],
-        # )
-        upd_rv, info = self.measurement_model.backward_realization(
-            data, rv, t=time, _linearise_at=_linearise_at
-        )
-        sigma = meas_rv.mean.T @ scipy.linalg.cho_solve(
-            (meas_rv.cov_cholesky, True), meas_rv.mean
-        )
-        info["current_sigma"] = sigma
-        # print(sigma)
+    #     meas_rv, _ = self.measurement_model.forward_rv(
+    #         rv, t=time, _linearise_at=_linearise_at, compute_gain=True
+    #     )
+    #     # upd_rv, info2 = self.measurement_model.backward_realization(
+    #     #     data,
+    #     #     rv,
+    #     #     t=time,
+    #     #     _linearise_at=_linearise_at,
+    #     #     forwarded_rv=meas_rv,
+    #     #     gain=info["gain"],
+    #     # )
+    #     upd_rv, info = self.measurement_model.backward_realization(
+    #         data, rv, t=time, _linearise_at=_linearise_at
+    #     )
+    #     sigma = meas_rv.mean.T @ scipy.linalg.cho_solve(
+    #         (meas_rv.cov_cholesky, True), meas_rv.mean
+    #     )
+    #     info["current_sigma"] = sigma
+    #     # print(sigma)
 
-        return upd_rv, info
+    #     return upd_rv, info
 
-    def filter_step(
-        self,
-        start,
-        stop,
-        current_rv,
-        data,
-        _linearise_predict_at=None,
-        _linearise_update_at=None,
-        _diffusion=1.0,
-    ):
-        """A single filter step.
+    # def filter_step(
+    #     self,
+    #     start,
+    #     stop,
+    #     current_rv,
+    #     data,
+    #     _linearise_predict_at=None,
+    #     _linearise_update_at=None,
+    #     _diffusion=1.0,
+    # ):
+    #     """A single filter step.
 
-        Consists of a prediction step (t -> t+1) and an update step (at t+1).
+    #     Consists of a prediction step (t -> t+1) and an update step (at t+1).
 
-        Parameters
-        ----------
-        start : float
-            Predict FROM this time point.
-        stop : float
-            Predict TO this time point.
-        current_rv : RandomVariable
-            Predict based on this random variable. For instance, this can be the result
-            of a previous call to filter_step.
-        data : array_like
-            Compute the update based on this data.
-        _linearise_predict_at
-            Linearise the prediction step at this RV. Used for iterated filtering and smoothing.
-        _linearise_update_at
-            Linearise the update step at this RV. Used for iterated filtering and smoothing.
-        _diffusion
-            Custom diffusion for the underlying Wiener process. Used in calibration.
+    #     Parameters
+    #     ----------
+    #     start : float
+    #         Predict FROM this time point.
+    #     stop : float
+    #         Predict TO this time point.
+    #     current_rv : RandomVariable
+    #         Predict based on this random variable. For instance, this can be the result
+    #         of a previous call to filter_step.
+    #     data : array_like
+    #         Compute the update based on this data.
+    #     _linearise_predict_at
+    #         Linearise the prediction step at this RV. Used for iterated filtering and smoothing.
+    #     _linearise_update_at
+    #         Linearise the update step at this RV. Used for iterated filtering and smoothing.
+    #     _diffusion
+    #         Custom diffusion for the underlying Wiener process. Used in calibration.
 
-        Returns
-        -------
-        RandomVariable
-            Resulting filter estimate after the single step.
-        dict
-            Additional information provided by predict() and update().
-            Contains keys `pred_rv`, `info_pred`, `meas_rv`, `info_upd`.
-        """
-        data = np.asarray(data)
-        info = {}
-        info["pred_rv"], info["info_pred"] = self.predict(
-            rv=current_rv,
-            start=start,
-            stop=stop,
-            _linearise_at=_linearise_predict_at,
-            _diffusion=_diffusion,
-        )
+    #     Returns
+    #     -------
+    #     RandomVariable
+    #         Resulting filter estimate after the single step.
+    #     dict
+    #         Additional information provided by predict() and update().
+    #         Contains keys `pred_rv`, `info_pred`, `meas_rv`, `info_upd`.
+    #     """
+    #     data = np.asarray(data)
+    #     info = {}
+    #     info["pred_rv"], info["info_pred"] = self.predict(
+    #         rv=current_rv,
+    #         start=start,
+    #         stop=stop,
+    #         _linearise_at=_linearise_predict_at,
+    #         _diffusion=_diffusion,
+    #     )
 
-        filtrv, info["info_upd"] = self.update(
-            rv=info["pred_rv"],
-            time=stop,
-            data=data,
-            _linearise_at=_linearise_update_at,
-        )
+    #     filtrv, info["info_upd"] = self.update(
+    #         rv=info["pred_rv"],
+    #         time=stop,
+    #         data=data,
+    #         _linearise_at=_linearise_update_at,
+    #     )
 
-        return filtrv, info
+    #     return filtrv, info
 
 
 class MyIteratedDiscreteComponent(filtsmooth.IteratedDiscreteComponent):

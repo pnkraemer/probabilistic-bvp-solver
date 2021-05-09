@@ -76,22 +76,41 @@ class BVPSolver:
         kalman_posterior = filter_object.filtsmooth(
             dataset=dataset, times=times, measmod_list=measmod_list
         )
-        sigma_squared = np.inf
+        sigmas = filter_object.sigmas
+        sigma_squared = np.mean(sigmas) / bvp.dimension
         yield kalman_posterior, sigma_squared
 
         while True:
 
-            iter = 0
-            while iter < maxit:
-                iter += 1
-                lin_measmod_list = self.linearise_measmod_list(
-                    measmod_list, kalman_posterior.states, times
-                )
-                kalman_posterior = filter_object.filtsmooth(
-                    dataset=dataset, times=times, measmod_list=lin_measmod_list
-                )
-                sigma_squared = np.inf
+            iter_em = 1
+            iter_ieks = 10
+
+            # EM iterations
+            while iter_em < maxit:
+                iter_em += 1
+
+                # IEKS iterations
+                while iter_ieks < maxit:
+                    iter_ieks += 1
+                    lin_measmod_list = self.linearise_measmod_list(
+                        measmod_list, kalman_posterior.states, times
+                    )
+                    kalman_posterior = filter_object.filtsmooth(
+                        dataset=dataset, times=times, measmod_list=lin_measmod_list
+                    )
+                    sigmas = filter_object.sigmas
+                    sigma_squared = np.mean(sigmas) / bvp.dimension
+
+                initrv = self.update_initrv(kalman_posterior, initrv)
+                filter_object.initrv = initrv
+
             yield kalman_posterior, sigma_squared
+
+            # Recalibrate diffusion
+
+            # Compute errors
+
+            # Refine mesh wherever appropriate
 
     #
     #
@@ -163,3 +182,19 @@ class BVPSolver:
             lin_measmod_list.insert(0, measmod_list[0])
             lin_measmod_list.append(measmod_list[-1])
         return lin_measmod_list
+
+    def update_initrv(self, kalman_posterior, previous_initrv):
+        """EM update for initial RV."""
+
+        inferred_initrv = kalman_posterior.states[0]
+
+        new_mean = inferred_initrv.mean
+        new_cov_cholesky = utils.linalg.cholesky_update(
+            inferred_initrv.cov_cholesky,
+            inferred_initrv.mean - previous_initrv.mean,
+        )
+        new_cov = new_cov_cholesky @ new_cov_cholesky.T
+
+        return randvars.Normal(
+            mean=new_mean, cov=new_cov, cov_cholesky=new_cov_cholesky
+        )

@@ -89,23 +89,28 @@ def test_linearize_measmod_list(bvp, solver):
 @pytest.mark.parametrize("use_bridge", [True, False])
 def test_initialise(bvp, solver):
 
-    dummy_initial_grid = np.linspace(bvp.t0, bvp.tmax, 6)
+    N = 6
+    dummy_initial_grid = np.linspace(bvp.t0, bvp.tmax, N)
 
     gen = solver.solution_generator(
         bvp, atol=1.0, rtol=1.0, initial_grid=dummy_initial_grid
     )
-    init_kalman_posterior, init_ssq = next(gen)
+    kalman_posterior, sigma_squared = next(gen)
 
-    t = init_kalman_posterior.locations
-    y = init_kalman_posterior.states.mean
-    assert t.shape == (6,)
-    assert y.shape == (6, solver.dynamics_model.dimension)
+    t = kalman_posterior.locations
+    y = kalman_posterior.states.mean
+    # plt.plot(t, y[:, 0])
+    # plt.plot(t, y[:, 1])
+    # plt.show()
+    assert t.shape == (N,)
+    assert y.shape == (N, solver.dynamics_model.dimension)
 
 
 @pytest.mark.parametrize("use_bridge", [True, False])
 def test_first_iteration(bvp, solver):
 
-    dummy_initial_grid = np.linspace(bvp.t0, bvp.tmax, 16)
+    N = 15
+    dummy_initial_grid = np.linspace(bvp.t0, bvp.tmax, N)
 
     gen = solver.solution_generator(
         bvp,
@@ -115,9 +120,12 @@ def test_first_iteration(bvp, solver):
         maxit=3,
     )
     next(gen)
-    init_kalman_posterior, init_ssq = next(gen)
+    kalman_posterior, sigma_squared = next(gen)
 
-    t = init_kalman_posterior.locations
-    y = init_kalman_posterior.states.mean
-    assert t.shape == (16,)
-    assert y.shape == (16, solver.dynamics_model.dimension)
+    t = kalman_posterior.locations
+    y = kalman_posterior.states.mean
+    plt.plot(t, y[:, 0])
+    plt.plot(t, y[:, 1])
+    plt.show()
+    assert t.shape == (N,)
+    assert y.shape == (N, solver.dynamics_model.dimension)
