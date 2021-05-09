@@ -1,6 +1,6 @@
 """Test for BVP solver."""
 
-from bvps import bvp_solver, problem_examples
+from bvps import bvp_solver, problem_examples, quadrature
 import numpy as np
 
 import pytest
@@ -129,3 +129,39 @@ def test_first_iteration(bvp, solver):
     # plt.show()
     assert t.shape == (N,)
     assert y.shape == (N, solver.dynamics_model.dimension)
+
+
+def test_insert_quadrature_nodes_lobatto():
+    mesh = np.arange(0.0, 10.0, 1.0)
+    quadrule = quadrature.gauss_lobatto_interior_only()
+    where = np.ones_like(mesh[:-1], dtype=bool)
+
+    new_mesh = bvp_solver.insert_quadrature_nodes(mesh, quadrule, where)
+
+    # Sanity check: mesh is as expected
+    np.testing.assert_allclose(mesh[0], 0.0)
+    np.testing.assert_allclose(mesh[1], 1.0)
+    assert len(mesh) == 10
+
+    np.testing.assert_allclose(new_mesh[0], 0.0)
+    np.testing.assert_allclose(new_mesh[1:4], quadrule.nodes)
+    np.testing.assert_allclose(new_mesh[4], 1.0)
+    assert len(new_mesh) == 37
+
+
+def test_insert_quadrature_nodes_expquad():
+    mesh = np.arange(0.0, 10.0, 1.0)
+    quadrule = quadrature.expquad_interior_only()
+    where = np.ones_like(mesh[:-1], dtype=bool)
+
+    new_mesh = bvp_solver.insert_quadrature_nodes(mesh, quadrule, where)
+
+    # Sanity check: mesh is as expected
+    np.testing.assert_allclose(mesh[0], 0.0)
+    np.testing.assert_allclose(mesh[1], 1.0)
+    assert len(mesh) == 10
+
+    np.testing.assert_allclose(new_mesh[0], 0.0)
+    np.testing.assert_allclose(new_mesh[1:4], quadrule.nodes)
+    np.testing.assert_allclose(new_mesh[4], 1.0)
+    assert len(new_mesh) == 37

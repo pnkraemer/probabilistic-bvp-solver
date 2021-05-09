@@ -143,7 +143,7 @@ class BVPSolver:
         self.dynamics_model.equivalent_discretisation_preconditioned._proc_noise_cov_cholesky *= (
             sigma
         )
-        self.dynamics_model.equivalent_discretisation_preconditioned._proc_noise_cov_mat *= (
+        self.dynamics_model.equivalent_discretisation_preconditioned.proc_noise_cov_mat *= (
             sigma_squared
         )
         return initrv_not_bridged
@@ -214,3 +214,30 @@ class BVPSolver:
         return randvars.Normal(
             mean=new_mean, cov=new_cov, cov_cholesky=new_cov_cholesky
         )
+
+
+def insert_quadrature_nodes(mesh, quadrule, where):
+    """Insert 5-pt Lobatto points into a mesh."""
+
+    print(quadrule)
+    diff = np.diff(mesh)
+    new_mesh = mesh
+
+    for node in quadrule.nodes:
+        new_pts = mesh[:-1] + diff * node
+        new_mesh = np.union1d(new_mesh, new_pts[where])
+
+    return new_mesh
+    # left = (np.sqrt(7.0) - np.sqrt(3)) / np.sqrt(28)
+    # middle = 1.0 / 2.0
+    # right = (np.sqrt(7.0) + np.sqrt(3)) / np.sqrt(28)
+
+    # mesh_left = mesh[:-1] + diff * left
+    # mesh_middle = mesh[:-1] + diff * middle
+    # mesh_right = mesh[:-1] + diff * right
+
+    # mesh_left_and_middle = np.union1d(mesh_left[where], mesh_middle[where])
+    # lobatto = np.union1d(mesh_left_and_middle, mesh_right[where])
+    # new_mesh = np.union1d(mesh, lobatto)
+
+    # return new_mesh, lobatto, np.repeat(diff, 3)
