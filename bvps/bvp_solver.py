@@ -36,13 +36,20 @@ class BVPSolver:
         self.use_bridge = use_bridge
 
     @classmethod
-    def from_default_values(cls, dynamics_model):
+    def from_default_values(
+        cls,
+        dynamics_model,
+        initial_sigma_squared=1e10,
+        use_bridge=True,
+    ):
 
         return cls(
             dynamics_model=dynamics_model,
             error_estimator=error_estimates.estimate_errors_via_probabilistic_defect,
             quadrature_rule=quadrature.gauss_lobatto_interior_only(),
             initialisation_strategy=bvp_initialise.bvp_initialise_ode,
+            initial_sigma_squared=initial_sigma_squared,
+            use_bridge=use_bridge,
         )
 
     def solve(self, *args, **kwargs):
@@ -112,8 +119,12 @@ class BVPSolver:
     def create_measmod_list(self, ode_measmod, left_measmod, right_measmod, times):
 
         N = len(times)
+        if N < 3:
+            raise ValueError("Too few time steps")
         if self.use_bridge:
             return [ode_measmod] * N
-
         else:
-            return [left_measmod].extend([ode_measmod] * (N - 2)).append(right_measmod)
+            measmod_list = [left_measmod]
+            measmod_list.extend([ode_measmod] * (N - 2))
+            measmod_list.append(right_measmod)
+            return measmod_list
