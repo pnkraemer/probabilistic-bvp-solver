@@ -2,6 +2,8 @@ import numpy as np
 from probnum import diffeq, randvars, utils
 from probnum._randomvariablelist import _RandomVariableList
 
+import functools
+
 from bvps import (
     mesh,
     ode_measmods,
@@ -68,9 +70,9 @@ class BVPSolver:
         filter_object = kalman.MyKalman(prior, None, initrv)
 
         # Create data and measmods
-        dataset = np.zeros((len(initial_grid), bvp.dimension))
-        times = initial_grid
         ode_measmod, left_measmod, right_measmod = self.choose_measurement_model(bvp)
+        times = initial_grid
+        dataset = np.zeros((len(times), bvp.dimension))
         measmod_list = self.create_measmod_list(
             ode_measmod, left_measmod, right_measmod, times
         )
@@ -113,7 +115,7 @@ class BVPSolver:
             initrv = self.update_covariances_with_sigma_squared(initrv, sigma_squared)
 
             # Compute errors
-            new_mesh, mesh_candidates = insert_quadrature_nodes(
+            _, mesh_candidates = insert_quadrature_nodes(
                 mesh=times,
                 quadrule=self.quadrule,
                 where=np.ones_like(times[:-1], dtype=bool),
@@ -141,7 +143,18 @@ class BVPSolver:
             )
             insert_two = threshold_two <= per_interval_error
 
-            raise RuntimeError("Continue with inserting the proper nodes here!")
+            a1, _ = insert_quadrature_nodes(
+                mesh=times, quadrule=self.quadrule[[1]], where=insert_one
+            )
+            a2, _ = insert_quadrature_nodes(
+                mesh=times, quadrule=self.quadrule[[0], [2]], where=insert_two
+            )
+            times = functools.reduce(np.union1d, (times, a1, a2))
+            dataset = np.zeros((len(times), bvp.dimension))
+            measmod_list = self.create_measmod_list(
+                ode_measmod, left_measmod, right_measmod, times
+            )
+            raise RuntimeError("Linearise at the previous evaluation!")
 
     #
     #

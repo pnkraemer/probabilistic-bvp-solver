@@ -15,6 +15,12 @@ class QuadratureRule:
     order: int
     info: Dict = None
 
+    def __getitem__(self, idx):
+
+        return QuadratureRule(
+            nodes=nodes[idx], weights=weights[idx], order=None, info=info
+        )
+
 
 def gauss_lobatto_interior_only():
     LOBATTO_WEIGHTS = np.array([49.0 / 90.0, 32.0 / 45.0, 49.0 / 90.0])
