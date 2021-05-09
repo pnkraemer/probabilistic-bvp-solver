@@ -124,8 +124,8 @@ def test_first_iteration(bvp, solver):
 
     t = kalman_posterior.locations
     y = kalman_posterior.states.mean
-    plt.plot(t, y[:, 0])
-    plt.plot(t, y[:, 1])
-    plt.show()
+    # plt.plot(t, y[:, 0])
+    # plt.plot(t, y[:, 1])
+    # plt.show()
     assert t.shape == (N,)
     assert y.shape == (N, solver.dynamics_model.dimension)

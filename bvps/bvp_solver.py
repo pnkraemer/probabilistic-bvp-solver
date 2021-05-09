@@ -60,7 +60,10 @@ class BVPSolver:
     ):
 
         # Set up filter object
-        initrv_not_bridged = self.initialise_sigma_squared()
+        initrv_not_bridged = self.create_initrv()
+        initrv_not_bridged = self.update_covariances_with_sigma_squared(
+            initrv_not_bridged, self.initial_sigma_squared
+        )
         prior, initrv = self.initialise_bridge(bvp, initrv_not_bridged)
         filter_object = kalman.MyKalman(prior, None, initrv)
 
@@ -82,8 +85,8 @@ class BVPSolver:
 
         while True:
 
-            iter_em = 1
-            iter_ieks = 10
+            iter_em = 0
+            iter_ieks = 0
 
             # EM iterations
             while iter_em < maxit:
@@ -107,6 +110,7 @@ class BVPSolver:
             yield kalman_posterior, sigma_squared
 
             # Recalibrate diffusion
+            initrv = self.update_covariances_with_sigma_squared(initrv, sigma_squared)
 
             # Compute errors
 
@@ -120,15 +124,27 @@ class BVPSolver:
     #
     #
 
-    def initialise_sigma_squared(self):
-        """Include sigma into initial covariance and process noise."""
+    def create_initrv(self):
         m0 = np.ones(self.dynamics_model.dimension)
         c0 = self.initial_sigma_squared * np.ones(self.dynamics_model.dimension)
         C0 = np.diag(c0)
         initrv_not_bridged = randvars.Normal(m0, C0, cov_cholesky=np.sqrt(C0))
+        return initrv_not_bridged
 
-        self.dynamics_model.equivalent_discretisation_preconditioned._proc_noise_cov_cholesky *= np.sqrt(
-            self.initial_sigma_squared
+    def update_covariances_with_sigma_squared(self, initrv_not_bridged, sigma_squared):
+        """Include sigma into initial covariance and process noise."""
+
+        sigma = np.sqrt(sigma_squared)
+        m0 = initrv_not_bridged.mean
+        C0 = sigma_squared * initrv_not_bridged.cov
+        C0_cholesky = sigma * initrv_not_bridged.cov_cholesky
+        initrv_not_bridged = randvars.Normal(m0, C0, cov_cholesky=C0_cholesky)
+
+        self.dynamics_model.equivalent_discretisation_preconditioned._proc_noise_cov_cholesky *= (
+            sigma
+        )
+        self.dynamics_model.equivalent_discretisation_preconditioned._proc_noise_cov_mat *= (
+            sigma_squared
         )
         return initrv_not_bridged
 
