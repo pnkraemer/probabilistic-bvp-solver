@@ -18,7 +18,7 @@ class MyKalman(filtsmooth.Kalman):
         any case, the result is an approximation to the maximum-a-
         posteriori estimate.
         """
-
+        raise RuntimeError
         new_posterior = init_posterior
 
         new_mean = new_posterior.states.mean

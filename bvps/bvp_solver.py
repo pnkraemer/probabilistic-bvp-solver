@@ -79,6 +79,20 @@ class BVPSolver:
         sigma_squared = np.inf
         yield kalman_posterior, sigma_squared
 
+        while True:
+
+            iter = 0
+            while iter < maxit:
+                iter += 1
+                lin_measmod_list = self.linearise_measmod_list(
+                    measmod_list, kalman_posterior.states, times
+                )
+                kalman_posterior = filter_object.filtsmooth(
+                    dataset=dataset, times=times, measmod_list=lin_measmod_list
+                )
+                sigma_squared = np.inf
+            yield kalman_posterior, sigma_squared
+
     #
     #
     #
@@ -138,11 +152,14 @@ class BVPSolver:
     def linearise_measmod_list(self, measmod_list, states, times):
 
         if self.use_bridge:
-            for idx, (mm, state, time) in enumerate(zip(measmod_list, states, times)):
-                measmod_list[idx] = mm.linearize(state)
+            lin_measmod_list = [
+                mm.linearize(state) for (mm, state) in zip(measmod_list, states)
+            ]
         else:
-            for idx, (mm, state, time) in enumerate(
-                zip(measmod_list[1:-1], states[1:-1], times[1:-1]), start=1
-            ):
-                measmod_list[idx] = mm.linearize(state)
-        return measmod_list
+            lin_measmod_list = [
+                mm.linearize(state)
+                for (mm, state) in zip(measmod_list[1:-1], states[1:-1])
+            ]
+            lin_measmod_list.insert(0, measmod_list[0])
+            lin_measmod_list.append(measmod_list[-1])
+        return lin_measmod_list
