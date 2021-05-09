@@ -98,8 +98,22 @@ class BVPSolver:
             return self.dynamics_model, initrv_not_bridged
 
     def choose_measurement_model(self, bvp):
+
         if isinstance(bvp, problems.SecondOrderBoundaryValueProblem):
-            measmod = ode_measmods.from_second_order_ode(bvp, self.dynamics_model)
+            ode_measmod = ode_measmods.from_second_order_ode(bvp, self.dynamics_model)
         else:
-            measmod = ode_measmods.from_ode(bvp, self.dynamics_model)
-        return measmod
+            ode_measmod = ode_measmods.from_ode(bvp, self.dynamics_model)
+
+        left_measmod, right_measmod = ode_measmods.from_boundary_conditions(
+            bvp, self.dynamics_model
+        )
+        return ode_measmod, left_measmod, right_measmod
+
+    def create_measmod_list(self, ode_measmod, left_measmod, right_measmod, times):
+
+        N = len(times)
+        if self.use_bridge:
+            return [ode_measmod] * N
+
+        else:
+            return [left_measmod].extend([ode_measmod] * (N - 2)).append(right_measmod)
