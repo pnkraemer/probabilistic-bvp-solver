@@ -58,7 +58,10 @@ class BVPSolver:
         )
 
     def solve(self, *args, **kwargs):
-        raise NotImplementedError
+        for kalman_posterior, _ in self.solution_generator(*args, **kwargs):
+            pass
+        return kalman_posterior
+
 
     def solution_generator(
         self,
@@ -69,6 +72,7 @@ class BVPSolver:
         maxit_ieks=10,
         maxit_em=1,
         initial_guess=None,
+
     ):
 
         self.error_estimator.set_tolerance(atol=atol, rtol=rtol)
@@ -164,61 +168,6 @@ class BVPSolver:
             )
             linearise_at = kalman_posterior(times)
 
-    #
-    # def refine_mesh(
-    #     self, bvp, left_measmod, right_measmod, per_interval_error, ode_measmod, times
-    # ):
-    #     nu = self.dynamics_model.ordint
-    #     threshold_two = 3.0 ** (nu + 0.5)
-    #
-    #     inacceptable = 1.0 < per_interval_error
-    #     insert_one = np.logical_and(
-    #         1.0 < per_interval_error, per_interval_error < threshold_two
-    #     )
-    #     insert_two = threshold_two <= per_interval_error
-    #     a1, _ = insert_quadrature_nodes(
-    #         mesh=times, quadrule=self.quadrule[1], where=insert_one
-    #     )
-    #     a2, _ = insert_quadrature_nodes(
-    #         mesh=times, quadrule=self.quadrule[[0, 2]], where=insert_two
-    #     )
-    #     times = functools.reduce(np.union1d, (times, a1, a2))
-    #     dataset = np.zeros((len(times), bvp.dimension))
-    #     measmod_list = self.create_measmod_list(
-    #         ode_measmod, left_measmod, right_measmod, times
-    #     )
-    #     return dataset, times, measmod_list, inacceptable
-    #
-    # def estimate_per_interval_error(
-    #     self, atol, rtol, kalman_posterior, bvp, times, sigma_squared
-    # ):
-    #     _, mesh_candidates = insert_quadrature_nodes(
-    #         mesh=times,
-    #         quadrule=self.quadrule,
-    #         where=np.ones_like(times[:-1], dtype=bool),
-    #     )
-    #     non_integrated_squared_error, reference, info = self.estimate_squared_error(
-    #         kalman_posterior, mesh_candidates, sigma_squared
-    #     )
-    #     normalised_squared_error = non_integrated_squared_error / (
-    #         atol + rtol * reference
-    #     )
-    #     integrand = (
-    #         np.linalg.norm(normalised_squared_error, axis=1) ** 2 / bvp.dimension
-    #     )
-    #     per_interval_error = (
-    #         integrand.reshape((-1, self.quadrule.order - 2)) @ self.quadrule.weights
-    #     )
-    #     return per_interval_error
-    #
-    # #
-    #
-    #
-    #
-    #
-    #
-    #
-
     def setup_filter_object(self, bvp):
         initrv_not_bridged = self.create_initrv()
         initrv_not_bridged = self.update_covariances_with_sigma_squared(
@@ -283,9 +232,9 @@ class BVPSolver:
         if self.use_bridge:
             return [ode_measmod] * N
         else:
-            measmod_list = [left_measmod]
+            measmod_list = [[left_measmod, ode_measmod]]
             measmod_list.extend([ode_measmod] * (N - 2))
-            measmod_list.append(right_measmod)
+            measmod_list.extend([[right_measmod, ode_measmod]])
             return measmod_list
 
     def linearise_measmod_list(self, measmod_list, states, times):
@@ -299,8 +248,14 @@ class BVPSolver:
                 mm.linearize(state)
                 for (mm, state) in zip(measmod_list[1:-1], states[1:-1])
             ]
-            lin_measmod_list.insert(0, measmod_list[0])
-            lin_measmod_list.append(measmod_list[-1])
+
+            mm0 = measmod_list[0][0]
+            lm0 = measmod_list[0][1].linearize(states[0])
+            mm1 = measmod_list[-1][0]
+            lm1 = measmod_list[-1][1].linearize(states[-1])
+
+            lin_measmod_list.insert(0, [mm0, lm0])
+            lin_measmod_list.append([mm1, lm1])
 
         return lin_measmod_list
 

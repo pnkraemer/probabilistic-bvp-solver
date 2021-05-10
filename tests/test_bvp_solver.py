@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 @pytest.fixture
 def solver(use_bridge):
     ibm3 = statespace.IBM(
-        ordint=2,
+        ordint=4,
         spatialdim=1,
         forward_implementation="sqrt",
         backward_implementation="sqrt",
@@ -22,7 +22,7 @@ def solver(use_bridge):
 
 @pytest.fixture
 def bvp():
-    return problem_examples.problem_7_second_order(xi=0.0001)
+    return problem_examples.problem_7_second_order(xi=1e-2)
 
 
 @pytest.mark.parametrize("use_bridge", [True, False])
@@ -52,10 +52,10 @@ def test_choose_measurement_model(solver, bvp):
     if not solver.use_bridge:
         assert isinstance(measmod_list, list)
         assert len(measmod_list) == len(dummy_times_array)
-        assert isinstance(measmod_list[0], statespace.DiscreteLTIGaussian)
-        assert isinstance(measmod_list[1], filtsmooth.DiscreteEKFComponent)
-        assert isinstance(measmod_list[-2], filtsmooth.DiscreteEKFComponent)
-        assert isinstance(measmod_list[-1], statespace.DiscreteLTIGaussian)
+        assert isinstance(measmod_list[0][0], statespace.DiscreteLTIGaussian)
+        assert isinstance(measmod_list[0][1], filtsmooth.DiscreteEKFComponent)
+        assert isinstance(measmod_list[-1][0], statespace.DiscreteLTIGaussian)
+        assert isinstance(measmod_list[-1][1], filtsmooth.DiscreteEKFComponent)
 
 
 @pytest.mark.parametrize("use_bridge", [True, False])
@@ -80,16 +80,16 @@ def test_linearize_measmod_list(bvp, solver):
     if not solver.use_bridge:
         assert isinstance(lin_measmod_list, list)
         assert len(lin_measmod_list) == len(dummy_times_array)
-        assert isinstance(lin_measmod_list[0], statespace.DiscreteLTIGaussian)
-        assert isinstance(lin_measmod_list[1], statespace.DiscreteLinearGaussian)
-        assert isinstance(lin_measmod_list[-2], statespace.DiscreteLinearGaussian)
-        assert isinstance(lin_measmod_list[-1], statespace.DiscreteLTIGaussian)
+        assert isinstance(measmod_list[0][0], statespace.DiscreteLTIGaussian)
+        assert isinstance(measmod_list[0][1], filtsmooth.DiscreteEKFComponent)
+        assert isinstance(measmod_list[-1][0], statespace.DiscreteLTIGaussian)
+        assert isinstance(measmod_list[-1][1], filtsmooth.DiscreteEKFComponent)
 
 
 @pytest.mark.parametrize("use_bridge", [True, False])
 def test_initialise(bvp, solver):
 
-    N = 6
+    N = 4
     dummy_initial_grid = np.linspace(bvp.t0, bvp.tmax, N)
 
     gen = solver.solution_generator(
@@ -99,6 +99,7 @@ def test_initialise(bvp, solver):
 
     t = kalman_posterior.locations
     y = kalman_posterior.states.mean
+    # plt.title(f"Use bridge: {solver.use_bridge}, N:{len(t)}")
     # plt.plot(t, y[:, 0])
     # plt.plot(t, y[:, 1])
     # plt.show()
@@ -123,11 +124,13 @@ def test_first_iteration(bvp, solver):
     )
 
     kalman_posterior, sigma_squared = next(gen)
-    #
+    t = kalman_posterior.locations
+    y = kalman_posterior.states.mean
+
+
     # plt.title(f"Use bridge: {solver.use_bridge}, N:{len(t)}")
-    # plt.plot(t, y[:, 0])
-    # plt.plot(t, y[:, 1])
-    # plt.plot(kalman_posterior.locations, kalman_posterior.states.mean[:, :2], "o")
+    # plt.plot(t, y[:, :3])
+    # plt.plot(kalman_posterior.locations, kalman_posterior.states.mean[:, :3], "o", color="gray")
     # plt.show()
 
     assert t.shape == (N,)
@@ -137,7 +140,7 @@ def test_first_iteration(bvp, solver):
 @pytest.mark.parametrize("use_bridge", [True, False])
 def test_full_iteration(bvp, solver):
 
-    N = 15
+    N = 5
     dummy_initial_grid = np.linspace(bvp.t0, bvp.tmax, N)
 
     gen = solver.solution_generator(
@@ -154,46 +157,9 @@ def test_full_iteration(bvp, solver):
 
     t = kalman_posterior.locations
     y = kalman_posterior.states.mean
-    plt.title(f"Use bridge: {solver.use_bridge}, NIter: {idx + 1}, N:{len(t)}")
-    plt.plot(t, y[:, 0])
-    plt.plot(t, y[:, 1])
-    plt.show()
+    # plt.title(f"Use bridge: {solver.use_bridge}, NIter: {idx + 1}, N:{len(t)}")
+    # plt.plot(t, y)
+    # plt.show()
 
     N, d = len(t), solver.dynamics_model.dimension
     assert y.shape == (N, d)
-
-#
-# def test_insert_quadrature_nodes_lobatto():
-#     mesh = np.arange(0.0, 10.0, 1.0)
-#     quadrule = quadrature.gauss_lobatto_interior_only()
-#     where = np.ones_like(mesh[:-1], dtype=bool)
-#
-#     new_mesh, _ = bvp_solver.insert_quadrature_nodes(mesh, quadrule, where)
-#
-#     # Sanity check: mesh is as expected
-#     np.testing.assert_allclose(mesh[0], 0.0)
-#     np.testing.assert_allclose(mesh[1], 1.0)
-#     assert len(mesh) == 10
-#
-#     np.testing.assert_allclose(new_mesh[0], 0.0)
-#     np.testing.assert_allclose(new_mesh[1:4], quadrule.nodes)
-#     np.testing.assert_allclose(new_mesh[4], 1.0)
-#     assert len(new_mesh) == 37
-#
-#
-# def test_insert_quadrature_nodes_expquad():
-#     mesh = np.arange(0.0, 10.0, 1.0)
-#     quadrule = quadrature.expquad_interior_only()
-#     where = np.ones_like(mesh[:-1], dtype=bool)
-#
-#     new_mesh, _ = bvp_solver.insert_quadrature_nodes(mesh, quadrule, where)
-#
-#     # Sanity check: mesh is as expected
-#     np.testing.assert_allclose(mesh[0], 0.0)
-#     np.testing.assert_allclose(mesh[1], 1.0)
-#     assert len(mesh) == 10
-#
-#     np.testing.assert_allclose(new_mesh[0], 0.0)
-#     np.testing.assert_allclose(new_mesh[1:4], quadrule.nodes)
-#     np.testing.assert_allclose(new_mesh[4], 1.0)
-#     assert len(new_mesh) == 37

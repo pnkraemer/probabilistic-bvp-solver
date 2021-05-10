@@ -111,26 +111,29 @@ class MyKalman(filtsmooth.Kalman):
                 rv, info = self.dynamics_model.forward_rv(rv=rv, t=t_old, dt=dt)
 
             # Split up update in forward and backward to get access to the marginal likelihoods
-            forwarded_rv, info = mm.forward_rv(rv, t=t, compute_gain=True)
+            if not isinstance(mm, list):
+                mm = [mm]
+            for mm_ in mm:
+                forwarded_rv, info = mm_.forward_rv(rv, t=t, compute_gain=True)
 
-            z = forwarded_rv.mean
-            LS = forwarded_rv.cov_cholesky
-            S = forwarded_rv.cov
-            try:
-                intermediate = scipy.linalg.solve_triangular(
-                    LS.T, z, lower=False
+                z = forwarded_rv.mean
+                LS = forwarded_rv.cov_cholesky
+                S = forwarded_rv.cov
+                try:
+                    intermediate = scipy.linalg.solve_triangular(
+                        LS.T, z, lower=False
+                    )
+                    current_sigma = intermediate.T @ intermediate
+                except np.linalg.LinAlgError:
+                    print("Warning")
+                    print(t, mm_)
+                    current_sigma = z.T @ np.linalg.solve(S, z)
+                self.sigmas.append(current_sigma)
+                self.normalisation_for_sigmas += len(intermediate)
+
+                rv, info = mm_.backward_realization(
+                    y, rv, t=t, rv_forwarded=forwarded_rv, gain=info["gain"]
                 )
-                current_sigma = intermediate.T @ intermediate
-            except np.linalg.LinAlgError:
-                print("Warning")
-                print(t, mm)
-                current_sigma = z.T @ np.linalg.solve(S, z)
-            self.sigmas.append(current_sigma)
-            self.normalisation_for_sigmas += len(intermediate)
-
-            rv, info = mm.backward_realization(
-                y, rv, t=t, rv_forwarded=forwarded_rv, gain=info["gain"]
-            )
             t_old = t
             rvs.append(rv)
 
