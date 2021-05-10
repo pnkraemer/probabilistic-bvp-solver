@@ -300,18 +300,7 @@ class BVPSolver:
         return squared_error, reference, info
 
 
-def insert_quadrature_nodes(mesh, nodes_per_interval, where):
-    """Insert 5-pt Lobatto points into a mesh."""
-    new_candidates = construct_candidate_nodes(mesh, nodes_per_interval, where)
-    return np.union1d(mesh, new_candidates)
 
-
-def construct_candidate_nodes(mesh, nodes_per_interval, where):
-    new_mesh = []
-    for node in nodes_per_interval:
-        new_pts = mesh[:-1] + diff * node
-        new_mesh = np.union1d(new_mesh, new_pts[where])
-    return new_mesh
 
 
 def initial_guess_measurement_models(initial_guess, prior, damping=0.0):
@@ -332,25 +321,79 @@ def initial_guess_measurement_models(initial_guess, prior, damping=0.0):
     return [single_measmod] * N
 
 
-def refine_mesh(current_mesh, error_per_interval, localconvrate, quadrule):
 
-    inacceptable = 1.0 < error_per_interval
-    if not np.any(inacceptable):
-        return current_mesh, inacceptable
 
-    threshold_two = 3.0 ** localconvrate
 
+
+
+
+########################################################################
+########################################################################
+# Mesh refinement
+########################################################################
+########################################################################
+
+#
+# def insert_quadrature_nodes(mesh, nodes_per_interval, where):
+#     """Insert 5-pt Lobatto points into a mesh."""
+#     new_candidates = construct_candidate_nodes(mesh, nodes_per_interval, where)
+#     return np.union1d(mesh, new_candidates)
+#
+
+
+
+def refine_mesh(current_mesh, error_per_interval, localconvrate, quadrature_nodes):
+    """Refine the mesh.
+
+    Examples
+    ----------
+    >>> current_mesh = [0., 0.5, 1.0, 2.0]
+    >>> error_per_interval = [1000., 10., 0.1]
+    >>> localconvrate = 3.5
+    >>> quadrature_nodes = [0.3, 0.5, 0.7]
+    >>> new_mesh, acceptable = refine_mesh(current_mesh, error_per_interval, localconvrate, quadrature_nodes)
+    >>> print(new_mesh)
+    [0.   0.15 0.35 0.5  0.75 1.   2.  ]
+    >>> print(acceptable)
+    [False False  True]
+    """
+
+    current_mesh = np.asarray(current_mesh)
+    error_per_interval = np.asarray(error_per_interval)
+
+    acceptable =  error_per_interval <= 1.0
+    if np.all(acceptable):
+        return current_mesh, acceptable
+
+    threshold_two_instead_of_one = 3.0 ** localconvrate
     insert_one_here = np.logical_and(
-        inacceptable, error_per_interval < threshold_two
+        1. < error_per_interval, error_per_interval < threshold_two_instead_of_one
     )
-    insert_two_here = threshold_two <= error_per_interval
+    insert_two_here = threshold_two_instead_of_one <= error_per_interval
 
-    left, central, right = quadrule.nodes
-    one_inserted = construct_candidate_nodes(current_mesh, [central], where=insert_one_here)
-    two_inserted = construct_candidate_nodes(current_mesh, [left, right], where=insert_two_here)
+    left_node, central_node, right_node = quadrature_nodes
+    one_inserted = construct_candidate_nodes(current_mesh, [central_node], where=insert_one_here)
+    two_inserted = construct_candidate_nodes(current_mesh, [left_node, right_node], where=insert_two_here)
     new_mesh = functools.reduce(np.union1d, (current_mesh, one_inserted, two_inserted))
-    return new_mesh, inacceptable
+    return new_mesh, acceptable
 
+
+def construct_candidate_nodes(mesh, nodes_per_interval, where):
+    diff = np.diff(mesh)
+    new_mesh = []
+
+    for node in nodes_per_interval:
+        new_pts = mesh[:-1] + diff * node
+        new_mesh = np.union1d(new_mesh, new_pts[where])
+    return new_mesh
+
+
+
+########################################################################
+########################################################################
+# Error estimation
+########################################################################
+########################################################################
 
 class BVPErrorEstimator(abc.ABC):
     """Estimate the error of a BVP solver."""
