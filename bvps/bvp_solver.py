@@ -314,6 +314,7 @@ class BVPSolver:
             inferred_initrv.cov_cholesky,
             inferred_initrv.mean - previous_initrv.mean,
         )
+        new_cov_cholesky += 1e-10 * np.eye(len(new_cov_cholesky))
         new_cov = new_cov_cholesky @ new_cov_cholesky.T
 
         return randvars.Normal(

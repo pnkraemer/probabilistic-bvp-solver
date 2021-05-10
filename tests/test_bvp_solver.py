@@ -22,7 +22,7 @@ def solver(use_bridge):
 
 @pytest.fixture
 def bvp():
-    return problem_examples.problem_7_second_order()
+    return problem_examples.problem_7_second_order(xi=0.0001)
 
 
 @pytest.mark.parametrize("use_bridge", [True, False])
@@ -109,24 +109,27 @@ def test_initialise(bvp, solver):
 @pytest.mark.parametrize("use_bridge", [True, False])
 def test_first_iteration(bvp, solver):
 
-    N = 15
+    N = 5
     dummy_initial_grid = np.linspace(bvp.t0, bvp.tmax, N)
 
+    # maxit_ieks is NaN, because this part of the code should never be reached,
+    # if the initialisation is yielded properly.
     gen = solver.solution_generator(
         bvp,
         atol=1.0,
         rtol=1.0,
         initial_grid=dummy_initial_grid,
-        maxit_ieks=3,
+        maxit_ieks=np.nan,
     )
-    next(gen)
-    kalman_posterior, sigma_squared = next(gen)
 
-    t = kalman_posterior.locations
-    y = kalman_posterior.states.mean
+    kalman_posterior, sigma_squared = next(gen)
+    #
+    # plt.title(f"Use bridge: {solver.use_bridge}, N:{len(t)}")
     # plt.plot(t, y[:, 0])
     # plt.plot(t, y[:, 1])
+    # plt.plot(kalman_posterior.locations, kalman_posterior.states.mean[:, :2], "o")
     # plt.show()
+
     assert t.shape == (N,)
     assert y.shape == (N, solver.dynamics_model.dimension)
 
@@ -144,15 +147,18 @@ def test_full_iteration(bvp, solver):
         initial_grid=dummy_initial_grid,
         maxit_ieks=3,
     )
-    for kalman_posterior, sigma_squared in gen:
+
+    for idx, (kalman_posterior, sigma_squared) in enumerate(gen):
         pass
 
 
     t = kalman_posterior.locations
     y = kalman_posterior.states.mean
-    # plt.plot(t, y[:, 0])
-    # plt.plot(t, y[:, 1])
-    # plt.show()
+    plt.title(f"Use bridge: {solver.use_bridge}, NIter: {idx + 1}, N:{len(t)}")
+    plt.plot(t, y[:, 0])
+    plt.plot(t, y[:, 1])
+    plt.show()
+
     N, d = len(t), solver.dynamics_model.dimension
     assert y.shape == (N, d)
 

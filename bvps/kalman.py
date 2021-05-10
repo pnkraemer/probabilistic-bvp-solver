@@ -113,10 +113,18 @@ class MyKalman(filtsmooth.Kalman):
             # Split up update in forward and backward to get access to the marginal likelihoods
             forwarded_rv, info = mm.forward_rv(rv, t=t, compute_gain=True)
 
-            intermediate = scipy.linalg.solve_triangular(
-                forwarded_rv.cov_cholesky.T, forwarded_rv.mean, lower=False
-            )
-            current_sigma = intermediate.T @ intermediate
+            z = forwarded_rv.mean
+            LS = forwarded_rv.cov_cholesky
+            S = forwarded_rv.cov
+            try:
+                intermediate = scipy.linalg.solve_triangular(
+                    LS.T, z, lower=False
+                )
+                current_sigma = intermediate.T @ intermediate
+            except np.linalg.LinAlgError:
+                print("Warning")
+                print(t, mm)
+                current_sigma = z.T @ np.linalg.solve(S, z)
             self.sigmas.append(current_sigma)
             self.normalisation_for_sigmas += len(intermediate)
 
