@@ -120,9 +120,7 @@ class MyKalman(filtsmooth.Kalman):
                 LS = forwarded_rv.cov_cholesky
                 S = forwarded_rv.cov
                 try:
-                    intermediate = scipy.linalg.solve_triangular(
-                        LS.T, z, lower=False
-                    )
+                    intermediate = scipy.linalg.solve_triangular(LS.T, z, lower=False)
                     current_sigma = intermediate.T @ intermediate
                 except np.linalg.LinAlgError:
                     print("Warning")
@@ -130,7 +128,6 @@ class MyKalman(filtsmooth.Kalman):
                     current_sigma = z.T @ np.linalg.solve(S, z)
                 self.sigmas.append(current_sigma)
                 self.normalisation_for_sigmas += len(intermediate)
-
                 rv, info = mm_.backward_realization(
                     y, rv, t=t, rv_forwarded=forwarded_rv, gain=info["gain"]
                 )

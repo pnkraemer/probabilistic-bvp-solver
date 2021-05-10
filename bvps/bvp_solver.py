@@ -35,7 +35,7 @@ class BVPSolver:
         self.initial_sigma_squared = initial_sigma_squared
         self.use_bridge = use_bridge
 
-        self.localconvrate = self.dynamics_model.ordint   # + 0.5?
+        self.localconvrate = self.dynamics_model.ordint  # + 0.5?
 
     @classmethod
     def from_default_values(
@@ -57,11 +57,30 @@ class BVPSolver:
             use_bridge=use_bridge,
         )
 
+    @classmethod
+    def from_default_values_probabilistic_refinement(
+        cls,
+        dynamics_model,
+        initial_sigma_squared=1e10,
+        use_bridge=True,
+    ):
+        quadrature_rule = quadrature.expquad_interior_only()
+        P0 = dynamics_model.proj2coord(0)
+        P1 = dynamics_model.proj2coord(1)
+        error_estimator = ErrorViaProbabilisticResidual(
+            atol=None, rtol=None, quadrature_rule=quadrature_rule, P0=P0, P1=P1
+        )
+        return cls(
+            dynamics_model=dynamics_model,
+            error_estimator=error_estimator,
+            initial_sigma_squared=initial_sigma_squared,
+            use_bridge=use_bridge,
+        )
+
     def solve(self, *args, **kwargs):
         for kalman_posterior, _ in self.solution_generator(*args, **kwargs):
             pass
         return kalman_posterior
-
 
     def solution_generator(
         self,
@@ -72,7 +91,7 @@ class BVPSolver:
         maxit_ieks=10,
         maxit_em=1,
         initial_guess=None,
-
+        yield_ieks_iterations=False,
     ):
 
         self.error_estimator.set_tolerance(atol=atol, rtol=rtol)
@@ -108,10 +127,9 @@ class BVPSolver:
 
         acceptable_intervals = np.zeros(len(times[1:]), dtype=bool)
         while np.any(np.logical_not(acceptable_intervals)):
-        # while True:
+            # while True:
             # EM iterations
             for _ in range(maxit_em):
-
 
                 # IEKS iterations
                 for _ in range(maxit_ieks):
@@ -122,9 +140,13 @@ class BVPSolver:
                     kalman_posterior = filter_object.filtsmooth(
                         dataset=dataset, times=times, measmod_list=lin_measmod_list
                     )
+                    sigmas = filter_object.sigmas
+                    sigma_squared = np.mean(sigmas) / bvp.dimension
 
                     linearise_at = kalman_posterior.states
 
+                    if yield_ieks_iterations:
+                        yield kalman_posterior, sigma_squared
 
                 filter_object.initrv = self.update_initrv(
                     kalman_posterior, filter_object.initrv
@@ -133,8 +155,6 @@ class BVPSolver:
             yield kalman_posterior, sigma_squared
 
             # Recalibrate diffusion
-            sigmas = filter_object.sigmas
-            sigma_squared = np.mean(sigmas) / bvp.dimension
             filter_object.initrv = self.update_covariances_with_sigma_squared(
                 filter_object.initrv, sigma_squared
             )
@@ -145,7 +165,10 @@ class BVPSolver:
             )
             evaluated_posterior = kalman_posterior(candidate_nodes)
             mm_list = [ode_measmod] * len(candidate_nodes)
-            per_interval_error, acceptable = self.error_estimator.estimate_error_per_interval(
+            (
+                per_interval_error,
+                acceptable,
+            ) = self.error_estimator.estimate_error_per_interval(
                 evaluated_posterior,
                 candidate_nodes,
                 times,
@@ -159,8 +182,6 @@ class BVPSolver:
                 localconvrate=self.localconvrate,
                 quadrature_nodes=self.error_estimator.quadrature_rule.nodes,
             )
-
-
 
             dataset = np.zeros((len(times), bvp.dimension))
             measmod_list = self.create_measmod_list(
@@ -436,7 +457,7 @@ class BVPErrorEstimator(abc.ABC):
         dim = len(normalised_error[0])
 
         integrand = np.linalg.norm(normalised_error, axis=1) ** 2 / dim
-        per_interval_error = (
+        per_interval_error = np.abs(
             integrand.reshape((-1, self.quadrature_rule.order - 2))
             @ self.quadrature_rule.weights
         )
@@ -499,7 +520,10 @@ class ErrorViaResidual(BVPErrorEstimator):
         if self.P0 is None:
             raise ValueError("Pass a P0 to the ErrorEstimator.")
         residual_rv = _RandomVariableList(
-            [mm.forward_rv(rv, t)[0] for mm, rv, t in zip(ode_measmod_list, evaluated_posterior, points)]
+            [
+                mm.forward_rv(rv, t)[0]
+                for mm, rv, t in zip(ode_measmod_list, evaluated_posterior, points)
+            ]
         )
         squared_error_estimate = residual_rv.mean ** 2
         reference = evaluated_posterior.mean @ self.P0.T
@@ -519,7 +543,10 @@ class ErrorViaProbabilisticResidual(BVPErrorEstimator):
             raise ValueError("Pass a P0 to the ErrorEstimator.")
 
         residual_rv = _RandomVariableList(
-            [mm.forward_rv(rv, t)[0] for mm, rv, t in zip(ode_measmod_list, evaluated_posterior, points)]
+            [
+                mm.forward_rv(rv, t)[0]
+                for mm, rv, t in zip(ode_measmod_list, evaluated_posterior, points)
+            ]
         )
         squared_error_estimate = (
             residual_rv.mean ** 2 + residual_rv.var * calibrated_sigma_squared

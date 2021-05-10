@@ -127,7 +127,6 @@ def test_first_iteration(bvp, solver):
     t = kalman_posterior.locations
     y = kalman_posterior.states.mean
 
-
     # plt.title(f"Use bridge: {solver.use_bridge}, N:{len(t)}")
     # plt.plot(t, y[:, :3])
     # plt.plot(kalman_posterior.locations, kalman_posterior.states.mean[:, :3], "o", color="gray")
@@ -153,7 +152,6 @@ def test_full_iteration(bvp, solver):
 
     for idx, (kalman_posterior, sigma_squared) in enumerate(gen):
         pass
-
 
     t = kalman_posterior.locations
     y = kalman_posterior.states.mean

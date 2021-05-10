@@ -419,3 +419,55 @@ def seir_jac(t, y, params):
     d_dy4 = np.array([0.0, 0.0, gamma, 0.0])
     jac_matrix = np.array([d_dy1, d_dy2, d_dy3, d_dy4])
     return jac_matrix
+
+
+
+
+
+
+
+
+
+
+def problem_20_second_order(xi=0.1):
+    """https://rdrr.io/rforge/bvpSolve/f/inst/doc/bvpTests.pdf"""
+    L = np.eye(1, 2)
+    R = np.eye(1, 2)
+
+    y0 = np.array([1. + xi * np.log(np.cosh(-0.745/xi))])
+    ymax = np.array([1. + xi * np.log(np.cosh(0.255/xi))])
+
+    t0 = 0.0
+    tmax = 1.0
+
+    return SecondOrderBoundaryValueProblem(
+        f=lambda t, y, dy: p20_rhs_second_order(t, y, dy, xi=xi),
+        t0=t0,
+        tmax=tmax,
+        L=L,
+        R=R,
+        y0=y0,
+        ymax=ymax,
+        df_dy=lambda t, y, dy: p20_jacobian_second_order_dy(t, y, dy, xi=xi),
+        df_ddy=lambda t, y, dy: p20_jacobian_second_order_ddy(t, y, dy, xi=xi),
+        solution=lambda t: p20_solution(t, xi=xi),
+        dimension=1,
+    )
+
+
+def p20_rhs_second_order(t, y, dy, xi):
+    return (1 -dy**2)/xi
+
+
+
+def p20_jacobian_second_order_ddy(t, y, dy, xi):
+    return np.ones((1, 1)) * -2.*dy/ xi
+
+
+def p20_jacobian_second_order_dy(t, y, dy, xi):
+    return np.ones((1, 1)) * 0.
+
+def p20_solution(t, xi):
+    return 1 + xi * np.log(np.cosh((t - 0.745)/xi))
+
+
