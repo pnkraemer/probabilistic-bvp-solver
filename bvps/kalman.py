@@ -100,6 +100,7 @@ class MyKalman(filtsmooth.Kalman):
 
         rvs = []
         self.sigmas = []
+        self.normalisation_for_sigmas = 0.0
 
         rv = self.initrv
         t_old = times[0]
@@ -117,6 +118,7 @@ class MyKalman(filtsmooth.Kalman):
             )
             current_sigma = intermediate.T @ intermediate
             self.sigmas.append(current_sigma)
+            self.normalisation_for_sigmas += len(intermediate)
 
             rv, info = mm.backward_realization(
                 y, rv, t=t, rv_forwarded=forwarded_rv, gain=info["gain"]

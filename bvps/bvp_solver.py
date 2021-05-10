@@ -1,5 +1,5 @@
 import numpy as np
-from probnum import diffeq, randvars, utils
+from probnum import diffeq, randvars, utils, statespace
 from probnum._randomvariablelist import _RandomVariableList
 
 import functools
@@ -31,9 +31,7 @@ class BVPSolver:
         use_bridge=True,
     ):
         self.dynamics_model = dynamics_model
-        self.error_estimator = error_estimator
         self.quadrature_rule = quadrature_rule
-        self.initialisation_strategy = initialisation_strategy
         self.initial_sigma_squared = initial_sigma_squared
         self.use_bridge = use_bridge
 
@@ -58,16 +56,15 @@ class BVPSolver:
         raise NotImplementedError
 
     def solution_generator(
-        self, bvp, atol, rtol, initial_grid, maxit=10, initial_guess=None
+        self,
+        bvp,
+        atol,
+        rtol,
+        initial_grid,
+        maxit_ieks=10,
+        maxit_em=1,
+        initial_guess=None,
     ):
-
-        # Set up filter object
-        initrv_not_bridged = self.create_initrv()
-        initrv_not_bridged = self.update_covariances_with_sigma_squared(
-            initrv_not_bridged, self.initial_sigma_squared
-        )
-        prior, initrv = self.initialise_bridge(bvp, initrv_not_bridged)
-        filter_object = kalman.MyKalman(prior, None, initrv)
 
         # Create data and measmods
         ode_measmod, left_measmod, right_measmod = self.choose_measurement_model(bvp)
@@ -77,12 +74,24 @@ class BVPSolver:
             ode_measmod, left_measmod, right_measmod, times
         )
 
-        # Initialise with ODE
-        kalman_posterior = filter_object.filtsmooth(
-            dataset=dataset, times=times, measmod_list=measmod_list
-        )
+        # Initialise with ODE or data
+        filter_object, initrv = self.setup_filter_object(bvp)
+        if initial_guess is None:
+            kalman_posterior = filter_object.filtsmooth(
+                dataset=dataset, times=times, measmod_list=measmod_list
+            )
+        else:
+            initial_guess_measmod_list = initial_guess_measurement_models(
+                initial_guess, self.dynamics_model, damping=0.0
+            )
+            kalman_posterior = filter_object.filtsmooth(
+                dataset=initial_guess,
+                times=times,
+                measmod_list=initial_guess_measmod_list,
+            )
         sigmas = filter_object.sigmas
-        sigma_squared = np.mean(sigmas) / bvp.dimension
+        normalisation = filter_object.normalisation_for_sigmas
+        sigma_squared = np.sum(sigmas) / normalisation
         yield kalman_posterior, sigma_squared
 
         while True:
@@ -91,11 +100,11 @@ class BVPSolver:
             iter_ieks = 0
 
             # EM iterations
-            while iter_em < maxit:
+            while iter_em < maxit_em:
                 iter_em += 1
 
                 # IEKS iterations
-                while iter_ieks < maxit:
+                while iter_ieks < maxit_ieks:
                     iter_ieks += 1
                     lin_measmod_list = self.linearise_measmod_list(
                         measmod_list, kalman_posterior.states, times
@@ -103,8 +112,6 @@ class BVPSolver:
                     kalman_posterior = filter_object.filtsmooth(
                         dataset=dataset, times=times, measmod_list=lin_measmod_list
                     )
-                    sigmas = filter_object.sigmas
-                    sigma_squared = np.mean(sigmas) / bvp.dimension
 
                 initrv = self.update_initrv(kalman_posterior, initrv)
                 filter_object.initrv = initrv
@@ -112,6 +119,8 @@ class BVPSolver:
             yield kalman_posterior, sigma_squared
 
             # Recalibrate diffusion
+            sigmas = filter_object.sigmas
+            sigma_squared = np.mean(sigmas) / bvp.dimension
             initrv = self.update_covariances_with_sigma_squared(initrv, sigma_squared)
 
             # Compute errors
@@ -163,6 +172,15 @@ class BVPSolver:
     #
     #
     #
+
+    def setup_filter_object(self, bvp):
+        initrv_not_bridged = self.create_initrv()
+        initrv_not_bridged = self.update_covariances_with_sigma_squared(
+            initrv_not_bridged, self.initial_sigma_squared
+        )
+        prior, initrv = self.initialise_bridge(bvp, initrv_not_bridged)
+        filter_object = kalman.MyKalman(prior, None, initrv)
+        return filter_object, initrv
 
     def create_initrv(self):
         m0 = np.ones(self.dynamics_model.dimension)
@@ -277,3 +295,21 @@ def insert_quadrature_nodes(mesh, quadrule, where):
 
     mesh_candidates = np.setdiff1d(new_mesh, mesh)
     return new_mesh, mesh_candidates
+
+
+def initial_guess_measurement_models(initial_guess, prior, damping=0.0):
+    N, d = initial_guess.shape
+    projmat = prior.proj2coord(0)
+
+    empty_shift = np.zeros(d)
+    variances = damping * np.ones(d)
+    process_noise_cov = np.diag(variances)
+    process_noise_cov_cholesky = np.diag(np.sqrt(variances))
+
+    single_measmod = statespace.DiscreteLTIGaussian(
+        state_trans_mat=projmat,
+        shift_vec=empty_shift,
+        proc_noise_cov_mat=process_noise_cov,
+        proc_noise_cov_cholesky=process_noise_cov_cholesky,
+    )
+    return [single_measmod] * N

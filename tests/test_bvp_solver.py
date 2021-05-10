@@ -117,7 +117,7 @@ def test_first_iteration(bvp, solver):
         atol=1.0,
         rtol=1.0,
         initial_grid=dummy_initial_grid,
-        maxit=3,
+        maxit_ieks=3,
     )
     next(gen)
     kalman_posterior, sigma_squared = next(gen)
