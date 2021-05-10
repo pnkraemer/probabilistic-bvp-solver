@@ -300,9 +300,6 @@ class BVPSolver:
         return squared_error, reference, info
 
 
-
-
-
 def initial_guess_measurement_models(initial_guess, prior, damping=0.0):
     N, d = initial_guess.shape
     projmat = prior.proj2coord(0)
@@ -321,12 +318,6 @@ def initial_guess_measurement_models(initial_guess, prior, damping=0.0):
     return [single_measmod] * N
 
 
-
-
-
-
-
-
 ########################################################################
 ########################################################################
 # Mesh refinement
@@ -339,7 +330,6 @@ def initial_guess_measurement_models(initial_guess, prior, damping=0.0):
 #     new_candidates = construct_candidate_nodes(mesh, nodes_per_interval, where)
 #     return np.union1d(mesh, new_candidates)
 #
-
 
 
 def refine_mesh(current_mesh, error_per_interval, localconvrate, quadrature_nodes):
@@ -361,26 +351,29 @@ def refine_mesh(current_mesh, error_per_interval, localconvrate, quadrature_node
     current_mesh = np.asarray(current_mesh)
     error_per_interval = np.asarray(error_per_interval)
 
-    acceptable =  error_per_interval <= 1.0
+    acceptable = error_per_interval <= 1.0
     if np.all(acceptable):
         return current_mesh, acceptable
 
     threshold_two_instead_of_one = 3.0 ** localconvrate
     insert_one_here = np.logical_and(
-        1. < error_per_interval, error_per_interval < threshold_two_instead_of_one
+        1.0 < error_per_interval, error_per_interval < threshold_two_instead_of_one
     )
     insert_two_here = threshold_two_instead_of_one <= error_per_interval
 
     left_node, central_node, right_node = quadrature_nodes
-    one_inserted = construct_candidate_nodes(current_mesh, [central_node], where=insert_one_here)
-    two_inserted = construct_candidate_nodes(current_mesh, [left_node, right_node], where=insert_two_here)
+    one_inserted = construct_candidate_nodes(
+        current_mesh, [central_node], where=insert_one_here
+    )
+    two_inserted = construct_candidate_nodes(
+        current_mesh, [left_node, right_node], where=insert_two_here
+    )
     new_mesh = functools.reduce(np.union1d, (current_mesh, one_inserted, two_inserted))
     return new_mesh, acceptable
 
 
 def construct_candidate_nodes(current_mesh, nodes_per_interval, where=None):
-    """Construct nodes that lie in-between mesh points.
-
+    """Construct nodes that are located in-between mesh points.
 
     Examples
     --------
@@ -396,10 +389,10 @@ def construct_candidate_nodes(current_mesh, nodes_per_interval, where=None):
     [0.15 0.25 0.35]
     """
 
+    current_mesh = np.asarray(current_mesh)
     if where is None:
         where = np.ones_like(current_mesh[1:], dtype=bool)
 
-    current_mesh = np.asarray(current_mesh)
     diff = np.diff(current_mesh)
     new_mesh = []
 
@@ -409,56 +402,91 @@ def construct_candidate_nodes(current_mesh, nodes_per_interval, where=None):
     return new_mesh
 
 
-
 ########################################################################
 ########################################################################
 # Error estimation
 ########################################################################
 ########################################################################
 
-class BVPErrorEstimator(abc.ABC):
-    """Estimate the error of a BVP solver."""
 
-    def __init__(self, quadrature_rule):
+class BVPErrorEstimator(abc.ABC):
+    def __init__(self, atol, rtol, quadrature_rule):
         self.quadrature_rule = quadrature_rule
+        self.atol = atol
+        self.rtol = rtol
 
     def estimate_error_per_interval(
         self,
-        kalman_posterior,
+        evaluated_posterior,
+        mesh_candidates,
         current_mesh,
         calibrated_sigma_squared,
-        bvp_dim,
-        error_per_unit_step=False,
+        normalise_with_interval_size=True,
     ):
         """Estimate error per interval.
 
         Numerically approximate the integrated error estimate per subinterval.
         """
-
-        mesh_candidates = construct_candidate_nodes(
-            mesh=current_mesh,
-            quadrule=self.quadrature_rule,
-            where=np.ones_like(times[:-1], dtype=bool),
-        )
+        assert self.quadrature_rule.order == 5
 
         squared_error, reference, info = self.estimate_squared_error_at_points(
-            kalman_posterior,
+            evaluated_posterior,
             mesh_candidates,
             calibrated_sigma_squared,
         )
-        normalised_squared_error = squared_error / (atol + rtol * np.abs(reference))
+        normalisation = (self.atol + self.rtol * np.abs(reference)) ** 2
+        normalised_squared_error = squared_error / normalisation
+        normalised_error = np.sqrt(normalised_squared_error)
+        dim = len(normalised_error[0])
 
-        integrand = np.linalg.norm(normalised_squared_error, axis=1) ** 2 / bvp_dim
+
+        integrand = np.linalg.norm(normalised_error, axis=1) ** 2 / dim
         per_interval_error = (
-            integrand.reshape((-1, self.quadrule.order - 2)) @ self.quadrule.weights
+            integrand.reshape((-1, self.quadrature_rule.order - 2))
+            @ self.quadrature_rule.weights
         )
-        if error_per_unit_step:
-            return per_interval_error / np.diff(current_mesh)
+        if normalise_with_interval_size:
+            dt = np.diff(current_mesh)
+            return np.sqrt(per_interval_error / dt)
 
-        return per_interval_error
+        return np.sqrt(per_interval_error)
 
     @abc.abstractmethod
     def estimate_squared_error_at_points(
-        self, kalman_posterior, points, calibrated_sigma_squared
+        self, evaluated_posterior, points, calibrated_sigma_squared
     ):
         raise NotImplementedError
+
+
+class ErrorViaStandardDeviation(BVPErrorEstimator):
+    """The posterior standard deviation is the error estimate.
+
+    Examples
+    --------
+    >>> from probnum._randomvariablelist import _RandomVariableList
+    >>> from probnum import randvars
+    >>> from bvps import quadrature
+
+    >>> quadrule = quadrature.QuadratureRule(nodes=[0.3, 0.5, 0.6], weights=[1./3., 1./3., 1./3.], order=5)
+    >>> estimator = ErrorViaStandardDeviation(atol=0.5, rtol=0.5, quadrature_rule=quadrule)
+
+    >>> dummy_rv = randvars.Normal(mean=np.ones(1), cov=np.eye(1))
+    >>> evaluated_posterior = _RandomVariableList([dummy_rv]*12)
+    >>> current_mesh = np.arange(0., 5., step=1.)
+    >>> mesh_candidates = construct_candidate_nodes(current_mesh, quadrule.nodes)
+    >>> calibrated_sigma_squared = 9
+    >>> error = estimator.estimate_error_per_interval(evaluated_posterior, mesh_candidates,current_mesh, calibrated_sigma_squared)
+    >>> print(error)
+    [3. 3. 3. 3.]
+    >>> calibrated_sigma_squared = 100
+    >>> error = estimator.estimate_error_per_interval(evaluated_posterior, mesh_candidates,current_mesh, calibrated_sigma_squared)
+    >>> print(error)
+    [10. 10. 10. 10.]
+    """
+
+    def estimate_squared_error_at_points(
+        self, evaluated_posterior, points, calibrated_sigma_squared
+    ):
+        squared_error_estimate = evaluated_posterior.var * calibrated_sigma_squared
+        reference = evaluated_posterior.mean
+        return squared_error_estimate, reference, {}

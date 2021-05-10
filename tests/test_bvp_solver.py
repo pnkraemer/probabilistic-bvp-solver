@@ -131,7 +131,6 @@ def test_first_iteration(bvp, solver):
     assert y.shape == (N, solver.dynamics_model.dimension)
 
 
-
 @pytest.mark.parametrize("use_bridge", [True, False])
 def test_full_iteration(bvp, solver):
 

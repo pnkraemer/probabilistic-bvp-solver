@@ -50,12 +50,11 @@ TOL = 1e-3
 # bvp = problem_7_second_order(xi=0.1)
 # bvp1st = problem_7(xi=0.1)
 
-initial_grid = np.union1d(np.linspace(bvp.t0, bvp.tmax, 10), np.linspace(bvp.t0, bvp.t0 + 0.2, 10))
+initial_grid = np.union1d(
+    np.linspace(bvp.t0, bvp.tmax, 10), np.linspace(bvp.t0, bvp.t0 + 0.2, 10)
+)
 initial_guess = np.zeros((2, len(initial_grid)))
 refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=TOL)
-
-
-
 
 
 # initial_grid = refsol.x
@@ -64,7 +63,6 @@ refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=T
 # plt.show()
 # print(refsol.x)
 # assert False
-
 
 
 q = 5
@@ -82,8 +80,8 @@ posterior = probsolve_bvp(
     bvp=bvp,
     bridge_prior=integ,
     initial_grid=initial_grid,
-    atol=1*TOL,
-    rtol=1*TOL,
+    atol=1 * TOL,
+    rtol=1 * TOL,
     insert="double",
     which_method="iekf",
     maxit=5,
@@ -93,13 +91,17 @@ posterior = probsolve_bvp(
 )
 
 
-print("Current information: EM in the filter sucks, EM on iterated filtsmooth level is okay, no EM is fine too.")
+print(
+    "Current information: EM in the filter sucks, EM on iterated filtsmooth level is okay, no EM is fine too."
+)
 
 
 evalgrid = np.linspace(bvp.t0, bvp.tmax, 150, endpoint=True)
 
 for idx, (post, ssq, errors, kalpost, candidates, h) in enumerate(posterior):
-    print("Why is the filtering posterior soooo bad even if the smoothing posterior is alright?")
+    print(
+        "Why is the filtering posterior soooo bad even if the smoothing posterior is alright?"
+    )
     post2 = diffeq.KalmanODESolution(kalpost.filtering_posterior)
 
     # print(post.states[0].mean)
@@ -118,13 +120,11 @@ for idx, (post, ssq, errors, kalpost, candidates, h) in enumerate(posterior):
     fig, ax = plt.subplots(nrows=3, sharex=True, dpi=200)
     evaluated = post(evalgrid)
     m = evaluated.mean[:, 0]
-    s = evaluated.std[:, 0] #* np.sqrt(ssq)
-
+    s = evaluated.std[:, 0]  # * np.sqrt(ssq)
 
     evaluated2 = post2(evalgrid)
     m2 = evaluated2.mean[:, 0]
-    s2 = evaluated2.std[:, 0] #* np.sqrt(ssq)
-
+    s2 = evaluated2.std[:, 0]  # * np.sqrt(ssq)
 
     discrepancy = np.abs(refsol.sol(evalgrid).T[:, 0] - m)
     ax[0].plot(evalgrid, m, color="k")
@@ -155,7 +155,9 @@ for idx, (post, ssq, errors, kalpost, candidates, h) in enumerate(posterior):
     #     label="Error",
     # )
 
-    ax[1].semilogy(evalgrid, discrepancy, linestyle="dashed", color="steelblue", label="True Error")
+    ax[1].semilogy(
+        evalgrid, discrepancy, linestyle="dashed", color="steelblue", label="True Error"
+    )
     ax[1].semilogy(
         evalgrid,
         scipy_discrepancy,
