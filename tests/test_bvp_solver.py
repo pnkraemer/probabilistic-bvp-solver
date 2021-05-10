@@ -131,6 +131,36 @@ def test_first_iteration(bvp, solver):
     assert y.shape == (N, solver.dynamics_model.dimension)
 
 
+
+@pytest.mark.parametrize("use_bridge", [True, False])
+def test_full_iteration(bvp, solver):
+
+    N = 15
+    dummy_initial_grid = np.linspace(bvp.t0, bvp.tmax, N)
+
+    gen = solver.solution_generator(
+        bvp,
+        atol=1.0,
+        rtol=1.0,
+        initial_grid=dummy_initial_grid,
+        maxit_ieks=3,
+    )
+    next(gen)
+    next(gen)
+    next(gen)
+    next(gen)
+    next(gen)
+    kalman_posterior, sigma_squared = next(gen)
+
+    t = kalman_posterior.locations
+    y = kalman_posterior.states.mean
+    # plt.plot(t, y[:, 0])
+    # plt.plot(t, y[:, 1])
+    # plt.show()
+    assert t.shape == (N,)
+    assert y.shape == (N, solver.dynamics_model.dimension)
+
+
 def test_insert_quadrature_nodes_lobatto():
     mesh = np.arange(0.0, 10.0, 1.0)
     quadrule = quadrature.gauss_lobatto_interior_only()

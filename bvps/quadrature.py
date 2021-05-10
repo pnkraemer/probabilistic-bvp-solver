@@ -18,7 +18,7 @@ class QuadratureRule:
     def __getitem__(self, idx):
 
         return QuadratureRule(
-            nodes=nodes[idx], weights=weights[idx], order=None, info=info
+            nodes=self.nodes[idx], weights=self.weights[idx], order=None, info=self.info
         )
 
 

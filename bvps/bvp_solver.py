@@ -4,6 +4,8 @@ from probnum._randomvariablelist import _RandomVariableList
 
 import functools
 
+
+import abc
 from bvps import (
     mesh,
     ode_measmods,
@@ -31,7 +33,7 @@ class BVPSolver:
         use_bridge=True,
     ):
         self.dynamics_model = dynamics_model
-        self.quadrature_rule = quadrature_rule
+        self.quadrule = quadrature_rule
         self.initial_sigma_squared = initial_sigma_squared
         self.use_bridge = use_bridge
 
@@ -75,7 +77,7 @@ class BVPSolver:
         )
 
         # Initialise with ODE or data
-        filter_object, initrv = self.setup_filter_object(bvp)
+        filter_object = self.setup_filter_object(bvp)
         if initial_guess is None:
             kalman_posterior = filter_object.filtsmooth(
                 dataset=dataset, times=times, measmod_list=measmod_list
@@ -113,57 +115,73 @@ class BVPSolver:
                         dataset=dataset, times=times, measmod_list=lin_measmod_list
                     )
 
-                initrv = self.update_initrv(kalman_posterior, initrv)
-                filter_object.initrv = initrv
+                filter_object.initrv = self.update_initrv(
+                    kalman_posterior, filter_object.initrv
+                )
 
             yield kalman_posterior, sigma_squared
 
             # Recalibrate diffusion
             sigmas = filter_object.sigmas
             sigma_squared = np.mean(sigmas) / bvp.dimension
-            initrv = self.update_covariances_with_sigma_squared(initrv, sigma_squared)
-
-            # Compute errors
-            _, mesh_candidates = insert_quadrature_nodes(
-                mesh=times,
-                quadrule=self.quadrule,
-                where=np.ones_like(times[:-1], dtype=bool),
-            )
-            non_integrated_squared_error, reference, info = self.estimate_squared_error(
-                kalman_posterior, mesh_candidates
-            )
-            normalised_squared_error = non_integrated_squared_error / (
-                atol + rtol * reference
-            )
-            integrand = (
-                np.linalg.norm(normalised_squared_error, axis=1) ** 2 / bvp.dimension
+            filter_object.initrv = self.update_covariances_with_sigma_squared(
+                filter_object.initrv, sigma_squared
             )
 
-            per_interval_error = (
-                integrand.reshape((-1, self.quadrule.order - 2)) @ self.quadrule.weights
+            per_interval_error = self.estimate_per_interval_error(
+                atol, rtol, kalman_posterior, bvp, times, sigma_squared
             )
+            dataset, times, measmod_list, inacceptable = self.refine_mesh(
+                bvp, left_measmod, right_measmod, per_interval_error, ode_measmod, times
+            )
+            print(inacceptable)
+            assert False
 
-            # Refine mesh wherever appropriate
-            nu = self.dynamics_model.ordint
-            threshold_two = 3.0 ** (nu + 0.5)
-            acceptable = per_interval_error < 1.0
-            insert_one = np.logical_and(
-                1.0 < per_interval_error, per_interval_error < threshold_two
-            )
-            insert_two = threshold_two <= per_interval_error
+    def refine_mesh(
+        self, bvp, left_measmod, right_measmod, per_interval_error, ode_measmod, times
+    ):
+        nu = self.dynamics_model.ordint
+        threshold_two = 3.0 ** (nu + 0.5)
 
-            a1, _ = insert_quadrature_nodes(
-                mesh=times, quadrule=self.quadrule[[1]], where=insert_one
-            )
-            a2, _ = insert_quadrature_nodes(
-                mesh=times, quadrule=self.quadrule[[0], [2]], where=insert_two
-            )
-            times = functools.reduce(np.union1d, (times, a1, a2))
-            dataset = np.zeros((len(times), bvp.dimension))
-            measmod_list = self.create_measmod_list(
-                ode_measmod, left_measmod, right_measmod, times
-            )
-            raise RuntimeError("Linearise at the previous evaluation!")
+        inacceptable = 1.0 < per_interval_error
+        insert_one = np.logical_and(
+            1.0 < per_interval_error, per_interval_error < threshold_two
+        )
+        insert_two = threshold_two <= per_interval_error
+        a1, _ = insert_quadrature_nodes(
+            mesh=times, quadrule=self.quadrule[1], where=insert_one
+        )
+        a2, _ = insert_quadrature_nodes(
+            mesh=times, quadrule=self.quadrule[[0, 2]], where=insert_two
+        )
+        times = functools.reduce(np.union1d, (times, a1, a2))
+        dataset = np.zeros((len(times), bvp.dimension))
+        measmod_list = self.create_measmod_list(
+            ode_measmod, left_measmod, right_measmod, times
+        )
+        return dataset, times, measmod_list, inacceptable
+
+    def estimate_per_interval_error(
+        self, atol, rtol, kalman_posterior, bvp, times, sigma_squared
+    ):
+        _, mesh_candidates = insert_quadrature_nodes(
+            mesh=times,
+            quadrule=self.quadrule,
+            where=np.ones_like(times[:-1], dtype=bool),
+        )
+        non_integrated_squared_error, reference, info = self.estimate_squared_error(
+            kalman_posterior, mesh_candidates, sigma_squared
+        )
+        normalised_squared_error = non_integrated_squared_error / (
+            atol + rtol * reference
+        )
+        integrand = (
+            np.linalg.norm(normalised_squared_error, axis=1) ** 2 / bvp.dimension
+        )
+        per_interval_error = (
+            integrand.reshape((-1, self.quadrule.order - 2)) @ self.quadrule.weights
+        )
+        return per_interval_error
 
     #
     #
@@ -180,7 +198,7 @@ class BVPSolver:
         )
         prior, initrv = self.initialise_bridge(bvp, initrv_not_bridged)
         filter_object = kalman.MyKalman(prior, None, initrv)
-        return filter_object, initrv
+        return filter_object
 
     def create_initrv(self):
         m0 = np.ones(self.dynamics_model.dimension)
@@ -282,19 +300,18 @@ class BVPSolver:
         return squared_error, reference, info
 
 
-def insert_quadrature_nodes(mesh, quadrule, where):
+def insert_quadrature_nodes(mesh, nodes_per_interval, where):
     """Insert 5-pt Lobatto points into a mesh."""
+    new_candidates = construct_candidate_nodes(mesh, nodes_per_interval, where)
+    return np.union1d(mesh, new_candidates)
 
-    print(quadrule)
-    diff = np.diff(mesh)
-    new_mesh = mesh
 
-    for node in quadrule.nodes:
+def construct_candidate_nodes(mesh, nodes_per_interval, where):
+    new_mesh = []
+    for node in nodes_per_interval:
         new_pts = mesh[:-1] + diff * node
         new_mesh = np.union1d(new_mesh, new_pts[where])
-
-    mesh_candidates = np.setdiff1d(new_mesh, mesh)
-    return new_mesh, mesh_candidates
+    return new_mesh
 
 
 def initial_guess_measurement_models(initial_guess, prior, damping=0.0):
@@ -313,3 +330,71 @@ def initial_guess_measurement_models(initial_guess, prior, damping=0.0):
         proc_noise_cov_cholesky=process_noise_cov_cholesky,
     )
     return [single_measmod] * N
+
+
+def refine_mesh(current_mesh, error_per_interval, localconvrate, quadrule):
+
+    inacceptable = 1.0 < error_per_interval
+    if not np.any(inacceptable):
+        return current_mesh, inacceptable
+
+    threshold_two = 3.0 ** localconvrate
+
+    insert_one_here = np.logical_and(
+        inacceptable, error_per_interval < threshold_two
+    )
+    insert_two_here = threshold_two <= error_per_interval
+
+    left, central, right = quadrule.nodes
+    one_inserted = construct_candidate_nodes(current_mesh, [central], where=insert_one_here)
+    two_inserted = construct_candidate_nodes(current_mesh, [left, right], where=insert_two_here)
+    new_mesh = functools.reduce(np.union1d, (current_mesh, one_inserted, two_inserted))
+    return new_mesh, inacceptable
+
+
+class BVPErrorEstimator(abc.ABC):
+    """Estimate the error of a BVP solver."""
+
+    def __init__(self, quadrature_rule):
+        self.quadrature_rule = quadrature_rule
+
+    def estimate_error_per_interval(
+        self,
+        kalman_posterior,
+        current_mesh,
+        calibrated_sigma_squared,
+        bvp_dim,
+        error_per_unit_step=False,
+    ):
+        """Estimate error per interval.
+
+        Numerically approximate the integrated error estimate per subinterval.
+        """
+
+        mesh_candidates = construct_candidate_nodes(
+            mesh=current_mesh,
+            quadrule=self.quadrature_rule,
+            where=np.ones_like(times[:-1], dtype=bool),
+        )
+
+        squared_error, reference, info = self.estimate_squared_error_at_points(
+            kalman_posterior,
+            mesh_candidates,
+            calibrated_sigma_squared,
+        )
+        normalised_squared_error = squared_error / (atol + rtol * np.abs(reference))
+
+        integrand = np.linalg.norm(normalised_squared_error, axis=1) ** 2 / bvp_dim
+        per_interval_error = (
+            integrand.reshape((-1, self.quadrule.order - 2)) @ self.quadrule.weights
+        )
+        if error_per_unit_step:
+            return per_interval_error / np.diff(current_mesh)
+
+        return per_interval_error
+
+    @abc.abstractmethod
+    def estimate_squared_error_at_points(
+        self, kalman_posterior, points, calibrated_sigma_squared
+    ):
+        raise NotImplementedError
