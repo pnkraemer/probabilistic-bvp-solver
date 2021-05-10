@@ -110,11 +110,14 @@ class BVPSolver:
                 dataset=dataset, times=times, measmod_list=measmod_list
             )
         else:
-            initial_guess_measmod_list = initial_guess_measurement_models(
-                initial_guess, self.dynamics_model, damping=0.0
+            initial_guess_measmod_list = self.initial_guess_measurement_models(
+                initial_guess,
+                damping=1e-14,
+                left_measmod=left_measmod,
+                right_measmod=right_measmod,
             )
             kalman_posterior = filter_object.filtsmooth(
-                dataset=initial_guess,
+                dataset=np.zeros_like(initial_guess),
                 times=times,
                 measmod_list=initial_guess_measmod_list,
             )
@@ -306,23 +309,33 @@ class BVPSolver:
     #     info = {"evaluated_posterior": evaluated_posterior}
     #     return squared_error, reference, info
 
+    def initial_guess_measurement_models(
+        self, initial_guess, damping, left_measmod, right_measmod
+    ):
 
-def initial_guess_measurement_models(initial_guess, prior, damping=0.0):
-    N, d = initial_guess.shape
-    projmat = prior.proj2coord(0)
+        N, d = initial_guess.shape
+        projmat = self.dynamics_model.proj2coord(0)
 
-    empty_shift = np.zeros(d)
-    variances = damping * np.ones(d)
-    process_noise_cov = np.diag(variances)
-    process_noise_cov_cholesky = np.diag(np.sqrt(variances))
+        variances = damping * np.ones(d)
+        process_noise_cov = np.diag(variances)
+        process_noise_cov_cholesky = np.diag(np.sqrt(variances))
 
-    single_measmod = statespace.DiscreteLTIGaussian(
-        state_trans_mat=projmat,
-        shift_vec=empty_shift,
-        proc_noise_cov_mat=process_noise_cov,
-        proc_noise_cov_cholesky=process_noise_cov_cholesky,
-    )
-    return [single_measmod] * N
+        measmodfun = lambda s: statespace.DiscreteLTIGaussian(
+            state_trans_mat=projmat,
+            shift_vec=s,
+            proc_noise_cov_mat=process_noise_cov,
+            proc_noise_cov_cholesky=process_noise_cov_cholesky,
+            forward_implementation="sqrt",
+            backward_implementation="sqrt",
+        )
+        if self.use_bridge:
+            return [measmodfun(s=d) for d in initial_guess]
+
+        else:
+            measmod_list = [[left_measmod, measmodfun(s=initial_guess[0])]]
+            measmod_list.extend([measmodfun(s=d) for d in initial_guess[1:-1]])
+            measmod_list.extend([[right_measmod, measmodfun(s=initial_guess[-1])]])
+            return measmod_list
 
 
 ########################################################################

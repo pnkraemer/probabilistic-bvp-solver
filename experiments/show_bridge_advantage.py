@@ -21,19 +21,33 @@ N = 10
 initial_grid = np.linspace(bvp.t0, bvp.tmax, N)
 t = np.linspace(bvp.t0, bvp.tmax, 200)
 
-MAXIT = 5
+MAXIT = 3
+
+initial_guess = np.ones((N, bvp.dimension))
 
 
-fig, ax = plt.subplots(ncols=2, figsize=(5.5, 2.5), nrows=ibm.ordint + 1, sharex=True, sharey="row", dpi=200, gridspec_kw={'height_ratios': [4, 1, 1]}, constrained_layout=True)
+fig, ax = plt.subplots(
+    ncols=2,
+    figsize=(5.5, 2.5),
+    nrows=ibm.ordint + 1,
+    sharex=True,
+    sharey="row",
+    dpi=200,
+    gridspec_kw={"height_ratios": [4, 1, 1]},
+    constrained_layout=True,
+)
 for USE_BRIDGE, axis in zip([True, False], ax.T):
-    solver = bvp_solver.BVPSolver.from_default_values(ibm, use_bridge=USE_BRIDGE, initial_sigma_squared=1e12)
+    solver = bvp_solver.BVPSolver.from_default_values(
+        ibm, use_bridge=USE_BRIDGE, initial_sigma_squared=1e12
+    )
     solution_gen = solver.solution_generator(
         bvp,
         atol=1e-0,
         rtol=1e-0,
         initial_grid=initial_grid,
+        initial_guess=initial_guess,
         maxit_ieks=MAXIT,
-        yield_ieks_iterations=True
+        yield_ieks_iterations=True,
     )
 
     # Only the first 20 iterations, i.e. the first 4 refinements (since maxit_ieks=5)
@@ -42,14 +56,15 @@ for USE_BRIDGE, axis in zip([True, False], ax.T):
         y = kalman_posterior(t).mean
         s = kalman_posterior(t).std * np.sqrt(sigma_squared)
         for q, curr_ax in zip(range(ibm.ordint + 1), axis):
-            curr_ax.plot(t, y[:, q], color="k", alpha=0.3 + 0.7*float(i/(MAXIT)))
+            curr_ax.plot(t, y[:, q], color="k", alpha=0.3 + 0.7 * float(i / (MAXIT)))
             # curr_ax.fill_between(t, y[:, q] - 2 * s[:, q], y[:, q] + 2*s[:, q], color="k", alpha=0.1)
             #
             curr_ax.plot(
                 kalman_posterior.locations,
                 kalman_posterior.states.mean[:, q],
                 ".",
-                color="black"            , alpha = 0.3 + 0.7 * float(i / (MAXIT))
+                color="black",
+                alpha=0.3 + 0.7 * float(i / (MAXIT)),
             )
     for q, curr_ax in zip(range(ibm.ordint + 1), axis):
         if q == 0:

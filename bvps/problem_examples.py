@@ -421,21 +421,13 @@ def seir_jac(t, y, params):
     return jac_matrix
 
 
-
-
-
-
-
-
-
-
 def problem_20_second_order(xi=0.1):
     """https://rdrr.io/rforge/bvpSolve/f/inst/doc/bvpTests.pdf"""
     L = np.eye(1, 2)
     R = np.eye(1, 2)
 
-    y0 = np.array([1. + xi * np.log(np.cosh(-0.745/xi))])
-    ymax = np.array([1. + xi * np.log(np.cosh(0.255/xi))])
+    y0 = np.array([1.0 + xi * np.log(np.cosh(-0.745 / xi))])
+    ymax = np.array([1.0 + xi * np.log(np.cosh(0.255 / xi))])
 
     t0 = 0.0
     tmax = 1.0
@@ -456,18 +448,16 @@ def problem_20_second_order(xi=0.1):
 
 
 def p20_rhs_second_order(t, y, dy, xi):
-    return (1 -dy**2)/xi
-
+    return (1 - dy ** 2) / xi
 
 
 def p20_jacobian_second_order_ddy(t, y, dy, xi):
-    return np.ones((1, 1)) * -2.*dy/ xi
+    return np.ones((1, 1)) * -2.0 * dy / xi
 
 
 def p20_jacobian_second_order_dy(t, y, dy, xi):
-    return np.ones((1, 1)) * 0.
+    return np.ones((1, 1)) * 0.0
+
 
 def p20_solution(t, xi):
-    return 1 + xi * np.log(np.cosh((t - 0.745)/xi))
-
-
+    return 1 + xi * np.log(np.cosh((t - 0.745) / xi))
