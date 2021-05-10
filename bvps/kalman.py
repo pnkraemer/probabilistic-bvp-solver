@@ -114,7 +114,7 @@ class MyKalman(filtsmooth.Kalman):
             forwarded_rv, info = mm.forward_rv(rv, t=t, compute_gain=True)
 
             intermediate = scipy.linalg.solve_triangular(
-                forwarded_rv.cov_cholesky, forwarded_rv.mean, lower=True
+                forwarded_rv.cov_cholesky.T, forwarded_rv.mean, lower=False
             )
             current_sigma = intermediate.T @ intermediate
             self.sigmas.append(current_sigma)
