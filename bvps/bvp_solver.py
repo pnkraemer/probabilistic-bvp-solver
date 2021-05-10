@@ -346,7 +346,7 @@ def refine_mesh(current_mesh, error_per_interval, localconvrate, quadrature_node
     """Refine the mesh.
 
     Examples
-    ----------
+    --------
     >>> current_mesh = [0., 0.5, 1.0, 2.0]
     >>> error_per_interval = [1000., 10., 0.1]
     >>> localconvrate = 3.5
@@ -378,12 +378,33 @@ def refine_mesh(current_mesh, error_per_interval, localconvrate, quadrature_node
     return new_mesh, acceptable
 
 
-def construct_candidate_nodes(mesh, nodes_per_interval, where):
-    diff = np.diff(mesh)
+def construct_candidate_nodes(current_mesh, nodes_per_interval, where=None):
+    """Construct nodes that lie in-between mesh points.
+
+
+    Examples
+    --------
+    >>> current_mesh = [0., 0.5, 1.0, 2.0]
+    >>> nodes_per_interval = [0.3, 0.5, 0.7]
+    >>> candidate_nodes = construct_candidate_nodes(current_mesh, nodes_per_interval)
+    >>> print(candidate_nodes)
+    [0.15 0.25 0.35 0.65 0.75 0.85 1.3  1.5  1.7 ]
+
+    >>> where = [True, False, False]
+    >>> candidate_nodes = construct_candidate_nodes(current_mesh, nodes_per_interval, where=where)
+    >>> print(candidate_nodes)
+    [0.15 0.25 0.35]
+    """
+
+    if where is None:
+        where = np.ones_like(current_mesh[1:], dtype=bool)
+
+    current_mesh = np.asarray(current_mesh)
+    diff = np.diff(current_mesh)
     new_mesh = []
 
     for node in nodes_per_interval:
-        new_pts = mesh[:-1] + diff * node
+        new_pts = current_mesh[:-1] + diff * node
         new_mesh = np.union1d(new_mesh, new_pts[where])
     return new_mesh
 
