@@ -173,7 +173,7 @@ def matlab_example_second_order(tmax=1.0):
         ymax=ymax,
         df_dy=matlab_jacobian_dy,
         df_ddy=matlab_jacobian_ddy,
-        solution=matlab_solution,
+        solution=matlab_solution_second_order,
         dimension=1,
     )
 
@@ -188,6 +188,11 @@ def matlab_jacobian_dy(t, y, dy):
 
 def matlab_jacobian_ddy(t, y, dy):
     return -2 / t * np.ones((len(y), len(y)))
+
+
+
+def matlab_solution_second_order(t):
+    return np.sin(1 / t)
 
 
 def r_example(y0=None, ymax=None, xi=0.01):
@@ -461,3 +466,7 @@ def p20_jacobian_second_order_dy(t, y, dy, xi):
 
 def p20_solution(t, xi):
     return 1 + xi * np.log(np.cosh((t - 0.745) / xi))
+
+
+
+
