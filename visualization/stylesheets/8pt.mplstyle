@@ -6,10 +6,10 @@
 
 font.size			: 8
 axes.titlesize      : medium  
-axes.labelsize      : medium
+axes.labelsize      : small
 legend.fontsize 	: small
 
 
-xtick.labelsize 	: medium
-ytick.labelsize 	: medium
+xtick.labelsize 	: x-small
+ytick.labelsize 	: x-small
 

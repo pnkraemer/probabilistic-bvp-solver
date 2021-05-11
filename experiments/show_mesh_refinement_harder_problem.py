@@ -14,9 +14,8 @@ from probnum import random_variables as randvars
 
 
 bvp = problem_examples.problem_24_second_order(xi=1e-2)
-bvp = problem_examples.problem_7_second_order(xi=1e-4)
 ibm = statespace.IBM(
-    ordint=4,
+    ordint=3,
     spatialdim=bvp.dimension,
     forward_implementation="sqrt",
     backward_implementation="sqrt",
@@ -25,11 +24,11 @@ measmod = ode_measmods.from_second_order_ode(bvp, ibm)
 
 
 # Solver and solver parameters
-solver = bvp_solver.BVPSolver.from_default_values(
-    ibm, use_bridge=False, initial_sigma_squared=1e2, normalise_with_interval_size=False
+solver = bvp_solver.BVPSolver.from_default_values_std_refinement(
+    ibm, use_bridge=True, initial_sigma_squared=1e2, normalise_with_interval_size=False
 )
-MAXIT = 2
-TOL = 1e-6
+MAXIT = 10
+TOL = 1e-2
 
 # Plotting parameters
 t = np.linspace(bvp.t0, bvp.tmax, 200)
@@ -52,8 +51,7 @@ SECOND_COLOR = "blue"
 
 
 # Reference solution
-
-initial_grid = np.linspace(bvp.t0, bvp.tmax, 256)
+initial_grid = np.linspace(bvp.t0, bvp.tmax, 100)
 initial_guess = np.ones((len(initial_grid), bvp.dimension))
 solution_gen = solver.solution_generator(
     bvp,
@@ -66,10 +64,9 @@ solution_gen = solver.solution_generator(
     yield_ieks_iterations=False,
 )
 # Skip initialisation
-next(solution_gen)
+for reference_posterior, sigma_squared in solution_gen:
+    print(len(reference_posterior.locations))
 
-# First iteration
-reference_posterior, _ = next(solution_gen)
 
 # Set up all 7 subplots
 fig, axes = plt.subplots(
@@ -82,26 +79,31 @@ fig, axes = plt.subplots(
     gridspec_kw={"height_ratios": [8, 8, 8, 8]},
 )
 
-for axis_index, (N, ax) in enumerate(zip([5, 5**2, 5**3], axes.T)):
-    # ax[0].set_title(f"$N={N}$")
-    initial_grid = np.linspace(bvp.t0, bvp.tmax, N)
-    initial_guess = np.ones((len(initial_grid), bvp.dimension))
+N = 100
+TOL = 1e-3
+initial_grid = np.linspace(bvp.t0, bvp.tmax, N)
+# initial_guess = np.ones((len(initial_grid), bvp.dimension))
+solution_gen = solver.solution_generator(
+    bvp,
+    atol=TOL,
+    rtol=TOL,
+    initial_grid=initial_grid,
+    initial_guess=None,
+    maxit_ieks=MAXIT,
+    maxit_em=1,
+    yield_ieks_iterations=False,
+)
 
-    solution_gen = solver.solution_generator(
-        bvp,
-        atol=TOL,
-        rtol=TOL,
-        initial_grid=initial_grid,
-        initial_guess=None,
-        maxit_ieks=MAXIT,
-        maxit_em=1,
-        yield_ieks_iterations=False,
-    )
-    # Skip initialisation
-    next(solution_gen)
+# Skip initialisation
+next(solution_gen)
+for axis_index, ((kalman_posterior, sigma_squared), ax) in enumerate(zip(solution_gen, axes.T)):
+    N = len(kalman_posterior.locations)
+    print(N)
+    # ax[0].set_title(f"$N={N}$")
+
 
     # First iteration
-    kalman_posterior, sigma_squared = next(solution_gen)
+    # kalman_posterior, sigma_squared = next(solution_gen)
     posterior_evaluations = kalman_posterior(t)
     posterior_mean = posterior_evaluations.mean
     posterior_std = posterior_evaluations.std * np.sqrt(sigma_squared)
@@ -148,8 +150,8 @@ for axis_index, (N, ax) in enumerate(zip([5, 5**2, 5**3], axes.T)):
         color="black",
         linestyle=reference_linestyle,
     )
-    ax[i].set_ylim(LOG_YLIM)
-    ax[i].set_yticks([LOG_YLIM[0], 1e-5, LOG_YLIM[1]])
+    # ax[i].set_ylim(LOG_YLIM)
+    # ax[i].set_yticks([LOG_YLIM[0], 1e-5, LOG_YLIM[1]])
     ax[i].set_title(f"\\bf {titles[i]}{str(N)}", loc="left", fontweight="bold", fontsize="small")
 
     i = next(idx)
@@ -170,19 +172,11 @@ for axis_index, (N, ax) in enumerate(zip([5, 5**2, 5**3], axes.T)):
         color=COLOR,
         linewidth=0,
     )
-    ax[i].plot(t, posterior_mean[:, 1], color="black", linestyle="dashed")
-    ax[i].fill_between(
-        t,
-        posterior_mean[:, 1] - 3 * posterior_std[:, 1],
-        posterior_mean[:, 1] + 3 * posterior_std[:, 1],
-        alpha=0.2,
-        color=COLOR,
-        linewidth=0,
-    )
+
     if axis_index == 0:
         ax[i].set_ylabel("Solution")
-    ax[i].set_ylim((-3, 5))
-    ax[i].set_yticks([-3, 1, 5])
+    # ax[i].set_ylim((-3, 5))
+    # ax[i].set_yticks([-3, 1, 5])
     ax[i].set_title(f"\\bf {titles[i]}{str(N)}", loc="left", fontweight="bold", fontsize="small")
     i = next(idx)
 
@@ -208,8 +202,8 @@ for axis_index, (N, ax) in enumerate(zip([5, 5**2, 5**3], axes.T)):
     )
     if axis_index == 0:
         ax[i].set_ylabel("Residual")
-    ax[i].set_ylim((-2000, 2000))
-    ax[i].set_yticks([-2000, 0, 2000])
+    # ax[i].set_ylim((-2000, 2000))
+    # ax[i].set_yticks([-2000, 0, 2000])
 
     ax[i].set_title(f"\\bf {titles[i]}{str(N)}", loc="left", fontweight="bold", fontsize="small")
 
@@ -232,7 +226,6 @@ for axis_index, (N, ax) in enumerate(zip([5, 5**2, 5**3], axes.T)):
 
     ax[i].fill_between(t, 1e-16*np.ones_like(t), error_estimates_res_mean[:, 0] ** 2, color="black", alpha=0.2)
     ax[i].fill_between(t, error_estimates_res_mean[:, 0] ** 2, error_estimates_res_mean[:, 0] ** 2 + error_estimates_res_std[:, 0] ** 2,color=SECOND_COLOR, alpha=0.2)
-
     ax[i].semilogy(
         t,
         true_error ** 2,
@@ -252,6 +245,7 @@ for axis_index, (N, ax) in enumerate(zip([5, 5**2, 5**3], axes.T)):
         a.set_xticks([bvp.t0, bvp.t0 + 0.5*(bvp.tmax - bvp.t0), bvp.tmax])
         # a.set_yticks([])
         a.set_xlim((bvp.t0, bvp.tmax))
+
 for ax in axes[-1]:
     ax.set_xlabel("Time $t$")
 fig.align_ylabels()

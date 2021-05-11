@@ -80,7 +80,7 @@ reference_posterior, _ = next(solution_gen)
 
 N = 32
 
-for TOL in [1e-1, 1e-2, 1e-3]:
+for TOL in [1e-1, 1e-2, 1e-3, 1e-4]:
     initial_grid = np.linspace(bvp.t0, bvp.tmax, N)
     initial_guess = np.ones((len(initial_grid), bvp.dimension))
     solver = bvp_solver.BVPSolver.from_default_values_std_refinement(
@@ -106,58 +106,60 @@ for TOL in [1e-1, 1e-2, 1e-3]:
     refsol = lambda x: reference_posterior(x).mean[:, 0]
     approxsol = lambda x: kalman_posterior(x).mean[:, 0]
     rmse = timeseries.root_mean_square_error(approxsol, refsol, t)
-    print("STD", TOL, rmse, len(kalman_posterior.locations))
 
-    solver = bvp_solver.BVPSolver.from_default_values(
-        ibm, use_bridge=True, initial_sigma_squared=1e2, normalise_with_interval_size=False
-    )
-    solution_gen = solver.solution_generator(
-        bvp,
-        atol=TOL,
-        rtol=TOL,
-        initial_grid=initial_grid,
-        initial_guess=None,
-        maxit_ieks=MAXIT,
-        maxit_em=1,
-        yield_ieks_iterations=False,
-    )
-    # Skip initialisation
-    for i, (kalman_posterior, sigma_squared) in enumerate(solution_gen):
-        print(i, ":", len(kalman_posterior.locations))
-        if i > 5:
-            print("fail")
-            break
-
-    refsol = lambda x: reference_posterior(x).mean[:, 0]
-    approxsol = lambda x: kalman_posterior(x).mean[:, 0]
-    rmse = timeseries.root_mean_square_error(approxsol, refsol, t)
-    print("Res", TOL, rmse, len(kalman_posterior.locations))
-
-
-
-
-
-    solver = bvp_solver.BVPSolver.from_default_values_probabilistic_refinement(
-        ibm, use_bridge=True, initial_sigma_squared=1e2, normalise_with_interval_size=False
-    )
-    solution_gen = solver.solution_generator(
-        bvp,
-        atol=TOL,
-        rtol=TOL,
-        initial_grid=initial_grid,
-        initial_guess=None,
-        maxit_ieks=MAXIT,
-        maxit_em=1,
-        yield_ieks_iterations=False,
-    )
-    # Skip initialisation
-    for i, (kalman_posterior, sigma_squared) in enumerate(solution_gen):
-        print(i, ":", len(kalman_posterior.locations))
-        if i > 5:
-            print("fail")
-            break
-
-    refsol = lambda x: reference_posterior(x).mean[:, 0]
-    approxsol = lambda x: kalman_posterior(x).mean[:, 0]
-    rmse = timeseries.root_mean_square_error(approxsol, refsol, t)
-    print("PRes", TOL, rmse, len(kalman_posterior.locations))
+    T = kalman_posterior.locations
+    print("STD", TOL, rmse, len(T), np.amax(np.diff(T)), np.amin(np.diff(T)),np.amax(np.diff(T))/ np.amin(np.diff(T)))
+    #
+    # solver = bvp_solver.BVPSolver.from_default_values(
+    #     ibm, use_bridge=True, initial_sigma_squared=1e2, normalise_with_interval_size=False
+    # )
+    # solution_gen = solver.solution_generator(
+    #     bvp,
+    #     atol=TOL,
+    #     rtol=TOL,
+    #     initial_grid=initial_grid,
+    #     initial_guess=None,
+    #     maxit_ieks=MAXIT,
+    #     maxit_em=1,
+    #     yield_ieks_iterations=False,
+    # )
+    # # Skip initialisation
+    # for i, (kalman_posterior, sigma_squared) in enumerate(solution_gen):
+    #     print(i, ":", len(kalman_posterior.locations))
+    #     if i > 5:
+    #         print("fail")
+    #         break
+    #
+    # refsol = lambda x: reference_posterior(x).mean[:, 0]
+    # approxsol = lambda x: kalman_posterior(x).mean[:, 0]
+    # rmse = timeseries.root_mean_square_error(approxsol, refsol, t)
+    # print("Res", TOL, rmse, len(kalman_posterior.locations))
+    #
+    #
+    #
+    #
+    #
+    # solver = bvp_solver.BVPSolver.from_default_values_probabilistic_refinement(
+    #     ibm, use_bridge=True, initial_sigma_squared=1e2, normalise_with_interval_size=False
+    # )
+    # solution_gen = solver.solution_generator(
+    #     bvp,
+    #     atol=TOL,
+    #     rtol=TOL,
+    #     initial_grid=initial_grid,
+    #     initial_guess=None,
+    #     maxit_ieks=MAXIT,
+    #     maxit_em=1,
+    #     yield_ieks_iterations=False,
+    # )
+    # # Skip initialisation
+    # for i, (kalman_posterior, sigma_squared) in enumerate(solution_gen):
+    #     print(i, ":", len(kalman_posterior.locations))
+    #     if i > 5:
+    #         print("fail")
+    #         break
+    #
+    # refsol = lambda x: reference_posterior(x).mean[:, 0]
+    # approxsol = lambda x: kalman_posterior(x).mean[:, 0]
+    # rmse = timeseries.root_mean_square_error(approxsol, refsol, t)
+    # print("PRes", TOL, rmse, len(kalman_posterior.locations))
