@@ -38,17 +38,37 @@ class BVPSolver:
         self.localconvrate = self.dynamics_model.ordint  # + 0.5?
 
     @classmethod
+    def from_default_values_std_refinement(
+        cls,
+        dynamics_model,
+        initial_sigma_squared=1e10,
+        use_bridge=True, normalise_with_interval_size=True
+    ):
+        quadrature_rule = quadrature.expquad_interior_only()
+        P0 = dynamics_model.proj2coord(0)
+        P1 = dynamics_model.proj2coord(1)
+        error_estimator = ErrorViaStandardDeviation(
+            atol=None, rtol=None, quadrature_rule=quadrature_rule, P0=P0, P1=P1, normalise_with_interval_size=normalise_with_interval_size
+        )
+        return cls(
+            dynamics_model=dynamics_model,
+            error_estimator=error_estimator,
+            initial_sigma_squared=initial_sigma_squared,
+            use_bridge=use_bridge,
+        )
+
+    @classmethod
     def from_default_values(
         cls,
         dynamics_model,
         initial_sigma_squared=1e10,
-        use_bridge=True,
+        use_bridge=True,normalise_with_interval_size=True,
     ):
         quadrature_rule = quadrature.expquad_interior_only()
         P0 = dynamics_model.proj2coord(0)
         P1 = dynamics_model.proj2coord(1)
         error_estimator = ErrorViaResidual(
-            atol=None, rtol=None, quadrature_rule=quadrature_rule, P0=P0, P1=P1
+            atol=None, rtol=None, quadrature_rule=quadrature_rule, P0=P0, P1=P1, normalise_with_interval_size=normalise_with_interval_size
         )
         return cls(
             dynamics_model=dynamics_model,
@@ -62,13 +82,13 @@ class BVPSolver:
         cls,
         dynamics_model,
         initial_sigma_squared=1e10,
-        use_bridge=True,
+        use_bridge=True, normalise_with_interval_size=True,
     ):
         quadrature_rule = quadrature.expquad_interior_only()
         P0 = dynamics_model.proj2coord(0)
         P1 = dynamics_model.proj2coord(1)
         error_estimator = ErrorViaProbabilisticResidual(
-            atol=None, rtol=None, quadrature_rule=quadrature_rule, P0=P0, P1=P1
+            atol=None, rtol=None, quadrature_rule=quadrature_rule, P0=P0, P1=P1, normalise_with_interval_size=normalise_with_interval_size
         )
         return cls(
             dynamics_model=dynamics_model,
@@ -177,7 +197,6 @@ class BVPSolver:
                 times,
                 sigma_squared,
                 ode_measmod_list=mm_list,
-                normalise_with_interval_size=False,
             )
             times, acceptable_intervals = refine_mesh(
                 current_mesh=times,
@@ -430,10 +449,11 @@ def construct_candidate_nodes(current_mesh, nodes_per_interval, where=None):
 
 
 class BVPErrorEstimator(abc.ABC):
-    def __init__(self, atol, rtol, quadrature_rule, P0=None, P1=None):
+    def __init__(self, atol, rtol, quadrature_rule, P0=None, P1=None, normalise_with_interval_size=True):
         self.quadrature_rule = quadrature_rule
         self.atol = atol
         self.rtol = rtol
+        self.normalise_with_interval_size = normalise_with_interval_size
 
         # Projection matrices: state to 0th/1st derivative.
         self.P0 = P0
@@ -450,7 +470,6 @@ class BVPErrorEstimator(abc.ABC):
         current_mesh,
         calibrated_sigma_squared,
         ode_measmod_list=None,
-        normalise_with_interval_size=True,
     ):
         """Estimate error per interval.
 
@@ -474,7 +493,8 @@ class BVPErrorEstimator(abc.ABC):
             integrand.reshape((-1, self.quadrature_rule.order - 2))
             @ self.quadrature_rule.weights
         )
-        if normalise_with_interval_size:
+
+        if self.normalise_with_interval_size:
             dt = np.diff(current_mesh)
             return np.sqrt(per_interval_error / dt), info
 
@@ -516,8 +536,8 @@ class ErrorViaStandardDeviation(BVPErrorEstimator):
     def estimate_squared_error_at_points(
         self, evaluated_posterior, points, calibrated_sigma_squared, ode_measmod_list
     ):
-        squared_error_estimate = evaluated_posterior.var * calibrated_sigma_squared
-        reference = evaluated_posterior.mean
+        squared_error_estimate = evaluated_posterior.var @ self.P0.T * calibrated_sigma_squared
+        reference = evaluated_posterior.mean @ self.P0.T
         return squared_error_estimate, reference, {}
 
 

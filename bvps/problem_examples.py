@@ -513,7 +513,7 @@ def p24_jacobian_second_order_ddy(t, y, dy, xi, gamma):
 def p24_jacobian_second_order_dy(t, y, dy, xi, gamma):
     da = 0.
     db = 2* dy / (A(t) * xi) / y ** 3
-    dc = dA(t) / (A(t)**2 * xi*y**2)  + dA(t) / A(t)**2*(gamma-1)/2/xi
+    dc = dA(t) / (A(t)**2 * xi * y**2)  + dA(t) /  (A(t) ** 2 * xi) * (gamma - 1) / 2
     return np.ones((1, 1)) * (da + db + dc)
 
 
