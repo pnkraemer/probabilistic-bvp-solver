@@ -190,7 +190,6 @@ def matlab_jacobian_ddy(t, y, dy):
     return -2 / t * np.ones((len(y), len(y)))
 
 
-
 def matlab_solution_second_order(t):
     return np.sin(1 / t)
 
@@ -468,5 +467,59 @@ def p20_solution(t, xi):
     return 1 + xi * np.log(np.cosh((t - 0.745) / xi))
 
 
+def problem_24_second_order(xi=0.1, gamma=1.4):
+    """https://rdrr.io/rforge/bvpSolve/f/inst/doc/bvpTests.pdf"""
+    L = np.eye(1, 2)
+    R = np.eye(1, 2)
+
+    y0 = np.array([0.9129])
+    ymax = np.array([0.375])
+
+    t0 = 0.0
+    tmax = 1.0
+
+    return SecondOrderBoundaryValueProblem(
+        f=lambda t, y, dy: p24_rhs_second_order(t, y, dy, xi=xi, gamma=gamma),
+        t0=t0,
+        tmax=tmax,
+        L=L,
+        R=R,
+        y0=y0,
+        ymax=ymax,
+        df_dy=lambda t, y, dy: p24_jacobian_second_order_dy(
+            t, y, dy, xi=xi, gamma=gamma
+        ),
+        df_ddy=lambda t, y, dy: p24_jacobian_second_order_ddy(
+            t, y, dy, xi=xi, gamma=gamma
+        ),
+        dimension=1,
+    )
 
 
+def p24_rhs_second_order(t, y, dy, xi, gamma):
+    a = ((1 + gamma) / 2 - xi * dA(t)) * dy / (A(t) * xi)
+    b = - dy / (y ** 2 * A(t) * xi)
+    c = - dA(t) / (A(t) ** 2 * xi * y) + dA(t) /  (A(t) ** 2 * xi) * (gamma - 1) / 2 * y
+    return a + b + c
+
+
+def p24_jacobian_second_order_ddy(t, y, dy, xi, gamma):
+    da = ((1 + gamma) / 2 - xi * dA(t)) / (A(t) * xi)
+    db = -1 / (y ** 2 * A(t) * xi)
+    dc = 0
+    return np.ones((1, 1)) * (da + db + dc)
+
+
+def p24_jacobian_second_order_dy(t, y, dy, xi, gamma):
+    da = 0.
+    db = 2* dy / (A(t) * xi) / y ** 3
+    dc = dA(t) / (A(t)**2 * xi*y**2)  + dA(t) / A(t)**2*(gamma-1)/2/xi
+    return np.ones((1, 1)) * (da + db + dc)
+
+
+def A(t):
+    return 1 + t ** 2
+
+
+def dA(t):
+    return 2 * t

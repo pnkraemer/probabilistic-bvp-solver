@@ -25,6 +25,7 @@ all_second_order_bvps = pytest.mark.parametrize(
         matlab_example_second_order(),
         problem_7_second_order(),
         problem_20_second_order(),
+        problem_24_second_order(),
     ],
 )
 

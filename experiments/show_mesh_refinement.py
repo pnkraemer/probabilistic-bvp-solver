@@ -15,7 +15,7 @@ from probnum import random_variables as randvars
 
 from scipy.integrate import solve_bvp
 
-bvp = problem_examples.matlab_example_second_order(tmax=1.)
+bvp = problem_examples.matlab_example_second_order(tmax=1.0)
 ibm = statespace.IBM(
     ordint=4,
     spatialdim=bvp.dimension,
@@ -70,9 +70,7 @@ plt.style.use(
 
 
 # Only the first 20 iterations, i.e. the first 4 refinements (since maxit_ieks=5)
-for iteration, (kalman_posterior, sigma_squared) in zip(
-    tqdm(range(5)), solution_gen
-):
+for iteration, (kalman_posterior, sigma_squared) in zip(tqdm(range(5)), solution_gen):
 
     posterior_evaluations = kalman_posterior(evalgrid)
     posterior_mean = posterior_evaluations.mean
@@ -90,7 +88,6 @@ for iteration, (kalman_posterior, sigma_squared) in zip(
     idx = itertools.count()
     i = next(idx)
 
-
     # Evaluate the residual
     residual_evaluations = _RandomVariableList(
         [measmod.forward_rv(rv, t)[0] for rv, t in zip(posterior_evaluations, evalgrid)]
@@ -98,11 +95,9 @@ for iteration, (kalman_posterior, sigma_squared) in zip(
     residual_mean = residual_evaluations.mean
     residual_std = residual_evaluations.std * np.sqrt(sigma_squared)
 
-
-
     # Evaluate the reference solution and errors
     reference_evaluated = bvp.solution(evalgrid)
-    SOL_YLIM = (1.5*np.amin(reference_evaluated), np.amax(reference_evaluated)*1.5)
+    SOL_YLIM = (1.5 * np.amin(reference_evaluated), np.amax(reference_evaluated) * 1.5)
     reference_color = "crimson"
     reference_linestyle = "dotted"
     warnings.warn("Use the truth residual here!")
@@ -156,8 +151,8 @@ for iteration, (kalman_posterior, sigma_squared) in zip(
     ax[i].plot(evalgrid, posterior_mean[:, 0], color="black")
     ax[i].fill_between(
         evalgrid,
-        posterior_mean[:, 0] - 3 *  posterior_std[:, 0],
-        posterior_mean[:, 0] + 3 *  posterior_std[:, 0],
+        posterior_mean[:, 0] - 3 * posterior_std[:, 0],
+        posterior_mean[:, 0] + 3 * posterior_std[:, 0],
         alpha=0.2,
         color="black",
         linewidth=0,
@@ -222,7 +217,6 @@ for iteration, (kalman_posterior, sigma_squared) in zip(
     ax[i].axhline(TOL, color=reference_color)
     i = next(idx)
 
-
     # Just the STD.
     ax[i].semilogy(
         evalgrid,
@@ -254,9 +248,6 @@ for iteration, (kalman_posterior, sigma_squared) in zip(
     ax[i].axhline(TOL, color=reference_color)
     i = next(idx)
 
-
-
-
     # Just the STD.
     ax[i].semilogy(
         evalgrid,
@@ -287,12 +278,6 @@ for iteration, (kalman_posterior, sigma_squared) in zip(
     )
     ax[i].axhline(TOL, color=reference_color)
     i = next(idx)
-
-
-
-
-
-
 
     # Sixth row: steps from refinement with residual only
     # for t in grid_refine_via_res:
