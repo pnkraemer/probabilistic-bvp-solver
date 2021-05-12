@@ -359,20 +359,19 @@ class BVPSolver:
 
         measmodfun = lambda s: statespace.DiscreteLTIGaussian(
             state_trans_mat=projmat,
-            shift_vec=s,
+            shift_vec=-s,
             proc_noise_cov_mat=process_noise_cov,
             proc_noise_cov_cholesky=process_noise_cov_cholesky,
             forward_implementation="sqrt",
             backward_implementation="sqrt",
         )
-        if self.use_bridge:
-            return [measmodfun(s=d) for d in initial_guess]
+        return [measmodfun(s=d) for d in initial_guess]
 
-        else:
-            measmod_list = [[left_measmod, measmodfun(s=initial_guess[0])]]
-            measmod_list.extend([measmodfun(s=d) for d in initial_guess[1:-1]])
-            measmod_list.extend([[right_measmod, measmodfun(s=initial_guess[-1])]])
-            return measmod_list
+        # else:
+        #     measmod_list = [[measmodfun(s=initial_guess[0])]]
+        #     measmod_list.extend([measmodfun(s=d) for d in initial_guess[1:-1]])
+        #     measmod_list.extend([[measmodfun(s=initial_guess[-1])]])
+        #     return measmod_list
 
 
 ########################################################################
