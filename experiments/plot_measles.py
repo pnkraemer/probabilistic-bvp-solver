@@ -67,12 +67,7 @@ for MAXIT_IEKS, axis_col in zip([MAXIT, 5], axes.T):
     y = reference_posterior(t).mean
 
     res = np.array(
-        [
-            measmod.forward_realization(y_, t=x_)[0].mean
-            for (x_, y_) in zip(
-                x, y
-            )
-        ]
+        [measmod.forward_realization(y_, t=x_)[0].mean for (x_, y_) in zip(x, y)]
     )
 
     if refsol.success:
