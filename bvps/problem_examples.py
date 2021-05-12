@@ -538,6 +538,9 @@ def measles():
     L = eye - np.flip(eye)
     R = eye - np.flip(eye)
 
+    assert L.shape == (3, 6)
+    assert R.shape == (3, 6)
+
     y0 = np.zeros(3)
     ymax = np.zeros(3)
     t0 = 0.0
@@ -558,16 +561,36 @@ def measles():
 
 def measles_rhs(t, y, mu, betafun, xi, eta):
     beta = betafun(t)
-    y1, y2, y3, c1, c2, c3 = y
+    f = y.copy()
+    y1, y2, y3, c1, c2, c3 = y[0], y[1], y[2], y[3], y[4], y[5]
+    # assert np.isscalar(y1), y1
+    # assert np.isscalar(y2)
+    # assert np.isscalar(y3)
+    # assert np.isscalar(c1)
+    # assert np.isscalar(c2)
+    # assert np.isscalar(c3)
     f1 = mu - beta * y1 * y3
     f2 = beta * y1 * y3 - y2 / xi
     f3 = y2 / xi - y3 / eta
-    return np.array([f1, f2, f3, 0.0, 0.0, 0.0])
+    f[0] = f1
+    f[1] = f2
+    f[2] = f3
+    f[3] *= 0
+    f[4] *= 0
+    f[5] *= 0
+    return f
 
 
 def measles_jac(t, y, mu, betafun, xi, eta):
     beta = betafun(t)
     y1, y2, y3, c1, c2, c3 = y
+
+    assert np.isscalar(y1)
+    assert np.isscalar(y2)
+    assert np.isscalar(y3)
+    assert np.isscalar(c1)
+    assert np.isscalar(c2)
+    assert np.isscalar(c3)
     df1_dy1 = -beta * y3
     df1_dy2 = 0.0
     df1_dy3 = -beta * y1
