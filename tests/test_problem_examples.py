@@ -14,6 +14,7 @@ all_first_order_bvps = pytest.mark.parametrize(
         problem_7(),
         problem_15(),
         seir_as_bvp(),
+        measles()
     ],
 )
 

@@ -15,7 +15,6 @@ from probnum import random_variables as randvars
 from probnumeval import timeseries
 
 
-
 bvp = problem_examples.problem_24_second_order(xi=2.5e-2)
 ibm = statespace.IBM(
     ordint=3,
@@ -44,8 +43,7 @@ plt.style.use(
         "./visualization/stylesheets/8pt.mplstyle",
     ]
 )
-mpl.rcParams['lines.linewidth'] = 0.5
-
+mpl.rcParams["lines.linewidth"] = 0.5
 
 
 # Reference solution
@@ -69,22 +67,16 @@ next(solution_gen)
 reference_posterior, _ = next(solution_gen)
 
 
-
-
-
-
-
-
-
-
-
 N = 32
 
 for TOL in [1e-1, 1e-2, 1e-3, 1e-4]:
     initial_grid = np.linspace(bvp.t0, bvp.tmax, N)
     initial_guess = np.ones((len(initial_grid), bvp.dimension))
     solver = bvp_solver.BVPSolver.from_default_values_std_refinement(
-        ibm, use_bridge=True, initial_sigma_squared=1e2, normalise_with_interval_size=False
+        ibm,
+        use_bridge=True,
+        initial_sigma_squared=1e2,
+        normalise_with_interval_size=False,
     )
     solution_gen = solver.solution_generator(
         bvp,
@@ -108,7 +100,15 @@ for TOL in [1e-1, 1e-2, 1e-3, 1e-4]:
     rmse = timeseries.root_mean_square_error(approxsol, refsol, t)
 
     T = kalman_posterior.locations
-    print("STD", TOL, rmse, len(T), np.amax(np.diff(T)), np.amin(np.diff(T)),np.amax(np.diff(T))/ np.amin(np.diff(T)))
+    print(
+        "STD",
+        TOL,
+        rmse,
+        len(T),
+        np.amax(np.diff(T)),
+        np.amin(np.diff(T)),
+        np.amax(np.diff(T)) / np.amin(np.diff(T)),
+    )
     #
     # solver = bvp_solver.BVPSolver.from_default_values(
     #     ibm, use_bridge=True, initial_sigma_squared=1e2, normalise_with_interval_size=False

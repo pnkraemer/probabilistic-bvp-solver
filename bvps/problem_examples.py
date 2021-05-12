@@ -498,8 +498,8 @@ def problem_24_second_order(xi=0.1, gamma=1.4):
 
 def p24_rhs_second_order(t, y, dy, xi, gamma):
     a = ((1 + gamma) / 2 - xi * dA(t)) * dy / (A(t) * xi)
-    b = - dy / (y ** 2 * A(t) * xi)
-    c = - dA(t) / (A(t) ** 2 * xi * y) + dA(t) /  (A(t) ** 2 * xi) * (gamma - 1) / 2 * y
+    b = -dy / (y ** 2 * A(t) * xi)
+    c = -dA(t) / (A(t) ** 2 * xi * y) + dA(t) / (A(t) ** 2 * xi) * (gamma - 1) / 2 * y
     return a + b + c
 
 
@@ -511,9 +511,9 @@ def p24_jacobian_second_order_ddy(t, y, dy, xi, gamma):
 
 
 def p24_jacobian_second_order_dy(t, y, dy, xi, gamma):
-    da = 0.
-    db = 2* dy / (A(t) * xi) / y ** 3
-    dc = dA(t) / (A(t)**2 * xi * y**2)  + dA(t) /  (A(t) ** 2 * xi) * (gamma - 1) / 2
+    da = 0.0
+    db = 2 * dy / (A(t) * xi) / y ** 3
+    dc = dA(t) / (A(t) ** 2 * xi * y ** 2) + dA(t) / (A(t) ** 2 * xi) * (gamma - 1) / 2
     return np.ones((1, 1)) * (da + db + dc)
 
 
@@ -523,3 +523,70 @@ def A(t):
 
 def dA(t):
     return 2 * t
+
+
+def measles():
+
+    mu = 0.02
+    xi = 0.0279
+    eta = 0.01
+    beta0 = 1575
+    betafun = lambda t: beta0 * (1 + np.cos(2 * np.pi * t))
+
+    # Projection to I & R
+    eye = np.eye(3, 6)
+    L = eye - np.flip(eye)
+    R = eye - np.flip(eye)
+
+    y0 = np.zeros(3)
+    ymax = np.zeros(3)
+    t0 = 0.0
+    tmax = 1.0
+
+    return BoundaryValueProblem(
+        f=lambda t, y: measles_rhs(t, y, mu=mu, betafun=betafun, xi=xi, eta=eta),
+        t0=t0,
+        tmax=tmax,
+        L=L,
+        R=R,
+        y0=y0,
+        ymax=ymax,
+        df=lambda t, y: measles_jac(t, y, mu=mu, betafun=betafun, xi=xi, eta=eta),
+        dimension=6,
+    )
+
+
+def measles_rhs(t, y, mu, betafun, xi, eta):
+    beta = betafun(t)
+    y1, y2, y3, c1, c2, c3 = y
+    f1 = mu - beta * y1 * y3
+    f2 = beta * y1 * y3 - y2 / xi
+    f3 = y2 / xi - y3 / eta
+    return np.array([f1, f2, f3, 0.0, 0.0, 0.0])
+
+
+def measles_jac(t, y, mu, betafun, xi, eta):
+    beta = betafun(t)
+    y1, y2, y3, c1, c2, c3 = y
+    df1_dy1 = -beta * y3
+    df1_dy2 = 0.0
+    df1_dy3 = -beta * y1
+
+    df2_dy1 = beta * y3
+    df2_dy2 = -1 / xi
+    df2_dy3 = beta * y1
+
+    df3_dy1 = 0.0
+    df3_dy2 = 1.0 / xi
+    df3_dy3 = -1.0 / eta
+    df_dy = np.array(
+        [
+            [df1_dy1, df1_dy2, df1_dy3, 0.0, 0.0, 0.0],
+            [df2_dy1, df2_dy2, df2_dy3, 0.0, 0.0, 0.0],
+            [df3_dy1, df3_dy2, df3_dy3, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        ]
+    )
+    return df_dy

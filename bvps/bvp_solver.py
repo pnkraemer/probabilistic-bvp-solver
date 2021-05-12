@@ -42,13 +42,19 @@ class BVPSolver:
         cls,
         dynamics_model,
         initial_sigma_squared=1e10,
-        use_bridge=True, normalise_with_interval_size=True
+        use_bridge=True,
+        normalise_with_interval_size=True,
     ):
         quadrature_rule = quadrature.expquad_interior_only()
         P0 = dynamics_model.proj2coord(0)
         P1 = dynamics_model.proj2coord(1)
         error_estimator = ErrorViaStandardDeviation(
-            atol=None, rtol=None, quadrature_rule=quadrature_rule, P0=P0, P1=P1, normalise_with_interval_size=normalise_with_interval_size
+            atol=None,
+            rtol=None,
+            quadrature_rule=quadrature_rule,
+            P0=P0,
+            P1=P1,
+            normalise_with_interval_size=normalise_with_interval_size,
         )
         return cls(
             dynamics_model=dynamics_model,
@@ -62,13 +68,19 @@ class BVPSolver:
         cls,
         dynamics_model,
         initial_sigma_squared=1e10,
-        use_bridge=True,normalise_with_interval_size=True,
+        use_bridge=True,
+        normalise_with_interval_size=True,
     ):
         quadrature_rule = quadrature.expquad_interior_only()
         P0 = dynamics_model.proj2coord(0)
         P1 = dynamics_model.proj2coord(1)
         error_estimator = ErrorViaResidual(
-            atol=None, rtol=None, quadrature_rule=quadrature_rule, P0=P0, P1=P1, normalise_with_interval_size=normalise_with_interval_size
+            atol=None,
+            rtol=None,
+            quadrature_rule=quadrature_rule,
+            P0=P0,
+            P1=P1,
+            normalise_with_interval_size=normalise_with_interval_size,
         )
         return cls(
             dynamics_model=dynamics_model,
@@ -82,13 +94,19 @@ class BVPSolver:
         cls,
         dynamics_model,
         initial_sigma_squared=1e10,
-        use_bridge=True, normalise_with_interval_size=True,
+        use_bridge=True,
+        normalise_with_interval_size=True,
     ):
         quadrature_rule = quadrature.expquad_interior_only()
         P0 = dynamics_model.proj2coord(0)
         P1 = dynamics_model.proj2coord(1)
         error_estimator = ErrorViaProbabilisticResidual(
-            atol=None, rtol=None, quadrature_rule=quadrature_rule, P0=P0, P1=P1, normalise_with_interval_size=normalise_with_interval_size
+            atol=None,
+            rtol=None,
+            quadrature_rule=quadrature_rule,
+            P0=P0,
+            P1=P1,
+            normalise_with_interval_size=normalise_with_interval_size,
         )
         return cls(
             dynamics_model=dynamics_model,
@@ -449,7 +467,15 @@ def construct_candidate_nodes(current_mesh, nodes_per_interval, where=None):
 
 
 class BVPErrorEstimator(abc.ABC):
-    def __init__(self, atol, rtol, quadrature_rule, P0=None, P1=None, normalise_with_interval_size=True):
+    def __init__(
+        self,
+        atol,
+        rtol,
+        quadrature_rule,
+        P0=None,
+        P1=None,
+        normalise_with_interval_size=True,
+    ):
         self.quadrature_rule = quadrature_rule
         self.atol = atol
         self.rtol = rtol
@@ -536,7 +562,9 @@ class ErrorViaStandardDeviation(BVPErrorEstimator):
     def estimate_squared_error_at_points(
         self, evaluated_posterior, points, calibrated_sigma_squared, ode_measmod_list
     ):
-        squared_error_estimate = evaluated_posterior.var @ self.P0.T * calibrated_sigma_squared
+        squared_error_estimate = (
+            evaluated_posterior.var @ self.P0.T * calibrated_sigma_squared
+        )
         reference = evaluated_posterior.mean @ self.P0.T
         return squared_error_estimate, reference, {}
 

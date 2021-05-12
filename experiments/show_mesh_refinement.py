@@ -28,7 +28,7 @@ measmod = ode_measmods.from_second_order_ode(bvp, ibm)
 solver = bvp_solver.BVPSolver.from_default_values(
     ibm, use_bridge=False, initial_sigma_squared=1e2, normalise_with_interval_size=False
 )
-MAXIT = 2
+MAXIT = 10
 TOL = 1e-6
 
 # Plotting parameters
@@ -46,9 +46,8 @@ plt.style.use(
 )
 # mpl.rcParams['lines.linewidth'] = 0.5
 
-COLOR="darkgreen"
+COLOR = "darkgreen"
 SECOND_COLOR = "blue"
-
 
 
 # Reference solution
@@ -82,7 +81,7 @@ fig, axes = plt.subplots(
     gridspec_kw={"height_ratios": [8, 8, 8, 8]},
 )
 
-for axis_index, (N, ax) in enumerate(zip([5, 5**2, 5**3], axes.T)):
+for axis_index, (N, ax) in enumerate(zip([5, 5 ** 2, 5 ** 3], axes.T)):
     # ax[0].set_title(f"$N={N}$")
     initial_grid = np.linspace(bvp.t0, bvp.tmax, N)
     initial_guess = np.ones((len(initial_grid), bvp.dimension))
@@ -135,11 +134,12 @@ for axis_index, (N, ax) in enumerate(zip([5, 5**2, 5**3], axes.T)):
     #
     # i = next(idx)
 
-
     # First row: uncertainties derived from std
     assert t.shape == error_estimates_std.shape
     ax[i].semilogy(t, error_estimates_std ** 2, "-", color="black")
-    ax[i].fill_between(t, 1e-16*np.ones_like(t), error_estimates_std ** 2, color=COLOR, alpha=0.2)
+    ax[i].fill_between(
+        t, 1e-16 * np.ones_like(t), error_estimates_std ** 2, color=COLOR, alpha=0.2
+    )
     if axis_index == 0:
         ax[i].set_ylabel("Variance")
     ax[i].semilogy(
@@ -150,7 +150,9 @@ for axis_index, (N, ax) in enumerate(zip([5, 5**2, 5**3], axes.T)):
     )
     ax[i].set_ylim(LOG_YLIM)
     ax[i].set_yticks([LOG_YLIM[0], 1e-5, LOG_YLIM[1]])
-    ax[i].set_title(f"\\bf {titles[i]}{str(N)}", loc="left", fontweight="bold", fontsize="small")
+    ax[i].set_title(
+        f"\\bf {titles[i]}{str(N)}", loc="left", fontweight="bold", fontsize="small"
+    )
 
     i = next(idx)
 
@@ -183,7 +185,9 @@ for axis_index, (N, ax) in enumerate(zip([5, 5**2, 5**3], axes.T)):
         ax[i].set_ylabel("Solution")
     ax[i].set_ylim((-3, 5))
     ax[i].set_yticks([-3, 1, 5])
-    ax[i].set_title(f"\\bf {titles[i]}{str(N)}", loc="left", fontweight="bold", fontsize="small")
+    ax[i].set_title(
+        f"\\bf {titles[i]}{str(N)}", loc="left", fontweight="bold", fontsize="small"
+    )
     i = next(idx)
 
     # Next row: Residual and uncertainties
@@ -211,7 +215,9 @@ for axis_index, (N, ax) in enumerate(zip([5, 5**2, 5**3], axes.T)):
     ax[i].set_ylim((-2000, 2000))
     ax[i].set_yticks([-2000, 0, 2000])
 
-    ax[i].set_title(f"\\bf {titles[i]}{str(N)}", loc="left", fontweight="bold", fontsize="small")
+    ax[i].set_title(
+        f"\\bf {titles[i]}{str(N)}", loc="left", fontweight="bold", fontsize="small"
+    )
 
     i = next(idx)
 
@@ -227,11 +233,23 @@ for axis_index, (N, ax) in enumerate(zip([5, 5**2, 5**3], axes.T)):
         t,
         error_estimates_res_mean[:, 0] ** 2 + error_estimates_res_std[:, 0] ** 2,
         color="black",
-        linestyle="dashed"
+        linestyle="dashed",
     )
 
-    ax[i].fill_between(t, 1e-16*np.ones_like(t), error_estimates_res_mean[:, 0] ** 2, color="black", alpha=0.2)
-    ax[i].fill_between(t, error_estimates_res_mean[:, 0] ** 2, error_estimates_res_mean[:, 0] ** 2 + error_estimates_res_std[:, 0] ** 2,color=SECOND_COLOR, alpha=0.2)
+    ax[i].fill_between(
+        t,
+        1e-16 * np.ones_like(t),
+        error_estimates_res_mean[:, 0] ** 2,
+        color="black",
+        alpha=0.2,
+    )
+    ax[i].fill_between(
+        t,
+        error_estimates_res_mean[:, 0] ** 2,
+        error_estimates_res_mean[:, 0] ** 2 + error_estimates_res_std[:, 0] ** 2,
+        color=SECOND_COLOR,
+        alpha=0.2,
+    )
 
     ax[i].semilogy(
         t,
@@ -243,13 +261,14 @@ for axis_index, (N, ax) in enumerate(zip([5, 5**2, 5**3], axes.T)):
     ax[i].set_yticks([LOG_YLIM[0], 1e-5, LOG_YLIM[1]])
     if axis_index == 0:
         ax[i].set_ylabel("Residual")
-    ax[i].set_title(f"\\bf {titles[i]}{str(N)}", loc="left", fontweight="bold", fontsize="small")
+    ax[i].set_title(
+        f"\\bf {titles[i]}{str(N)}", loc="left", fontweight="bold", fontsize="small"
+    )
     i = next(idx)
-
 
     # Clean up: remove all ticks for now and show the plot
     for a in ax:
-        a.set_xticks([bvp.t0, bvp.t0 + 0.5*(bvp.tmax - bvp.t0), bvp.tmax])
+        a.set_xticks([bvp.t0, bvp.t0 + 0.5 * (bvp.tmax - bvp.t0), bvp.tmax])
         # a.set_yticks([])
         a.set_xlim((bvp.t0, bvp.tmax))
 for ax in axes[-1]:
