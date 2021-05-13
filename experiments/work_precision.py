@@ -5,7 +5,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from probnum import statespace, randvars, filtsmooth, diffeq
 from probnum._randomvariablelist import _RandomVariableList
-from bvps import problem_examples, bridges, solver
+from bvps import problem_examples, bridges, bvp_solver
 from tqdm import tqdm
 import pandas as pd
 
@@ -14,9 +14,10 @@ from probnum import random_variables as randvars
 
 
 from scipy.integrate import solve_bvp
+import time
 
 # Easy aliases
-anees = timeseries.average_normalized_estimation_error_squared
+anees = timeseries.non_credibility_index
 rmse = timeseries.root_mean_square_error
 
 
@@ -24,24 +25,18 @@ TMAX = 1.0
 XI = 0.001
 
 
-bvp = problem_examples.bratus_second_order()
-bvp1st = problem_examples.bratus()
+bvp = problem_examples.problem_20_second_order(xi=0.5)
 
-
-print(bvp1st.y0, bvp1st.ymax)
-print(bvp1st.L, bvp1st.R)
 TOL = 1e-5
 
 
-initial_grid = np.linspace(bvp.t0, bvp.tmax, 10)
-initial_guess = np.zeros((2, len(initial_grid)))
-refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=TOL)
-refsol_fine = solve_bvp(
-    bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=1e-12
-)
-bvp.solution = refsol_fine.sol
 
-q = 5
+# refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=TOL)
+# refsol_fine = solve_bvp(
+#     bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=1e-12
+# )
+# bvp.solution = refsol_fine.sol
+
 
 
 results = {}
@@ -65,8 +60,6 @@ for q in [3, 4, 5, 6]:
     )
     # ibm.equivalent_discretisation_preconditioned._proc_noise_cov_cholesky *= 1e5
 
-    integ = bridges.GaussMarkovBridge(ibm, bvp)
-
     # initial_grid = np.linspace(bvp.t0, bvp.tmax, 2)
 
     # print(len(refsol.x))
@@ -82,51 +75,43 @@ for q in [3, 4, 5, 6]:
 
     evalgrid = np.linspace(bvp.t0, bvp.tmax, 250, endpoint=True)
 
-    for TOL in 10.0 ** -(np.arange(1.0, 6.0)):
+    for tol_order in np.arange(1.0, 6.0):
+        TOL = 10. ** (2-tol_order)
+        initial_grid = np.linspace(bvp.t0, bvp.tmax, int(10*tol_order/2))
+        initial_guess = np.zeros((len(initial_grid), bvp.dimension))
+
         print("tol", TOL)
-        posterior_generator = solver.probsolve_bvp(
-            bvp=bvp,
-            bridge_prior=integ,
-            initial_grid=initial_grid,
-            atol=1 * TOL,
-            rtol=1 * TOL,
-            insert="double",
-            which_method="ekf",
-            maxit=5,
-            ignore_bridge=False,
-            which_errors="probabilistic_defect",
-            refinement="tolerance",
-            initial_sigma_squared=1e1,
+
+        solver = bvp_solver.BVPSolver.from_default_values_std_refinement(
+            ibm, initial_sigma_squared=1e1
+        )
+        initial_posterior, sigma_squared = solver.compute_initialisation(
+            bvp, initial_grid, initial_guess=initial_guess, use_bridge=True
         )
 
-        # for idx, x in enumerate(posterior_generator):
-        #     print(x)
-        #     if idx > 1:
-        #         assert False
+        solution_gen = solver.solution_generator(
+            bvp,
+            atol=TOL,
+            rtol=TOL,
+            initial_posterior=initial_posterior,
+            maxit_ieks=10,
+            maxit_em=2,
+            yield_ieks_iterations=False,
+        )
 
-        for idx, (
-            post,
-            ssq,
-            integral_error,
-            kalpost,
-            candidates,
-            h,
-            quotient,
-            sigmas,
-            insert_one,
-            insert_two,
-            measmod,
-        ) in enumerate(posterior_generator):
-            pass
-
-        solution = post
+        start_time = time.time()
+        for post, ssq in solution_gen:
+            print(len(post.locations))
+        end_time = time.time() - start_time
+        solution = diffeq.KalmanODESolution(post)
 
         testlocations = np.linspace(bvp.t0, bvp.tmax)
-        reference_solution = lambda *args, **kwargs: refsol_fine.sol(*args, **kwargs)[
-            0
-        ].T.reshape((-1, 1))
+        reference_solution = lambda *args, **kwargs: bvp.solution(*args, **kwargs).T
+        # plt.plot(testlocations, reference_solution(testlocations))
+        # plt.plot(testlocations, solution(testlocations).mean[:, 0])
+        # plt.show()
 
-        solution_mean = lambda *args, **kwargs: solution(*args, **kwargs).mean
+        solution_mean = lambda *args, **kwargs: solution(*args, **kwargs).mean[:, 0]
 
         chi2 = anees(solution, reference_solution, testlocations) / ssq
 
@@ -135,7 +120,8 @@ for q in [3, 4, 5, 6]:
         results[q][TOL]["chi2"] = chi2
         results[q][TOL]["error"] = error
         results[q][TOL]["N"] = len(solution.locations)
-
+        results[q][TOL]["time"] = end_time
+        print(chi2)
 print(results)
 
 import json
