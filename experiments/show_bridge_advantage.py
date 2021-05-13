@@ -13,16 +13,16 @@ import itertools
 # bvp = problem_examples.problem_7_second_order(xi=1e-2)
 bvp = problem_examples.problem_20_second_order(xi=1e-2)
 ibm = statespace.IBM(
-    ordint=3,
+    ordint=4,
     spatialdim=bvp.dimension,
     forward_implementation="sqrt",
     backward_implementation="sqrt",
 )
-N = 8
+N = 6
 initial_grid = np.linspace(bvp.t0, bvp.tmax, N, endpoint=True)
-t = np.linspace(bvp.t0, bvp.tmax, 200)
+t = np.linspace(bvp.t0, bvp.tmax, 100)
 
-MAXIT = 3
+MAXIT = 5
 
 
 plt.style.use(
@@ -34,19 +34,25 @@ plt.style.use(
         "./visualization/stylesheets/baby_colors.mplstyle",
     ]
 )
-fig, ax = plt.subplots(
-    ncols=2,
+fig, ax_ = plt.subplots(
+    ncols=4,
     nrows=1,
     sharey=True,
-    dpi=200,
+    sharex=True,
     gridspec_kw={"height_ratios": [4]},
     constrained_layout=True,
 )
-
-for initial_guess in [None, np.ones((N, bvp.dimension))]:
-    for USE_BRIDGE, axis, cmap in zip(
-        [True, False], ax, [plt.cm.Oranges, plt.cm.Greens]
+ax = ax_.reshape((2, 2))
+colormaps = [plt.cm.Blues, plt.cm.Greens,plt.cm.Reds,plt.cm.Purples,]
+colormap_index_generator = itertools.count()
+colormap_index = next(colormap_index_generator)
+for initial_guess, row_axis in zip([None, 2*np.ones((N, bvp.dimension))], ax):
+    for USE_BRIDGE, axis in zip(
+        [True, False], row_axis
     ):
+        cmap = colormaps[colormap_index]
+        colormap_index = next(colormap_index_generator)
+
         solver = bvp_solver.BVPSolver.from_default_values(
             ibm, initial_sigma_squared=1e8
         )
@@ -83,28 +89,38 @@ for initial_guess in [None, np.ones((N, bvp.dimension))]:
             #         alpha=0.3 + 0.7 * float(i / (MAXIT)),
             #     )
             q = 0
-            if initial_guess is None:
-                color = cmap(0.2 + 0.8 * i / MAXIT)
-                alpha = 0.9
-                linewidth = 2.5
-                markersize = 8
-            else:
-                color = plt.cm.Greys(0.2 + 0.5 * i / MAXIT)
-                alpha = 0.7
-                linewidth = 1.5
-                markersize = 6
+            color = cmap(0.3 + 0.6*i / MAXIT)
+            alpha = 0.99
+            linewidth = 2
+            markersize = 5
+            zorder=1
+            marker="o"
 
-            axis.plot(t, y[:, q], "-", color=color, alpha=alpha, linewidth=linewidth)
+            axis.plot(t, y[:, q], "-", color=color, alpha=alpha, linewidth=linewidth, zorder=zorder)
             axis.plot(
                 kalman_posterior.locations,
                 kalman_posterior.states.mean[:, 0],
-                ".",
+                marker=marker,
                 color=color,
+                linestyle="None",
                 alpha=alpha,
                 linewidth=linewidth,
-                markersize=markersize,
+                markersize=markersize, zorder=zorder,
+                markeredgewidth=0.5,
+                markeredgecolor="black",
             )
             axis.plot(t, bvp.solution(t), color="black", linestyle="dashed")
+
+            if USE_BRIDGE:
+                bridge_title = "Bridge"
+            else:
+                bridge_title = "Conventional"
+            if initial_guess is None:
+                EKS_title = "EKS"
+            else:
+                EKS_title = "Guess"
+            axis.set_title(bridge_title + r" $\&$ " + EKS_title)
+            axis.set_xlabel("Time $t$")
 
         # for q, curr_ax in zip(range(ibm.ordint + 1), axis):
         #     if q == 0:
@@ -114,11 +130,7 @@ for initial_guess in [None, np.ones((N, bvp.dimension))]:
         # for x in kalman_posterior.locations:
         #    curr_ax.axvline(x, linewidth=0.25, color="k")
 
-
-ax[0].set_title("Bridge")
-ax[1].set_title("No Bridge")
-ax[0].set_ylabel("State y")
-ax[0].set_xlabel("Time $t$")
-ax[1].set_xlabel("Time $t$")
+ax[0][0].set_ylabel("Solution $y$")
+ax[1][1].set_ylim((0.5, 2.5))
 plt.savefig("bridge_advantage.pdf")
 plt.show()
