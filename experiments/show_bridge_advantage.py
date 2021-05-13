@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 
+import itertools
 # bvp = problem_examples.problem_7_second_order(xi=1e-2)
 bvp = problem_examples.problem_20_second_order(xi=1e-2)
 ibm = statespace.IBM(
@@ -18,12 +19,10 @@ ibm = statespace.IBM(
     backward_implementation="sqrt",
 )
 N = 8
-initial_grid = np.linspace(bvp.t0, bvp.tmax, N)
+initial_grid = np.linspace(bvp.t0, bvp.tmax, N, endpoint=True)
 t = np.linspace(bvp.t0, bvp.tmax, 200)
 
-MAXIT = 10
-
-initial_guess = np.ones((N, bvp.dimension))
+MAXIT = 3
 
 
 plt.style.use(
@@ -45,22 +44,29 @@ fig, ax = plt.subplots(
 )
 
 for initial_guess in [None, np.ones((N, bvp.dimension))]:
-    for USE_BRIDGE, axis, cmap in zip([True, False], ax, [plt.cm.Oranges, plt.cm.Greens]):
+    for USE_BRIDGE, axis, cmap in zip(
+        [True, False], ax, [plt.cm.Oranges, plt.cm.Greens]
+    ):
         solver = bvp_solver.BVPSolver.from_default_values(
-            ibm, use_bridge=USE_BRIDGE, initial_sigma_squared=1e8
+            ibm, initial_sigma_squared=1e8
         )
+        initial_posterior, sigma_squared = solver.compute_initialisation(
+            bvp, initial_grid, initial_guess, use_bridge=USE_BRIDGE
+        )
+
         solution_gen = solver.solution_generator(
             bvp,
             atol=1e-0,
             rtol=1e-0,
-            initial_grid=initial_grid,
-            initial_guess=initial_guess,
+            initial_posterior=initial_posterior,
             maxit_ieks=MAXIT,
             yield_ieks_iterations=True,
         )
 
         # Only the first 20 iterations, i.e. the first 4 refinements (since maxit_ieks=5)
-        for i, (kalman_posterior, sigma_squared) in zip(tqdm(range(MAXIT)), solution_gen):
+        for i, (kalman_posterior, sigma_squared) in zip(
+            tqdm(range(MAXIT)), itertools.chain([(initial_posterior, sigma_squared)], solution_gen)
+        ):
 
             y = kalman_posterior(t).mean
             s = kalman_posterior(t).std * np.sqrt(sigma_squared)
@@ -79,17 +85,25 @@ for initial_guess in [None, np.ones((N, bvp.dimension))]:
             q = 0
             if initial_guess is None:
                 color = cmap(0.2 + 0.8 * i / MAXIT)
-                alpha=0.9
-                linewidth=2.5
-                markersize=8
+                alpha = 0.9
+                linewidth = 2.5
+                markersize = 8
             else:
                 color = plt.cm.Greys(0.2 + 0.5 * i / MAXIT)
-                alpha=0.7
-                linewidth=1.5
-                markersize=6
+                alpha = 0.7
+                linewidth = 1.5
+                markersize = 6
 
             axis.plot(t, y[:, q], "-", color=color, alpha=alpha, linewidth=linewidth)
-            axis.plot(kalman_posterior.locations, kalman_posterior.states.mean[:, 0], ".", color=color, alpha=alpha, linewidth=linewidth, markersize=markersize)
+            axis.plot(
+                kalman_posterior.locations,
+                kalman_posterior.states.mean[:, 0],
+                ".",
+                color=color,
+                alpha=alpha,
+                linewidth=linewidth,
+                markersize=markersize,
+            )
             axis.plot(t, bvp.solution(t), color="black", linestyle="dashed")
 
         # for q, curr_ax in zip(range(ibm.ordint + 1), axis):
@@ -97,8 +111,8 @@ for initial_guess in [None, np.ones((N, bvp.dimension))]:
         #         curr_ax.plot(t, bvp.solution(t), color="gray", linestyle="dashed")
         #         curr_ax.plot(t, y[:, q], color="k", alpha=0.1 + 0.9 * float(i / (MAXIT)))
 
-            # for x in kalman_posterior.locations:
-            #    curr_ax.axvline(x, linewidth=0.25, color="k")
+        # for x in kalman_posterior.locations:
+        #    curr_ax.axvline(x, linewidth=0.25, color="k")
 
 
 ax[0].set_title("Bridge")

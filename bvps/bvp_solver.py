@@ -28,12 +28,10 @@ class BVPSolver:
         dynamics_model,
         error_estimator,
         initial_sigma_squared=1e10,
-        use_bridge=True,
     ):
         self.dynamics_model = dynamics_model
         self.error_estimator = error_estimator
         self.initial_sigma_squared = initial_sigma_squared
-        self.use_bridge = use_bridge
 
         self.localconvrate = self.dynamics_model.ordint  # + 0.5?
 
@@ -42,7 +40,6 @@ class BVPSolver:
         cls,
         dynamics_model,
         initial_sigma_squared=1e10,
-        use_bridge=True,
         normalise_with_interval_size=True,
     ):
         quadrature_rule = quadrature.expquad_interior_only()
@@ -60,7 +57,6 @@ class BVPSolver:
             dynamics_model=dynamics_model,
             error_estimator=error_estimator,
             initial_sigma_squared=initial_sigma_squared,
-            use_bridge=use_bridge,
         )
 
     @classmethod
@@ -68,7 +64,6 @@ class BVPSolver:
         cls,
         dynamics_model,
         initial_sigma_squared=1e10,
-        use_bridge=True,
         normalise_with_interval_size=True,
     ):
         quadrature_rule = quadrature.expquad_interior_only()
@@ -86,7 +81,6 @@ class BVPSolver:
             dynamics_model=dynamics_model,
             error_estimator=error_estimator,
             initial_sigma_squared=initial_sigma_squared,
-            use_bridge=use_bridge,
         )
 
     @classmethod
@@ -94,7 +88,6 @@ class BVPSolver:
         cls,
         dynamics_model,
         initial_sigma_squared=1e10,
-        use_bridge=True,
         normalise_with_interval_size=True,
     ):
         quadrature_rule = quadrature.expquad_interior_only()
@@ -112,8 +105,91 @@ class BVPSolver:
             dynamics_model=dynamics_model,
             error_estimator=error_estimator,
             initial_sigma_squared=initial_sigma_squared,
-            use_bridge=use_bridge,
         )
+
+    def compute_initialisation(
+        self, bvp, initial_grid, initial_guess=None, use_bridge=True
+    ):
+        # Check that initial grid covers the domain
+        np.testing.assert_allclose(bvp.t0, initial_grid[0])
+        np.testing.assert_allclose(bvp.tmax, initial_grid[-1])
+        # Check that initial guess satisfies the BC
+
+        # Create bridge
+        initrv_not_bridged = self.create_initrv()
+        if use_bridge:
+            dynamics_model, initrv = self.initialise_bridge(bvp, initrv_not_bridged)
+        else:
+            dynamics_model, initrv = self.dynamics_model, initrv_not_bridged
+        filter_object = kalman.MyKalman(
+            dynamics_model, measurement_model=None, initrv=initrv
+        )
+
+        # Create Measmodlist and zero data
+        N = len(initial_grid)
+        d = bvp.dimension
+        if initial_guess is not None and use_bridge == True:
+            initguess_measmodfun = self.initial_guess_measurement_model_function(damping=1e-6)
+        else:
+            initguess_measmodfun = self.initial_guess_measurement_model_function(damping=0.)
+
+        if initial_guess is None:
+            initial_guess_full = [None] * N
+        else:
+            initial_guess_full = initial_guess
+        if isinstance(bvp, problems.SecondOrderBoundaryValueProblem):
+            ode_measmod = ode_measmods.from_second_order_ode(bvp, self.dynamics_model)
+        else:
+            ode_measmod = ode_measmods.from_ode(bvp, self.dynamics_model)
+        measmod_list = [
+            ode_measmod if el is None else initguess_measmodfun(el)
+            for el in initial_guess_full
+        ]
+
+        left_measmod, right_measmod = ode_measmods.from_boundary_conditions(
+            bvp, self.dynamics_model
+        )
+
+        if initial_guess is None and use_bridge == False:
+            measmod_list[0] = [left_measmod, measmod_list[0]]
+            measmod_list[-1] = [measmod_list[-1], right_measmod]
+
+
+        # Filter
+        kalman_posterior = filter_object.filtsmooth(
+            dataset=np.zeros((N, d)),
+            times=initial_grid,
+            measmod_list=measmod_list,
+        )
+        sigmas = filter_object.sigmas
+        normalisation = filter_object.normalisation_for_sigmas
+        sigma_squared = np.sum(sigmas) / normalisation
+        return kalman_posterior, sigma_squared
+
+    def initialise_bridge(self, bvp, initrv_not_bridged):
+
+        bridge_prior = bridges.GaussMarkovBridge(self.dynamics_model, bvp)
+        initrv_bridged = bridge_prior.initialise_boundary_conditions(initrv_not_bridged)
+        return bridge_prior, initrv_bridged
+
+    def initial_guess_measurement_model_function(self, damping=0.0):
+
+        projmat = self.dynamics_model.proj2coord(0)
+        d = projmat.shape[0]
+
+        variances = damping * np.ones(d)
+        process_noise_cov = np.diag(variances)
+        process_noise_cov_cholesky = np.diag(np.sqrt(variances))
+
+        measmodfun = lambda s: statespace.DiscreteLTIGaussian(
+            state_trans_mat=projmat,
+            shift_vec=-s,
+            proc_noise_cov_mat=process_noise_cov,
+            proc_noise_cov_cholesky=process_noise_cov_cholesky,
+            forward_implementation="sqrt",
+            backward_implementation="sqrt",
+        )
+        return measmodfun
 
     def solve(self, *args, **kwargs):
         for kalman_posterior, _ in self.solution_generator(*args, **kwargs):
@@ -125,50 +201,29 @@ class BVPSolver:
         bvp,
         atol,
         rtol,
-        initial_grid,
+        initial_posterior,
         maxit_ieks=10,
         maxit_em=1,
-        initial_guess=None,
         yield_ieks_iterations=False,
     ):
 
         self.error_estimator.set_tolerance(atol=atol, rtol=rtol)
+
+        kalman_posterior = initial_posterior
+        times = kalman_posterior.locations
+        dataset = np.zeros((len(times), bvp.dimension))
+
         # Create data and measmods
         ode_measmod, left_measmod, right_measmod = self.choose_measurement_model(bvp)
-        times = initial_grid
-        dataset = np.zeros((len(times), bvp.dimension))
         measmod_list = self.create_measmod_list(
             ode_measmod, left_measmod, right_measmod, times
         )
 
-        # Initialise with ODE or data
         filter_object = self.setup_filter_object(bvp)
-        if initial_guess is None:
-            kalman_posterior = filter_object.filtsmooth(
-                dataset=dataset, times=times, measmod_list=measmod_list
-            )
-        else:
-            initial_guess_measmod_list = self.initial_guess_measurement_models(
-                initial_guess,
-                damping=1e-14,
-                left_measmod=left_measmod,
-                right_measmod=right_measmod,
-            )
-            kalman_posterior = filter_object.filtsmooth(
-                dataset=np.zeros_like(initial_guess),
-                times=times,
-                measmod_list=initial_guess_measmod_list,
-            )
-        sigmas = filter_object.sigmas
-        normalisation = filter_object.normalisation_for_sigmas
-        sigma_squared = np.sum(sigmas) / normalisation
-        yield kalman_posterior, sigma_squared
-
         linearise_at = kalman_posterior.states
-
         acceptable_intervals = np.zeros(len(times[1:]), dtype=bool)
         while np.any(np.logical_not(acceptable_intervals)):
-            # while True:
+
             # EM iterations
             for _ in range(maxit_em):
 
@@ -234,8 +289,7 @@ class BVPSolver:
         initrv_not_bridged = self.update_covariances_with_sigma_squared(
             initrv_not_bridged, self.initial_sigma_squared
         )
-        prior, initrv = self.initialise_bridge(bvp, initrv_not_bridged)
-        filter_object = kalman.MyKalman(prior, None, initrv)
+        filter_object = kalman.MyKalman(self.dynamics_model, None, initrv_not_bridged)
         return filter_object
 
     def create_initrv(self):
@@ -249,11 +303,6 @@ class BVPSolver:
         """Include sigma into initial covariance and process noise."""
 
         sigma = np.sqrt(sigma_squared)
-        m0 = initrv_not_bridged.mean
-        C0 = sigma_squared * initrv_not_bridged.cov
-        C0_cholesky = sigma * initrv_not_bridged.cov_cholesky
-        initrv_not_bridged = randvars.Normal(m0, C0, cov_cholesky=C0_cholesky)
-
         self.dynamics_model.equivalent_discretisation_preconditioned._proc_noise_cov_cholesky *= (
             sigma
         )
@@ -261,17 +310,6 @@ class BVPSolver:
             sigma_squared
         )
         return initrv_not_bridged
-
-    def initialise_bridge(self, bvp, initrv_not_bridged):
-
-        if self.use_bridge:
-            bridge_prior = bridges.GaussMarkovBridge(self.dynamics_model, bvp)
-            initrv_bridged = bridge_prior.initialise_boundary_conditions(
-                initrv_not_bridged
-            )
-            return bridge_prior, initrv_bridged
-        else:
-            return self.dynamics_model, initrv_not_bridged
 
     def choose_measurement_model(self, bvp):
 
@@ -290,33 +328,25 @@ class BVPSolver:
         N = len(times)
         if N < 3:
             raise ValueError("Too few time steps")
-        if self.use_bridge:
-            return [ode_measmod] * N
-        else:
-            measmod_list = [[left_measmod, ode_measmod]]
-            measmod_list.extend([ode_measmod] * (N - 2))
-            measmod_list.extend([[right_measmod, ode_measmod]])
-            return measmod_list
+        measmod_list = [[left_measmod, ode_measmod]]
+        measmod_list.extend([ode_measmod] * (N - 2))
+        measmod_list.extend([[right_measmod, ode_measmod]])
+        return measmod_list
 
     def linearise_measmod_list(self, measmod_list, states, times):
 
-        if self.use_bridge:
-            lin_measmod_list = [
-                mm.linearize(state) for (mm, state) in zip(measmod_list, states)
-            ]
-        else:
-            lin_measmod_list = [
-                mm.linearize(state)
-                for (mm, state) in zip(measmod_list[1:-1], states[1:-1])
-            ]
+        lin_measmod_list = [
+            mm.linearize(state)
+            for (mm, state) in zip(measmod_list[1:-1], states[1:-1])
+        ]
 
-            mm0 = measmod_list[0][0]
-            lm0 = measmod_list[0][1].linearize(states[0])
-            mm1 = measmod_list[-1][0]
-            lm1 = measmod_list[-1][1].linearize(states[-1])
+        mm0 = measmod_list[0][0]
+        lm0 = measmod_list[0][1].linearize(states[0])
+        mm1 = measmod_list[-1][0]
+        lm1 = measmod_list[-1][1].linearize(states[-1])
 
-            lin_measmod_list.insert(0, [mm0, lm0])
-            lin_measmod_list.append([mm1, lm1])
+        lin_measmod_list.insert(0, [mm0, lm0])
+        lin_measmod_list.append([mm1, lm1])
 
         return lin_measmod_list
 
@@ -346,32 +376,11 @@ class BVPSolver:
     #     info = {"evaluated_posterior": evaluated_posterior}
     #     return squared_error, reference, info
 
-    def initial_guess_measurement_models(
-        self, initial_guess, damping, left_measmod, right_measmod
-    ):
-
-        N, d = initial_guess.shape
-        projmat = self.dynamics_model.proj2coord(0)
-
-        variances = damping * np.ones(d)
-        process_noise_cov = np.diag(variances)
-        process_noise_cov_cholesky = np.diag(np.sqrt(variances))
-
-        measmodfun = lambda s: statespace.DiscreteLTIGaussian(
-            state_trans_mat=projmat,
-            shift_vec=-s,
-            proc_noise_cov_mat=process_noise_cov,
-            proc_noise_cov_cholesky=process_noise_cov_cholesky,
-            forward_implementation="sqrt",
-            backward_implementation="sqrt",
-        )
-        return [measmodfun(s=d) for d in initial_guess]
-
-        # else:
-        #     measmod_list = [[measmodfun(s=initial_guess[0])]]
-        #     measmod_list.extend([measmodfun(s=d) for d in initial_guess[1:-1]])
-        #     measmod_list.extend([[measmodfun(s=initial_guess[-1])]])
-        #     return measmod_list
+    # else:
+    #     measmod_list = [[measmodfun(s=initial_guess[0])]]
+    #     measmod_list.extend([measmodfun(s=d) for d in initial_guess[1:-1]])
+    #     measmod_list.extend([[measmodfun(s=initial_guess[-1])]])
+    #     return measmod_list
 
 
 ########################################################################

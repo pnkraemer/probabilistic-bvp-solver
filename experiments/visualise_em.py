@@ -80,17 +80,27 @@ for MAXIT_IEKS, axis_col, color in zip([MAXIT, 6, 1], axes.T, ["C0", "C1", "C2"]
         # plt.plot(x, y[:, 0])
         # plt.plot(x, y[:, 1:3])
         axis_col[0].plot(t, bvp.solution(t), color="black", linestyle="dotted")
-        axis_col[0].plot(t, y2[:, 0], color=plt.cm.cividis(1- iteration/MAXIT))
+        axis_col[0].plot(t, y2[:, 0], color=plt.cm.cividis(1 - iteration / MAXIT))
         axis_col[0].plot(
-            x, y[:, 0], "o",  color=plt.cm.cividis(1 - iteration/MAXIT), markeredgecolor="black", markeredgewidth=0.01, alpha=0.95, markersize=4
+            x,
+            y[:, 0],
+            "o",
+            color=plt.cm.cividis(1 - iteration / MAXIT),
+            markeredgecolor="black",
+            markeredgewidth=0.01,
+            alpha=0.95,
+            markersize=4,
         )
         axis_col[1].semilogy(
             x,
             np.abs(res) + 1e-18,
             "o",
-            color=plt.cm.cividis(1 - iteration/MAXIT),
+            color=plt.cm.cividis(1 - iteration / MAXIT),
             nonpositive="clip",
-            markeredgecolor="black", markeredgewidth=0.01, alpha=0.95, markersize=4
+            markeredgecolor="black",
+            markeredgewidth=0.01,
+            alpha=0.95,
+            markersize=4,
         )
         # axis_col[1].semilogy(t, np.abs(res2),color="gray", nonpositive="clip")
         # axis_col[0].set_ylim((-0.02, 0.02))
@@ -153,7 +163,6 @@ axes[-1][2].set_xlabel("Time $t$")
 #         alpha=0.5,
 #         nonpositive="clip",
 #     )
-
 
 
 # mpl.colorbar.ColorbarBase(ax=axes.ravel().tolist(), cmap=plt.cm.magma)
