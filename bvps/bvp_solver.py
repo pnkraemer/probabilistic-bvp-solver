@@ -129,9 +129,13 @@ class BVPSolver:
         N = len(initial_grid)
         d = bvp.dimension
         if initial_guess is not None and use_bridge == True:
-            initguess_measmodfun = self.initial_guess_measurement_model_function(damping=1e-6)
+            initguess_measmodfun = self.initial_guess_measurement_model_function(
+                damping=1e-6
+            )
         else:
-            initguess_measmodfun = self.initial_guess_measurement_model_function(damping=0.)
+            initguess_measmodfun = self.initial_guess_measurement_model_function(
+                damping=0.0
+            )
 
         if initial_guess is None:
             initial_guess_full = [None] * N
@@ -153,7 +157,6 @@ class BVPSolver:
         if initial_guess is None and use_bridge == False:
             measmod_list[0] = [left_measmod, measmod_list[0]]
             measmod_list[-1] = [measmod_list[-1], right_measmod]
-
 
         # Filter
         kalman_posterior = filter_object.filtsmooth(
@@ -336,8 +339,7 @@ class BVPSolver:
     def linearise_measmod_list(self, measmod_list, states, times):
 
         lin_measmod_list = [
-            mm.linearize(state)
-            for (mm, state) in zip(measmod_list[1:-1], states[1:-1])
+            mm.linearize(state) for (mm, state) in zip(measmod_list[1:-1], states[1:-1])
         ]
 
         mm0 = measmod_list[0][0]

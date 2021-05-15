@@ -15,7 +15,7 @@ plt.style.use(
         # "./visualization/stylesheets/tufte_colors.mplstyle",
         "./visualization/stylesheets/13_tile_jmlr.mplstyle",
         "./visualization/stylesheets/9pt.mplstyle",
-        "./visualization/stylesheets/probnum_colors.mplstyle"
+        "./visualization/stylesheets/probnum_colors.mplstyle",
     ]
 )
 

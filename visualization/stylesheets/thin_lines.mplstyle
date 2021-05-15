@@ -1,2 +1,3 @@
-lines.linewidth : 1
-patch.linewidth : 0.8
+lines.linewidth : 0.5
+axes.linewidth : 0.5
+patch.linewidth : 0.4

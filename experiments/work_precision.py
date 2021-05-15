@@ -30,13 +30,11 @@ bvp = problem_examples.problem_20_second_order(xi=0.5)
 TOL = 1e-5
 
 
-
 # refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=TOL)
 # refsol_fine = solve_bvp(
 #     bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=1e-12
 # )
 # bvp.solution = refsol_fine.sol
-
 
 
 results = {}
@@ -76,8 +74,8 @@ for q in [3, 4, 5, 6]:
     evalgrid = np.linspace(bvp.t0, bvp.tmax, 250, endpoint=True)
 
     for tol_order in np.arange(1.0, 6.0):
-        TOL = 10. ** (2-tol_order)
-        initial_grid = np.linspace(bvp.t0, bvp.tmax, int(10*tol_order/2))
+        TOL = 10.0 ** (2 - tol_order)
+        initial_grid = np.linspace(bvp.t0, bvp.tmax, int(10 * tol_order / 2))
         initial_guess = np.zeros((len(initial_grid), bvp.dimension))
 
         print("tol", TOL)

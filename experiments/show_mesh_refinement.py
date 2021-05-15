@@ -13,8 +13,8 @@ import itertools
 from probnum import random_variables as randvars
 
 
-bvp = problem_examples.problem_24_second_order(xi=1e-2)
-bvp = problem_examples.problem_7_second_order(xi=1e-4)
+# bvp = problem_examples.problem_24_second_order(xi=1e-2)
+bvp = problem_examples.problem_7_second_order(xi=1e-3)
 ibm = statespace.IBM(
     ordint=4,
     spatialdim=bvp.dimension,
@@ -24,27 +24,35 @@ ibm = statespace.IBM(
 measmod = ode_measmods.from_second_order_ode(bvp, ibm)
 
 
-# Solver and solver parameters
-solver = bvp_solver.BVPSolver.from_default_values(
-    ibm, use_bridge=False, initial_sigma_squared=1e2, normalise_with_interval_size=False
-)
-MAXIT = 10
+MAXIT = 100
 TOL = 1e-6
 
 # Plotting parameters
-t = np.linspace(bvp.t0, bvp.tmax, 200)
+t = np.linspace(bvp.t0, bvp.tmax, 150)
 titles = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-LOG_YLIM = (1e-16, 1e6)
+LOG_YLIM = (1e-16, 1e2)
 plt.style.use(
     [
-        "./visualization/stylesheets/science.mplstyle",
+        # "./visualization/stylesheets/science.mplstyle",
         # "./visualization/stylesheets/misc/grid.mplstyle",
         "./visualization/stylesheets/color/high-contrast.mplstyle",
         "./visualization/stylesheets/8pt.mplstyle",
         "./visualization/stylesheets/23_tile_jmlr.mplstyle",
+        "./visualization/stylesheets/thin_lines.mplstyle",
     ]
 )
 # mpl.rcParams['lines.linewidth'] = 0.5
+mpl.rcParams['xtick.major.size'] = 2
+mpl.rcParams['xtick.minor.size'] = 2
+mpl.rcParams['ytick.major.size'] = 2
+mpl.rcParams['ytick.minor.size'] = 2
+mpl.rcParams['xtick.major.width'] = 0.5
+mpl.rcParams['xtick.minor.width'] = 0.5
+mpl.rcParams['ytick.major.width'] = 0.5
+mpl.rcParams['ytick.minor.width'] = 0.5
+
+
+
 
 COLOR = "darkgreen"
 SECOND_COLOR = "blue"
@@ -52,52 +60,97 @@ SECOND_COLOR = "blue"
 
 # Reference solution
 
-initial_grid = np.linspace(bvp.t0, bvp.tmax, 256)
+initial_grid = np.linspace(bvp.t0, bvp.tmax, 1024, endpoint=True)
 initial_guess = np.ones((len(initial_grid), bvp.dimension))
+
+
+ibm = statespace.IBM(
+    ordint=4,
+    spatialdim=bvp.dimension,
+    forward_implementation="sqrt",
+    backward_implementation="sqrt",
+)
+solver = bvp_solver.BVPSolver.from_default_values(ibm, initial_sigma_squared=1e2)
+
+initial_posterior, _ = solver.compute_initialisation(
+    bvp, initial_grid, initial_guess=None, use_bridge=True
+)
+
+MAXIT_IEKS = 1
+MAXIT_EM = 20
 solution_gen = solver.solution_generator(
     bvp,
     atol=TOL,
     rtol=TOL,
-    initial_grid=initial_grid,
-    initial_guess=None,
-    maxit_ieks=MAXIT,
-    maxit_em=1,
+    initial_posterior=initial_posterior,
+    maxit_ieks=MAXIT_IEKS,
+    maxit_em=MAXIT_EM,
     yield_ieks_iterations=False,
 )
+
 # Skip initialisation
-next(solution_gen)
+# next(solution_gen)
 
 # First iteration
-reference_posterior, _ = next(solution_gen)
+reference_posterior, sigma_squared = next(solution_gen)
+# Evaluate the residual
+residual_evaluations_at_locations = _RandomVariableList(
+    [
+        measmod.forward_rv(rv, t_)[0]
+        for rv, t_ in zip(reference_posterior.states, reference_posterior.locations)
+    ]
+)
+residual_mean_at_locations = residual_evaluations_at_locations.mean
+residual_std_at_locations = residual_evaluations_at_locations.std * np.sqrt(
+    sigma_squared
+)
+print(np.linalg.norm(residual_mean_at_locations))
+print(np.linalg.norm(residual_std_at_locations))
 
 # Set up all 7 subplots
 fig, axes = plt.subplots(
     nrows=4,
-    ncols=3,
+    ncols=4,
     sharex="col",
     sharey="row",
-    dpi=500,
+    dpi=200,
     constrained_layout=True,
-    gridspec_kw={"height_ratios": [8, 8, 8, 8]},
+    gridspec_kw={"height_ratios": [8, 4, 4, 8]},
 )
 
-for axis_index, (N, ax) in enumerate(zip([5, 5 ** 2, 5 ** 3], axes.T)):
+
+for ax in axes.flatten():
+    ax.spines["left"].set_position(('outward', 2))
+    ax.spines["bottom"].set_position(('outward', 2))
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+
+for axis_index, (N, ax) in enumerate(zip([5**1, 5**2, 5**3, 5**4], axes.T)):
+    print(N)
+    ibm = statespace.IBM(
+        ordint=4,
+        spatialdim=bvp.dimension,
+        forward_implementation="sqrt",
+        backward_implementation="sqrt",
+    )
+    solver = bvp_solver.BVPSolver.from_default_values(ibm, initial_sigma_squared=1e2)
+
     # ax[0].set_title(f"$N={N}$")
-    initial_grid = np.linspace(bvp.t0, bvp.tmax, N)
+    initial_grid = np.linspace(bvp.t0, bvp.tmax, N, endpoint=True)
     initial_guess = np.ones((len(initial_grid), bvp.dimension))
+    initial_posterior, sigma_squared = solver.compute_initialisation(
+        bvp, initial_grid, initial_guess=None, use_bridge=True
+    )
 
     solution_gen = solver.solution_generator(
         bvp,
         atol=TOL,
         rtol=TOL,
-        initial_grid=initial_grid,
-        initial_guess=None,
-        maxit_ieks=MAXIT,
-        maxit_em=1,
+        initial_posterior=initial_posterior,
+        maxit_ieks=MAXIT_IEKS,
+        maxit_em=MAXIT_EM,
         yield_ieks_iterations=False,
     )
-    # Skip initialisation
-    next(solution_gen)
 
     # First iteration
     kalman_posterior, sigma_squared = next(solution_gen)
@@ -107,6 +160,20 @@ for axis_index, (N, ax) in enumerate(zip([5, 5 ** 2, 5 ** 3], axes.T)):
 
     idx = itertools.count()
     i = next(idx)
+
+    # Evaluate the residual
+    residual_evaluations_at_locations = _RandomVariableList(
+        [
+            measmod.forward_rv(rv, t_)[0]
+            for rv, t_ in zip(kalman_posterior.states, kalman_posterior.locations)
+        ]
+    )
+    residual_mean_at_locations = residual_evaluations_at_locations.mean
+    residual_std_at_locations = residual_evaluations_at_locations.std * np.sqrt(
+        sigma_squared
+    )
+    print(np.linalg.norm(residual_mean_at_locations))
+    print(np.linalg.norm(residual_std_at_locations))
 
     # Evaluate the residual
     residual_evaluations = _RandomVariableList(
@@ -136,22 +203,22 @@ for axis_index, (N, ax) in enumerate(zip([5, 5 ** 2, 5 ** 3], axes.T)):
 
     # First row: uncertainties derived from std
     assert t.shape == error_estimates_std.shape
-    ax[i].semilogy(t, error_estimates_std ** 2, "-", color="black")
+    ax[i].semilogy(t, error_estimates_std, "-", color="black")
     ax[i].fill_between(
-        t, 1e-16 * np.ones_like(t), error_estimates_std ** 2, color=COLOR, alpha=0.2
+        t, 1e-16 * np.ones_like(t), error_estimates_std, color=COLOR, alpha=0.2
     )
     if axis_index == 0:
         ax[i].set_ylabel("Variance")
     ax[i].semilogy(
         t,
-        true_error ** 2,
+        true_error,
         color="black",
         linestyle=reference_linestyle,
     )
     ax[i].set_ylim(LOG_YLIM)
-    ax[i].set_yticks([LOG_YLIM[0], 1e-5, LOG_YLIM[1]])
+    ax[i].set_yticks([LOG_YLIM[0], 1e-7, LOG_YLIM[1]])
     ax[i].set_title(
-        f"\\bf {titles[i]}{str(N)}", loc="left", fontweight="bold", fontsize="small"
+        f"{titles[i]}{str(N)}", loc="left", fontweight="bold", fontsize="x-small"
     )
 
     i = next(idx)
@@ -184,9 +251,9 @@ for axis_index, (N, ax) in enumerate(zip([5, 5 ** 2, 5 ** 3], axes.T)):
     if axis_index == 0:
         ax[i].set_ylabel("Solution")
     ax[i].set_ylim((-3, 5))
-    ax[i].set_yticks([-3, 1, 5])
+    ax[i].set_yticks([-3, 5])
     ax[i].set_title(
-        f"\\bf {titles[i]}{str(N)}", loc="left", fontweight="bold", fontsize="small"
+        f"{titles[i]}{str(N)}", loc="left", fontweight="bold", fontsize="x-small"
     )
     i = next(idx)
 
@@ -213,10 +280,10 @@ for axis_index, (N, ax) in enumerate(zip([5, 5 ** 2, 5 ** 3], axes.T)):
     if axis_index == 0:
         ax[i].set_ylabel("Residual")
     ax[i].set_ylim((-2000, 2000))
-    ax[i].set_yticks([-2000, 0, 2000])
+    ax[i].set_yticks([-2000, 2000])
 
     ax[i].set_title(
-        f"\\bf {titles[i]}{str(N)}", loc="left", fontweight="bold", fontsize="small"
+        f"{titles[i]}{str(N)}", loc="left", fontweight="bold", fontsize="x-small"
     )
 
     i = next(idx)
@@ -225,13 +292,15 @@ for axis_index, (N, ax) in enumerate(zip([5, 5 ** 2, 5 ** 3], axes.T)):
     assert t.shape == error_estimates_res_mean[:, 0].shape
     ax[i].semilogy(
         t,
-        error_estimates_res_mean[:, 0] ** 2,
+        error_estimates_res_mean[:, 0],
         color="black",
     )
 
     ax[i].semilogy(
         t,
-        error_estimates_res_mean[:, 0] ** 2 + error_estimates_res_std[:, 0] ** 2,
+        np.sqrt(
+            error_estimates_res_mean[:, 0] ** 2 + error_estimates_res_std[:, 0] ** 2
+        ),
         color="black",
         linestyle="dashed",
     )
@@ -239,30 +308,32 @@ for axis_index, (N, ax) in enumerate(zip([5, 5 ** 2, 5 ** 3], axes.T)):
     ax[i].fill_between(
         t,
         1e-16 * np.ones_like(t),
-        error_estimates_res_mean[:, 0] ** 2,
+        error_estimates_res_mean[:, 0],
         color="black",
         alpha=0.2,
     )
     ax[i].fill_between(
         t,
-        error_estimates_res_mean[:, 0] ** 2,
-        error_estimates_res_mean[:, 0] ** 2 + error_estimates_res_std[:, 0] ** 2,
+        error_estimates_res_mean[:, 0],
+        np.sqrt(
+            error_estimates_res_mean[:, 0] ** 2 + error_estimates_res_std[:, 0] ** 2
+        ),
         color=SECOND_COLOR,
         alpha=0.2,
     )
 
     ax[i].semilogy(
         t,
-        true_error ** 2,
+        true_error,
         color="black",
         linestyle=reference_linestyle,
     )
     ax[i].set_ylim(LOG_YLIM)
-    ax[i].set_yticks([LOG_YLIM[0], 1e-5, LOG_YLIM[1]])
+    ax[i].set_yticks([LOG_YLIM[0], 1e-7, LOG_YLIM[1]])
     if axis_index == 0:
         ax[i].set_ylabel("Residual")
     ax[i].set_title(
-        f"\\bf {titles[i]}{str(N)}", loc="left", fontweight="bold", fontsize="small"
+        f"{titles[i]}{str(N)}", loc="left", fontweight="bold", fontsize="x-small"
     )
     i = next(idx)
 

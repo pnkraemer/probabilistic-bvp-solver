@@ -10,6 +10,7 @@ from tqdm import tqdm
 
 
 import itertools
+
 # bvp = problem_examples.problem_7_second_order(xi=1e-2)
 bvp = problem_examples.problem_20_second_order(xi=1e-2)
 ibm = statespace.IBM(
@@ -43,13 +44,16 @@ fig, ax_ = plt.subplots(
     constrained_layout=True,
 )
 ax = ax_.reshape((2, 2))
-colormaps = [plt.cm.Blues, plt.cm.Greens,plt.cm.Reds,plt.cm.Purples,]
+colormaps = [
+    plt.cm.Blues,
+    plt.cm.Greens,
+    plt.cm.Reds,
+    plt.cm.Purples,
+]
 colormap_index_generator = itertools.count()
 colormap_index = next(colormap_index_generator)
-for initial_guess, row_axis in zip([None, 2*np.ones((N, bvp.dimension))], ax):
-    for USE_BRIDGE, axis in zip(
-        [True, False], row_axis
-    ):
+for initial_guess, row_axis in zip([None, 2 * np.ones((N, bvp.dimension))], ax):
+    for USE_BRIDGE, axis in zip([True, False], row_axis):
         cmap = colormaps[colormap_index]
         colormap_index = next(colormap_index_generator)
 
@@ -71,7 +75,8 @@ for initial_guess, row_axis in zip([None, 2*np.ones((N, bvp.dimension))], ax):
 
         # Only the first 20 iterations, i.e. the first 4 refinements (since maxit_ieks=5)
         for i, (kalman_posterior, sigma_squared) in zip(
-            tqdm(range(MAXIT)), itertools.chain([(initial_posterior, sigma_squared)], solution_gen)
+            tqdm(range(MAXIT)),
+            itertools.chain([(initial_posterior, sigma_squared)], solution_gen),
         ):
 
             y = kalman_posterior(t).mean
@@ -89,14 +94,22 @@ for initial_guess, row_axis in zip([None, 2*np.ones((N, bvp.dimension))], ax):
             #         alpha=0.3 + 0.7 * float(i / (MAXIT)),
             #     )
             q = 0
-            color = cmap(0.3 + 0.6*i / MAXIT)
+            color = cmap(0.3 + 0.6 * i / MAXIT)
             alpha = 0.99
             linewidth = 2
             markersize = 5
-            zorder=1
-            marker="o"
+            zorder = 1
+            marker = "o"
 
-            axis.plot(t, y[:, q], "-", color=color, alpha=alpha, linewidth=linewidth, zorder=zorder)
+            axis.plot(
+                t,
+                y[:, q],
+                "-",
+                color=color,
+                alpha=alpha,
+                linewidth=linewidth,
+                zorder=zorder,
+            )
             axis.plot(
                 kalman_posterior.locations,
                 kalman_posterior.states.mean[:, 0],
@@ -105,7 +118,8 @@ for initial_guess, row_axis in zip([None, 2*np.ones((N, bvp.dimension))], ax):
                 linestyle="None",
                 alpha=alpha,
                 linewidth=linewidth,
-                markersize=markersize, zorder=zorder,
+                markersize=markersize,
+                zorder=zorder,
                 markeredgewidth=0.5,
                 markeredgecolor="black",
             )
