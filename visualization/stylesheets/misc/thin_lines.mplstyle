@@ -1,3 +1,14 @@
 lines.linewidth : 0.5
 axes.linewidth : 0.5
-patch.linewidth : 0.4
+patch.linewidth : 0.5
+
+xtick.major.size : 2.0
+ytick.major.size : 2.0
+xtick.minor.size : 2.0
+ytick.minor.size : 2.0
+
+xtick.major.width : 0.5
+ytick.major.width : 0.5
+xtick.minor.width : 0.5
+ytick.minor.width : 0.5
+

@@ -31,27 +31,26 @@ TOL = 1e-6
 t = np.linspace(bvp.t0, bvp.tmax, 150)
 titles = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 LOG_YLIM = (1e-16, 1e2)
-plt.style.use(
-    [
-        # "./visualization/stylesheets/science.mplstyle",
-        # "./visualization/stylesheets/misc/grid.mplstyle",
-        "./visualization/stylesheets/color/high-contrast.mplstyle",
-        "./visualization/stylesheets/8pt.mplstyle",
-        "./visualization/stylesheets/23_tile_jmlr.mplstyle",
-        "./visualization/stylesheets/thin_lines.mplstyle",
-    ]
-)
+
+# plt.style.use(
+#     [
+#         # "./visualization/stylesheets/science.mplstyle",
+#         # "./visualization/stylesheets/misc/grid.mplstyle",
+#         "./visualization/stylesheets/color/high-contrast.mplstyle",
+#         "./visualization/stylesheets/8pt.mplstyle",
+#         "./visualization/stylesheets/23_tile_jmlr.mplstyle",
+#         "./visualization/stylesheets/thin_lines.mplstyle",
+#     ]
+# )
 # mpl.rcParams['lines.linewidth'] = 0.5
-mpl.rcParams['xtick.major.size'] = 2
-mpl.rcParams['xtick.minor.size'] = 2
-mpl.rcParams['ytick.major.size'] = 2
-mpl.rcParams['ytick.minor.size'] = 2
-mpl.rcParams['xtick.major.width'] = 0.5
-mpl.rcParams['xtick.minor.width'] = 0.5
-mpl.rcParams['ytick.major.width'] = 0.5
-mpl.rcParams['ytick.minor.width'] = 0.5
-
-
+# mpl.rcParams['xtick.major.size'] = 2
+# mpl.rcParams['xtick.minor.size'] = 2
+# mpl.rcParams['ytick.major.size'] = 2
+# mpl.rcParams['ytick.minor.size'] = 2
+# mpl.rcParams['xtick.major.width'] = 0.5
+# mpl.rcParams['xtick.minor.width'] = 0.5
+# mpl.rcParams['ytick.major.width'] = 0.5
+# mpl.rcParams['ytick.minor.width'] = 0.5
 
 
 COLOR = "darkgreen"
@@ -107,6 +106,16 @@ residual_std_at_locations = residual_evaluations_at_locations.std * np.sqrt(
 print(np.linalg.norm(residual_mean_at_locations))
 print(np.linalg.norm(residual_std_at_locations))
 
+
+plt.style.use(
+    [
+        "./visualization/stylesheets/fontsize/7pt.mplstyle",
+        "./visualization/stylesheets/figsize/neurips/23_tile.mplstyle",
+        "./visualization/stylesheets/misc/thin_lines.mplstyle",
+        "./visualization/stylesheets/misc/bottomleftaxes.mplstyle",
+    ]
+)
+
 # Set up all 7 subplots
 fig, axes = plt.subplots(
     nrows=4,
@@ -120,12 +129,10 @@ fig, axes = plt.subplots(
 
 
 for ax in axes.flatten():
-    ax.spines["left"].set_position(('outward', 2))
-    ax.spines["bottom"].set_position(('outward', 2))
-    ax.spines['right'].set_visible(False)
-    ax.spines['top'].set_visible(False)
+    ax.spines["left"].set_position(("outward", 2))
+    ax.spines["bottom"].set_position(("outward", 2))
 
-for axis_index, (N, ax) in enumerate(zip([5**1, 5**2, 5**3, 5**4], axes.T)):
+for axis_index, (N, ax) in enumerate(zip([5 ** 1, 5 ** 2, 5 ** 3, 5 ** 4], axes.T)):
     print(N)
     ibm = statespace.IBM(
         ordint=4,
@@ -217,9 +224,7 @@ for axis_index, (N, ax) in enumerate(zip([5**1, 5**2, 5**3, 5**4], axes.T)):
     )
     ax[i].set_ylim(LOG_YLIM)
     ax[i].set_yticks([LOG_YLIM[0], 1e-7, LOG_YLIM[1]])
-    ax[i].set_title(
-        f"{titles[i]}{str(N)}", loc="left", fontweight="bold", fontsize="x-small"
-    )
+    ax[i].set_title(f"{titles[i]}{str(N)}", loc="left", fontweight="bold")
 
     i = next(idx)
 
@@ -252,9 +257,7 @@ for axis_index, (N, ax) in enumerate(zip([5**1, 5**2, 5**3, 5**4], axes.T)):
         ax[i].set_ylabel("Solution")
     ax[i].set_ylim((-3, 5))
     ax[i].set_yticks([-3, 5])
-    ax[i].set_title(
-        f"{titles[i]}{str(N)}", loc="left", fontweight="bold", fontsize="x-small"
-    )
+    ax[i].set_title(f"{titles[i]}{str(N)}", loc="left", fontweight="bold")
     i = next(idx)
 
     # Next row: Residual and uncertainties
@@ -282,9 +285,7 @@ for axis_index, (N, ax) in enumerate(zip([5**1, 5**2, 5**3, 5**4], axes.T)):
     ax[i].set_ylim((-2000, 2000))
     ax[i].set_yticks([-2000, 2000])
 
-    ax[i].set_title(
-        f"{titles[i]}{str(N)}", loc="left", fontweight="bold", fontsize="x-small"
-    )
+    ax[i].set_title(f"{titles[i]}{str(N)}", loc="left", fontweight="bold")
 
     i = next(idx)
 
@@ -332,9 +333,7 @@ for axis_index, (N, ax) in enumerate(zip([5**1, 5**2, 5**3, 5**4], axes.T)):
     ax[i].set_yticks([LOG_YLIM[0], 1e-7, LOG_YLIM[1]])
     if axis_index == 0:
         ax[i].set_ylabel("Residual")
-    ax[i].set_title(
-        f"{titles[i]}{str(N)}", loc="left", fontweight="bold", fontsize="x-small"
-    )
+    ax[i].set_title(f"{titles[i]}{str(N)}", loc="left", fontweight="bold")
     i = next(idx)
 
     # Clean up: remove all ticks for now and show the plot

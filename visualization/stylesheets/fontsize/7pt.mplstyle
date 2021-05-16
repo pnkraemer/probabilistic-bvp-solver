@@ -4,7 +4,9 @@
 ## relative to font.size, using the following values: xx-small, x-small,
 ## small, medium, large, x-large, xx-large, larger, or smaller
 
-font.size			: 10
+## The title size is small, because it is usually bold anyway
+
+font.size			: 7
 axes.titlesize      : small
 axes.labelsize      : medium
 legend.fontsize 	: medium

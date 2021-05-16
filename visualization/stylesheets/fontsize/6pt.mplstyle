@@ -4,7 +4,7 @@
 ## relative to font.size, using the following values: xx-small, x-small,
 ## small, medium, large, x-large, xx-large, larger, or smaller
 
-font.size			: 10
+font.size			: 6
 axes.titlesize      : small
 axes.labelsize      : medium
 legend.fontsize 	: medium

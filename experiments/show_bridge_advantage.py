@@ -28,13 +28,14 @@ MAXIT = 5
 
 plt.style.use(
     [
-        "./visualization/stylesheets/science.mplstyle",
-        # "./visualization/stylesheets/misc/grid.mplstyle",
-        "./visualization/stylesheets/9pt.mplstyle",
-        "./visualization/stylesheets/13_tile_jmlr.mplstyle",
-        "./visualization/stylesheets/baby_colors.mplstyle",
+        "./visualization/stylesheets/fontsize/7pt.mplstyle",
+        "./visualization/stylesheets/figsize/neurips/13_tile.mplstyle",
+        "./visualization/stylesheets/misc/thin_lines.mplstyle",
+        "./visualization/stylesheets/misc/bottomleftaxes.mplstyle",
     ]
 )
+
+
 fig, ax_ = plt.subplots(
     ncols=4,
     nrows=1,
@@ -43,6 +44,11 @@ fig, ax_ = plt.subplots(
     gridspec_kw={"height_ratios": [4]},
     constrained_layout=True,
 )
+
+for ax in ax_:
+    ax.spines["left"].set_position(("outward", 2))
+    ax.spines["bottom"].set_position(("outward", 2))
+
 ax = ax_.reshape((2, 2))
 colormaps = [
     plt.cm.Blues,
@@ -125,6 +131,12 @@ for initial_guess, row_axis in zip([None, 2 * np.ones((N, bvp.dimension))], ax):
             )
             axis.plot(t, bvp.solution(t), color="black", linestyle="dashed")
 
+            axis.set_xlim((-0.03, 1.03))
+            axis.set_xticks((0.0, 0.5, 1.0))
+
+            axis.set_ylim((0.5, 2.5))
+            axis.set_yticks((0.5, 1.5, 2.5))
+
             if USE_BRIDGE:
                 bridge_title = "Bridge"
             else:
@@ -133,8 +145,8 @@ for initial_guess, row_axis in zip([None, 2 * np.ones((N, bvp.dimension))], ax):
                 EKS_title = "EKS"
             else:
                 EKS_title = "Guess"
-            axis.set_title(bridge_title + r" $\&$ " + EKS_title)
-            axis.set_xlabel("Time $t$")
+            axis.set_title(bridge_title + " & " + EKS_title, fontsize="medium")
+            axis.set_xlabel("Time")
 
         # for q, curr_ax in zip(range(ibm.ordint + 1), axis):
         #     if q == 0:
@@ -144,7 +156,7 @@ for initial_guess, row_axis in zip([None, 2 * np.ones((N, bvp.dimension))], ax):
         # for x in kalman_posterior.locations:
         #    curr_ax.axvline(x, linewidth=0.25, color="k")
 
-ax[0][0].set_ylabel("Solution $y$")
+ax[0][0].set_ylabel("Solution")
 ax[1][1].set_ylim((0.5, 2.5))
 plt.savefig("bridge_advantage.pdf")
 plt.show()

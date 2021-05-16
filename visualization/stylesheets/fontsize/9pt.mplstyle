@@ -5,11 +5,10 @@
 ## small, medium, large, x-large, xx-large, larger, or smaller
 
 font.size			: 9
-axes.titlesize      : medium  
+axes.titlesize      : small
 axes.labelsize      : medium
-legend.fontsize 	: small
+legend.fontsize 	: medium
 
-
-xtick.labelsize 	: medium
-ytick.labelsize 	: medium
+xtick.labelsize 	: small
+ytick.labelsize 	: small
 
