@@ -54,7 +54,7 @@ LOG_YLIM = (1e-16, 1e4)
 
 
 COLOR = "darkgreen"
-SECOND_COLOR = "blue"
+SECOND_COLOR = "darkblue"
 
 
 # Reference solution
@@ -214,11 +214,11 @@ for axis_index, (N, ax) in enumerate(zip([5 ** 1, 5 ** 2, 5 ** 3, 5 ** 4], axes.
 
     if axis_index in [0, 1]:
         ax[i].fill_between(
-            t, 1e-16 * np.ones_like(t), error_estimates_std, color=COLOR, alpha=0.4
+            t, 1e-16 * np.ones_like(t), error_estimates_std, color=COLOR, alpha=0.5
         )
     else:
         ax[i].fill_between(
-            t, 1e-16 * np.ones_like(t), error_estimates_std, color=COLOR, alpha=0.125
+            t, 1e-16 * np.ones_like(t), error_estimates_std, color=COLOR, alpha=0.2
         )
     if axis_index == 0:
         ax[i].set_ylabel("Std. deviation")
@@ -318,8 +318,8 @@ for axis_index, (N, ax) in enumerate(zip([5 ** 1, 5 ** 2, 5 ** 3, 5 ** 4], axes.
             t,
             1e-16 * np.ones_like(t),
             error_estimates_res_mean[:, 0],
-            color="black",
-            alpha=0.4,
+            color=SECOND_COLOR,
+            alpha=0.5,
         )
         ax[i].fill_between(
             t,
@@ -327,16 +327,16 @@ for axis_index, (N, ax) in enumerate(zip([5 ** 1, 5 ** 2, 5 ** 3, 5 ** 4], axes.
             np.sqrt(
                 error_estimates_res_mean[:, 0] ** 2 + error_estimates_res_std[:, 0] ** 2
             ),
-            color=SECOND_COLOR,
-            alpha=0.125,
+            color="black",
+            alpha=0.2,
         )
     else:
         ax[i].fill_between(
             t,
             1e-16 * np.ones_like(t),
             error_estimates_res_mean[:, 0],
-            color="black",
-            alpha=0.125,
+            color=SECOND_COLOR,
+            alpha=0.2,
         )
         ax[i].fill_between(
             t,
@@ -344,8 +344,8 @@ for axis_index, (N, ax) in enumerate(zip([5 ** 1, 5 ** 2, 5 ** 3, 5 ** 4], axes.
             np.sqrt(
                 error_estimates_res_mean[:, 0] ** 2 + error_estimates_res_std[:, 0] ** 2
             ),
-            color=SECOND_COLOR,
-            alpha=0.125,
+            color="black",
+            alpha=0.2,
         )
 
 
