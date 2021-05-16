@@ -93,7 +93,6 @@ def from_boundary_conditions(bvp, prior, damping_value=0.0):
 
     L, R = bvp.L, bvp.R
 
-    print(R.shape, proj.shape)
     Rnew = R @ proj
     Lnew = L @ proj
 

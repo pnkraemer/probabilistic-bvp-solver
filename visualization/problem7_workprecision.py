@@ -6,20 +6,20 @@ from probnumeval.timeseries import chi2_confidence_intervals
 
 out = chi2_confidence_intervals(dim=1)
 
-with open("./data/problem7_problem_work_precision.json", "r") as infile:
+with open("./data/yet_another_work_precision.json", "r") as infile:
     data = json.load(infile)
-plt.style.use(
-    [
-        "./visualization/stylesheets/science.mplstyle",
-        "./visualization/stylesheets/misc/grid.mplstyle",
-        "./visualization/stylesheets/color/muted.mplstyle",
-        "./visualization/stylesheets/13_tile_jmlr.mplstyle",
-        "./visualization/stylesheets/9pt.mplstyle",
-    ]
-)
+# plt.style.use(
+    #     [
+    #   "./visualization/stylesheets/science.mplstyle",
+    #   "./visualization/stylesheets/misc/grid.mplstyle",
+    #   "./visualization/stylesheets/color/muted.mplstyle",
+    #   "./visualization/stylesheets/13_tile_jmlr.mplstyle",
+    #   "./visualization/stylesheets/9pt.mplstyle",
+    # ]
+# )
 
 
-fig, ax = plt.subplots(ncols=3, dpi=350, constrained_layout=True)
+fig, ax = plt.subplots(ncols=3, dpi=150, figsize=(8, 3), constrained_layout=True)
 markers = ["s", "d", "^", "o"]
 colors = ["C0", "C1", "C2", "C3"]
 for q, marker, color in zip(data.keys(), markers, colors):

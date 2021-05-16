@@ -17,7 +17,7 @@ from scipy.integrate import solve_bvp
 import time
 
 # Easy aliases
-anees = timeseries.non_credibility_index
+anees = timeseries.average_normalized_estimation_error_squared
 rmse = timeseries.root_mean_square_error
 
 
@@ -42,7 +42,7 @@ results = {}
 testlocations = np.linspace(bvp.t0, bvp.tmax, 500)
 
 
-for q in [3, 4, 5, 6]:
+for q in [3, 4]:
     print()
     print()
     print("q", q)
@@ -73,16 +73,30 @@ for q in [3, 4, 5, 6]:
 
     evalgrid = np.linspace(bvp.t0, bvp.tmax, 250, endpoint=True)
 
-    for tol_order in np.arange(1.0, 6.0):
-        TOL = 10.0 ** (2 - tol_order)
-        initial_grid = np.linspace(bvp.t0, bvp.tmax, int(10 * tol_order / 2))
-        initial_guess = np.zeros((len(initial_grid), bvp.dimension))
+    for tol_order in np.arange(1.0, 9.0):
+        if q ==3:
+            if tol_order > 7:
+                tol_order = 7.
+        TOL = 10.0 ** (-tol_order)
 
         print("tol", TOL)
+        if TOL > 1e-4:
+            solver = bvp_solver.BVPSolver.from_default_values_std_refinement(
+                ibm, initial_sigma_squared=1e2, normalise_with_interval_size=False
+            )
+        else:
+            solver = bvp_solver.BVPSolver.from_default_values(
+                ibm, initial_sigma_squared=1e2, normalise_with_interval_size=False
+            )
 
-        solver = bvp_solver.BVPSolver.from_default_values_std_refinement(
-            ibm, initial_sigma_squared=1e1
-        )
+        if TOL > 1e-4:
+            initial_grid = np.linspace(bvp.t0, bvp.tmax, 3)
+        elif TOL > 1e-8:
+            initial_grid = np.linspace(bvp.t0, bvp.tmax, 50)
+        else:
+            initial_grid = np.linspace(bvp.t0, bvp.tmax, 160)
+        initial_guess = np.ones((len(initial_grid), bvp.dimension))
+
         initial_posterior, sigma_squared = solver.compute_initialisation(
             bvp, initial_grid, initial_guess=initial_guess, use_bridge=True
         )
@@ -92,8 +106,8 @@ for q in [3, 4, 5, 6]:
             atol=TOL,
             rtol=TOL,
             initial_posterior=initial_posterior,
-            maxit_ieks=10,
-            maxit_em=2,
+            maxit_ieks=5,
+            maxit_em=1,
             yield_ieks_iterations=False,
         )
 
@@ -104,14 +118,14 @@ for q in [3, 4, 5, 6]:
         solution = diffeq.KalmanODESolution(post)
 
         testlocations = np.linspace(bvp.t0, bvp.tmax)
-        reference_solution = lambda *args, **kwargs: bvp.solution(*args, **kwargs).T
+        reference_solution = lambda *args, **kwargs: bvp.solution(*args, **kwargs).reshape((-1, 1))
         # plt.plot(testlocations, reference_solution(testlocations))
         # plt.plot(testlocations, solution(testlocations).mean[:, 0])
         # plt.show()
+        solution_mean = lambda *args, **kwargs: solution(*args, **kwargs).mean[:, 0].reshape((-1, 1))
 
-        solution_mean = lambda *args, **kwargs: solution(*args, **kwargs).mean[:, 0]
-
-        chi2 = anees(solution, reference_solution, testlocations) / ssq
+        print(ssq)
+        chi2 = anees(solution, reference_solution, testlocations, damping=1e-30) / ssq
 
         error = rmse(solution_mean, reference_solution, testlocations)
         results[q][TOL] = {}
@@ -119,7 +133,7 @@ for q in [3, 4, 5, 6]:
         results[q][TOL]["error"] = error
         results[q][TOL]["N"] = len(solution.locations)
         results[q][TOL]["time"] = end_time
-        print(chi2)
+        print(chi2, error, end_time)
 print(results)
 
 import json

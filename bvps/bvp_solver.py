@@ -40,7 +40,7 @@ class BVPSolver:
         cls,
         dynamics_model,
         initial_sigma_squared=1e10,
-        normalise_with_interval_size=True,
+        normalise_with_interval_size=False,
     ):
         quadrature_rule = quadrature.expquad_interior_only()
         P0 = dynamics_model.proj2coord(0)
@@ -64,7 +64,7 @@ class BVPSolver:
         cls,
         dynamics_model,
         initial_sigma_squared=1e10,
-        normalise_with_interval_size=True,
+        normalise_with_interval_size=False,
     ):
         quadrature_rule = quadrature.expquad_interior_only()
         P0 = dynamics_model.proj2coord(0)
@@ -88,7 +88,7 @@ class BVPSolver:
         cls,
         dynamics_model,
         initial_sigma_squared=1e10,
-        normalise_with_interval_size=True,
+        normalise_with_interval_size=False,
     ):
         quadrature_rule = quadrature.expquad_interior_only()
         P0 = dynamics_model.proj2coord(0)
@@ -486,7 +486,7 @@ class BVPErrorEstimator(abc.ABC):
         quadrature_rule,
         P0=None,
         P1=None,
-        normalise_with_interval_size=True,
+        normalise_with_interval_size=False,
     ):
         self.quadrature_rule = quadrature_rule
         self.atol = atol
