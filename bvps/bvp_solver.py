@@ -157,10 +157,12 @@ class BVPSolver:
         if initial_guess is None and use_bridge == False:
             measmod_list[0] = [left_measmod, measmod_list[0]]
             measmod_list[-1] = [measmod_list[-1], right_measmod]
+        dataset = np.zeros((N, d))
+
 
         # Filter
         kalman_posterior = filter_object.filtsmooth(
-            dataset=np.zeros((N, d)),
+            dataset=dataset,
             times=initial_grid,
             measmod_list=measmod_list,
         )

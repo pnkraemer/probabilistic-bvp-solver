@@ -10,20 +10,20 @@ x = np.load("./data/firstpage_plot/x.npy")
 y = np.load("./data/firstpage_plot/y.npy")
 
 
+
 plt.style.use(
     [
-        "./visualization/stylesheets/science.mplstyle",
-        "./visualization/stylesheets/misc/grid.mplstyle",
-        "./visualization/stylesheets/color/high-contrast.mplstyle",
-        "./visualization/stylesheets/9pt.mplstyle",
-        "./visualization/stylesheets/one_of_13_tile.mplstyle",
-        # "./stylesheets/hollow_markers.mplstyle",
-        # "./stylesheets/probnum_colors.mplstyle"
+        "./visualization/stylesheets/fontsize/7pt.mplstyle",
+        "./visualization/stylesheets/figsize/neurips/one_of_13_tile.mplstyle",
+        "./visualization/stylesheets/misc/thin_lines.mplstyle",
+        "./visualization/stylesheets/misc/bottomleftaxes.mplstyle",
     ]
 )
 
 
-fig, ax = plt.subplots(ncols=1, constrained_layout=True)
+fig, ax = plt.subplots(dpi=300, constrained_layout=True)
+ax.spines["left"].set_position(("outward", 2))
+ax.spines["bottom"].set_position(("outward", 2))
 
 
 ax.plot(x, y[1], "--", color="C1", linewidth=1.5)
@@ -43,10 +43,12 @@ ax.annotate(
     bbox={"facecolor": "white", "edgecolor": "white", "pad": 2},
     zorder=10,
 )
-ax.set_title(r"$\bf A$" + "  ", loc="left", fontweight="bold", ha="right")
+# ax.set_title(r"$\bf A$" + "  ", loc="left", fontweight="bold", ha="right")
 
-ax.set_xlabel("Time $t$")
-ax.set_ylabel(r"Solution $y(t)$")
+ax.set_xticks((0., 1.5))
+ax.set_yticks((-np.pi/2, np.pi/2))
+ax.set_xlabel("Time")
+ax.set_ylabel(r"Position / Velocity")
 plt.savefig("./figures/firstpage.pdf")
 plt.show()
 

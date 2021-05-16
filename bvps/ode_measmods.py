@@ -85,12 +85,15 @@ def from_second_order_ode(ode, prior, damping_value=0.0):
 def from_boundary_conditions(bvp, prior, damping_value=0.0):
 
     if isinstance(bvp, SecondOrderBoundaryValueProblem):
-        proj = np.stack((prior.proj2coord(0)[0], prior.proj2coord(1)[0]))
+        P0 = prior.proj2coord(0)
+        P1 = prior.proj2coord(1)
+        proj = np.vstack((P0, P1))
     else:
         proj = prior.proj2coord(0)
 
     L, R = bvp.L, bvp.R
 
+    print(R.shape, proj.shape)
     Rnew = R @ proj
     Lnew = L @ proj
 
