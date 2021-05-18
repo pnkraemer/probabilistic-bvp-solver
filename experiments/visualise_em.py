@@ -48,8 +48,8 @@ for ax in axes.flatten():
 initial_grid = np.linspace(bvp.t0, bvp.tmax, 6, endpoint=True)
 t = np.linspace(bvp.t0, bvp.tmax, 50, endpoint=True)
 
-for MAXIT_IEKS, axis_col, colormap, marker in zip(
-    [MAXIT, 5, 1], axes.T, [plt.cm.Blues, plt.cm.Oranges, plt.cm.Purples], ["o", "^", "d"]
+for MAXIT_IEKS, axis_col, colormap, marker, title in zip(
+    [MAXIT, 5, 1], axes.T, [plt.cm.Blues, plt.cm.Oranges, plt.cm.Purples], ["o", "^", "d"], ["No EM Updates", "EM Updates every 5th Iteration", "EM Updates every iteration"]
 ):
     # Solver and solver parameters
 
@@ -131,7 +131,7 @@ for MAXIT_IEKS, axis_col, colormap, marker in zip(
         # axis_col[0].set_ylim((-0.02, 0.02))
         axis_col[1].set_ylim((1e-21, 1e1))
         axis_col[0].set_title(
-            f"{MAXIT_IEKS} IEKS Updates, {MAXIT // MAXIT_IEKS} EM Updates",
+            title,
             fontsize="medium",
         )
         axis_col[1].set_xlim((-0.03, 1.03))
