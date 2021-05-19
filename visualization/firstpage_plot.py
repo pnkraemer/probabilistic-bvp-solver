@@ -48,7 +48,7 @@ ax.annotate(
 ax.set_xticks((0., 1.5))
 ax.set_yticks((-np.pi/2, np.pi/2))
 ax.set_xlabel("Time")
-ax.set_ylabel(r"Position / Velocity")
+ax.set_ylabel(r"Displacement / Ampl.")
 plt.savefig("./figures/firstpage.pdf")
 plt.show()
 
