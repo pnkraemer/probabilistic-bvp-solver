@@ -51,17 +51,23 @@ for ax in ax_:
 
 ax = ax_.reshape((2, 2))
 colormaps = [
-    plt.cm.Blues,
+    plt.cm.Purples,
     plt.cm.Greens,
     plt.cm.Reds,
-    plt.cm.Purples,
+    plt.cm.Blues,
 ]
 colormap_index_generator = itertools.count()
 colormap_index = next(colormap_index_generator)
-for initial_guess, row_axis in zip([None, 2 * np.ones((N, bvp.dimension))], ax):
-    for USE_BRIDGE, axis in zip([True, False], row_axis):
+for initial_guess, row_axis in zip([2 * np.ones((N, bvp.dimension)), None], ax):
+    for USE_BRIDGE, axis in zip([False, True], row_axis):
         cmap = colormaps[colormap_index]
         colormap_index = next(colormap_index_generator)
+        ibm = statespace.IBM(
+            ordint=4,
+            spatialdim=bvp.dimension,
+            forward_implementation="sqrt",
+            backward_implementation="sqrt",
+        )
 
         solver = bvp_solver.BVPSolver.from_default_values(
             ibm, initial_sigma_squared=1e8
