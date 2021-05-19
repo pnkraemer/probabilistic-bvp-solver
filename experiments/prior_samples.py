@@ -1,12 +1,11 @@
 """Draw samples from a bridge prior."""
-import numpy as np
-
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from probnum import statespace, randvars
+import numpy as np
+from probnum import randvars, statespace
 from tqdm import tqdm
 
-from bvps import problem_examples, bridges, generate_samples
+from bvps import bridges, generate_samples, problem_examples
 
 SAVE_DATA = True
 PATH = "./data/prior_samples/samples_"

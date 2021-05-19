@@ -1,7 +1,8 @@
 """Plot WP on bratu's problem."""
-import numpy as np
 import json
+
 import matplotlib.pyplot as plt
+import numpy as np
 from probnumeval.timeseries import chi2_confidence_intervals
 
 out = chi2_confidence_intervals(dim=1)
@@ -78,16 +79,13 @@ for q, marker, color in zip(data.keys(), markers, colors):
         label=f"$\\nu={q}$",
         marker=marker,
         markersize=3,
-        linewidth=1.
+        linewidth=1.0,
     )
-    with plt.style.context("./visualization/stylesheets/marker/hollow_markers.mplstyle"):
+    with plt.style.context(
+        "./visualization/stylesheets/marker/hollow_markers.mplstyle"
+    ):
         ax[0].loglog(
-            Ns[:3],
-            errors[:3],
-            color=color,
-            marker=marker,
-            markersize=3,
-            linewidth=1.
+            Ns[:3], errors[:3], color=color, marker=marker, markersize=3, linewidth=1.0
         )
     ax[1].loglog(
         times,
@@ -96,16 +94,18 @@ for q, marker, color in zip(data.keys(), markers, colors):
         label=f"$\\nu={q}$",
         marker=marker,
         markersize=3,
-        linewidth=1.
+        linewidth=1.0,
     )
-    with plt.style.context("./visualization/stylesheets/marker/hollow_markers.mplstyle"):
+    with plt.style.context(
+        "./visualization/stylesheets/marker/hollow_markers.mplstyle"
+    ):
         ax[1].loglog(
             times[:3],
             errors[:3],
             color=color,
             marker=marker,
             markersize=3,
-            linewidth=1.
+            linewidth=1.0,
         )
     ax[2].loglog(
         Ns,
@@ -114,16 +114,13 @@ for q, marker, color in zip(data.keys(), markers, colors):
         marker=marker,
         markersize=3,
         color=color,
-        linewidth=1.
+        linewidth=1.0,
     )
-    with plt.style.context("./visualization/stylesheets/marker/hollow_markers.mplstyle"):
+    with plt.style.context(
+        "./visualization/stylesheets/marker/hollow_markers.mplstyle"
+    ):
         ax[2].loglog(
-            Ns[:3],
-            times[:3],
-            marker=marker,
-            markersize=3,
-            color=color,
-            linewidth=1.
+            Ns[:3], times[:3], marker=marker, markersize=3, color=color, linewidth=1.0
         )
 
     ax[3].loglog(
@@ -133,16 +130,13 @@ for q, marker, color in zip(data.keys(), markers, colors):
         marker=marker,
         markersize=3,
         color=color,
-        linewidth=1.
+        linewidth=1.0,
     )
-    with plt.style.context("./visualization/stylesheets/marker/hollow_markers.mplstyle"):
+    with plt.style.context(
+        "./visualization/stylesheets/marker/hollow_markers.mplstyle"
+    ):
         ax[3].loglog(
-            Ns[:3],
-            chi2s[:3],
-            marker=marker,
-            markersize=3,
-            color=color,
-            linewidth=1.
+            Ns[:3], chi2s[:3], marker=marker, markersize=3, color=color, linewidth=1.0
         )
 
 ax[0].set_xlabel(r"No. of grid points")

@@ -1,19 +1,17 @@
 """Try out probsolve_bvp."""
-import numpy as np
-
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from probnum import statespace, randvars, filtsmooth, diffeq
-from probnum._randomvariablelist import _RandomVariableList
-from bvps import problem_examples, bridges, solver
-from tqdm import tqdm
+import numpy as np
 import pandas as pd
-
-from probnumeval import timeseries
+from probnum import diffeq, filtsmooth
 from probnum import random_variables as randvars
-
-
+from probnum import randvars, statespace
+from probnum._randomvariablelist import _RandomVariableList
+from probnumeval import timeseries
 from scipy.integrate import solve_bvp
+from tqdm import tqdm
+
+from bvps import bridges, problem_examples, solver
 
 # Easy aliases
 anees = timeseries.average_normalized_estimation_error_squared

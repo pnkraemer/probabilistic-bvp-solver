@@ -1,19 +1,15 @@
-import numpy as np
-
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from probnum import statespace, randvars, filtsmooth, diffeq
-from probnum._randomvariablelist import _RandomVariableList
-from bvps import problem_examples
-from tqdm import tqdm
+import numpy as np
 import pandas as pd
-
-
+from probnum import diffeq, filtsmooth
 from probnum import random_variables as randvars
-
-
+from probnum import randvars, statespace
+from probnum._randomvariablelist import _RandomVariableList
 from scipy.integrate import solve_bvp
+from tqdm import tqdm
 
+from bvps import problem_examples
 
 bvp = problem_examples.pendulum()
 initial_grid = np.linspace(bvp.t0, bvp.tmax, 15)

@@ -1,7 +1,8 @@
 """Plot WP on bratu's problem."""
-import numpy as np
 import json
+
 import matplotlib.pyplot as plt
+import numpy as np
 from probnumeval.timeseries import chi2_confidence_intervals
 
 out = chi2_confidence_intervals(dim=1)
@@ -9,13 +10,13 @@ out = chi2_confidence_intervals(dim=1)
 with open("./data/yet_another_work_precision.json", "r") as infile:
     data = json.load(infile)
 # plt.style.use(
-    #     [
-    #   "./visualization/stylesheets/science.mplstyle",
-    #   "./visualization/stylesheets/misc/grid.mplstyle",
-    #   "./visualization/stylesheets/color/muted.mplstyle",
-    #   "./visualization/stylesheets/13_tile_jmlr.mplstyle",
-    #   "./visualization/stylesheets/9pt.mplstyle",
-    # ]
+#     [
+#   "./visualization/stylesheets/science.mplstyle",
+#   "./visualization/stylesheets/misc/grid.mplstyle",
+#   "./visualization/stylesheets/color/muted.mplstyle",
+#   "./visualization/stylesheets/13_tile_jmlr.mplstyle",
+#   "./visualization/stylesheets/9pt.mplstyle",
+# ]
 # )
 
 

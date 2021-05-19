@@ -1,15 +1,14 @@
 """This script chisels out the advantage of using a bridge prior over not using one."""
 
-from bvps import bvp_solver, problem_examples, quadrature
-import numpy as np
+import itertools
 
-import pytest
-from probnum import statespace, filtsmooth, randvars
 import matplotlib.pyplot as plt
+import numpy as np
+import pytest
+from probnum import filtsmooth, randvars, statespace
 from tqdm import tqdm
 
-
-import itertools
+from bvps import bvp_solver, problem_examples, quadrature
 
 # bvp = problem_examples.problem_7_second_order(xi=1e-2)
 bvp = problem_examples.problem_20_second_order(xi=1e-2)

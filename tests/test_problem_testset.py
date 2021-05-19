@@ -1,8 +1,8 @@
 """Assert that the jacobians are implemented correctly."""
+import numpy as np
 import pytest
 
 from bvps.problem_testset import testset_firstorder
-import numpy as np
 
 
 @pytest.fixture

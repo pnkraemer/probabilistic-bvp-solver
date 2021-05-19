@@ -1,14 +1,12 @@
 """Template to turn the .csv files in data/ into work-precision plots."""
 
 import matplotlib.pyplot as plt
-from probnumeval.timeseries import chi2_confidence_intervals
-from _styles import LINESTYLES, MARKERS
-
 import numpy as np
+from _styles import LINESTYLES, MARKERS
+from probnumeval.timeseries import chi2_confidence_intervals
 
 x = np.load("./data/firstpage_plot/x.npy")
 y = np.load("./data/firstpage_plot/y.npy")
-
 
 
 plt.style.use(
@@ -45,8 +43,8 @@ ax.annotate(
 )
 # ax.set_title(r"$\bf A$" + "  ", loc="left", fontweight="bold", ha="right")
 
-ax.set_xticks((0., 1.5))
-ax.set_yticks((-np.pi/2, np.pi/2))
+ax.set_xticks((0.0, 1.5))
+ax.set_yticks((-np.pi / 2, np.pi / 2))
 ax.set_xlabel("Time")
 ax.set_ylabel(r"Displacement / Ampl.")
 plt.savefig("./figures/firstpage.pdf")

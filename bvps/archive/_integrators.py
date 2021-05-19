@@ -2,6 +2,7 @@
 
 import numpy as np
 from probnum import statespace
+
 from ._problems import SecondOrderBoundaryValueProblem
 
 __all__ = ["WrappedIntegrator"]

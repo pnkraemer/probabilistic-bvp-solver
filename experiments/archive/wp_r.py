@@ -1,13 +1,9 @@
+import matplotlib.pyplot as plt
 import numpy as np
-
-
+from probnumeval.timeseries import root_mean_square_error
 from scipy.integrate import solve_bvp
 
-import matplotlib.pyplot as plt
 from bvps import r_example
-
-from probnumeval.timeseries import root_mean_square_error
-
 
 bvp = r_example(y0=np.array([1.0]), ymax=np.array([3.0 / 2.0]), xi=0.05)
 

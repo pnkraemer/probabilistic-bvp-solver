@@ -1,11 +1,11 @@
 """Test for BVP solver."""
 
-from bvps import bvp_solver, problem_examples, quadrature
-import numpy as np
-
-import pytest
-from probnum import statespace, filtsmooth, randvars
 import matplotlib.pyplot as plt
+import numpy as np
+import pytest
+from probnum import filtsmooth, randvars, statespace
+
+from bvps import bvp_solver, problem_examples, quadrature
 
 
 @pytest.fixture

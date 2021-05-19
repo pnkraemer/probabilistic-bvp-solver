@@ -2,7 +2,7 @@
 
 import numpy as np
 import scipy.linalg
-from probnum import filtsmooth, statespace, utils, randvars
+from probnum import filtsmooth, randvars, statespace, utils
 from probnum._randomvariablelist import _RandomVariableList
 
 

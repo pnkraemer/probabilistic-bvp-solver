@@ -1,38 +1,35 @@
 """Try out probsolve_bvp."""
-import numpy as np
-
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from probnum import statespace, randvars, filtsmooth, diffeq
+import numpy as np
+import pandas as pd
+from probnum import diffeq, filtsmooth
+from probnum import random_variables as randvars
+from probnum import randvars, statespace
 from probnum._randomvariablelist import _RandomVariableList
+from scipy.integrate import solve_bvp
+from tqdm import tqdm
+
 from bvps import (
-    r_example,
-    bratus,
     BoundaryValueProblem,
-    WrappedIntegrator,
-    from_ode,
+    MyIteratedDiscreteComponent,
     MyKalman,
+    MyStoppingCriterion,
+    WrappedIntegrator,
+    bratus,
+    bratus_second_order,
+    from_ode,
     generate_samples,
-    split_grid,
+    matlab_example,
+    matlab_example_second_order,
     new_grid,
     new_grid2,
-    matlab_example,
-    MyStoppingCriterion,
-    MyIteratedDiscreteComponent,
-    probsolve_bvp,
-    bratus_second_order,
-    matlab_example_second_order,
-    problem_7_second_order,
     problem_7,
+    problem_7_second_order,
+    probsolve_bvp,
+    r_example,
+    split_grid,
 )
-from tqdm import tqdm
-import pandas as pd
-
-
-from probnum import random_variables as randvars
-
-
-from scipy.integrate import solve_bvp
 
 TOL = 1e-3
 

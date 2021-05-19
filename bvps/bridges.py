@@ -2,8 +2,9 @@
 
 import numpy as np
 from probnum import statespace
-from .problems import SecondOrderBoundaryValueProblem
+
 from .ode_measmods import from_boundary_conditions
+from .problems import SecondOrderBoundaryValueProblem
 
 SMALL_VALUE = 0.0
 

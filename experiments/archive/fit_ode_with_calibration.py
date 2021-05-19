@@ -1,19 +1,17 @@
 """Compute the solution to the bratus BVP with a probabilistic solver."""
-import numpy as np
-
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from probnum import statespace, randvars, filtsmooth, diffeq
-from bvps import bratus, BoundaryValueProblem, WrappedIntegrator, from_ode, MyKalman
-from tqdm import tqdm
+import numpy as np
 import pandas as pd
-
-
+from probnum import diffeq, filtsmooth, randvars, statespace
 from probnumeval.timeseries import (
     average_normalized_estimation_error_squared,
-    root_mean_square_error,
     non_credibility_index,
+    root_mean_square_error,
 )
+from tqdm import tqdm
+
+from bvps import BoundaryValueProblem, MyKalman, WrappedIntegrator, bratus, from_ode
 
 
 def rmse(kalpost, refsol, locs):
@@ -39,7 +37,6 @@ def dataframe(row_labels, column_labels):
 
 
 from scipy.integrate import solve_bvp
-
 
 bvp = bratus(tmax=1.0)
 

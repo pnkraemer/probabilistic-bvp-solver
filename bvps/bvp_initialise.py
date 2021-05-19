@@ -1,19 +1,14 @@
 """Initialise a BVP solver."""
 import numpy as np
-from probnum import diffeq, randvars, utils, statespace, filtsmooth, problems
+import scipy.linalg
+from probnum import diffeq, filtsmooth, problems, randvars, statespace, utils
 from probnum._randomvariablelist import _RandomVariableList
 
+from .kalman import MyIteratedDiscreteComponent, MyKalman
 from .mesh import *
 from .ode_measmods import from_ode, from_second_order_ode
 from .problems import SecondOrderBoundaryValueProblem
-from .kalman import (
-    MyIteratedDiscreteComponent,
-    MyKalman,
-)
 from .stopcrit import ConstantStopping, MyStoppingCriterion
-
-import scipy.linalg
-
 
 # __all__ = ["bvp_initialise", "bvp_initialise_ode", "bvp_initialise_guesses"]
 

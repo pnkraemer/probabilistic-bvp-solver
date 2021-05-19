@@ -1,8 +1,8 @@
 """Assert that the jacobians are implemented correctly."""
+import numpy as np
 import pytest
 
 from bvps.problem_examples import *
-import numpy as np
 
 all_first_order_bvps = pytest.mark.parametrize(
     "bvp1st",

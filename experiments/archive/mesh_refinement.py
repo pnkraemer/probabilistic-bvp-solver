@@ -7,42 +7,36 @@ http://www.orcca.on.ca/TechReports/TechReports/2001/TR-01-02.pdf
 
 
 """
-import numpy as np
-
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from probnum import statespace, randvars, filtsmooth, diffeq
-from probnum._randomvariablelist import _RandomVariableList
-from bvps import (
-    r_example,
-    BoundaryValueProblem,
-    WrappedIntegrator,
-    from_ode,
-    MyKalman,
-    generate_samples,
-    split_grid,
-    new_grid,
-    new_grid2,
-    matlab_example,
-    MyStoppingCriterion,
-    MyIteratedDiscreteComponent,
-)
-from tqdm import tqdm
+import numpy as np
 import pandas as pd
-
-
+from probnum import diffeq, filtsmooth
 from probnum import random_variables as randvars
-
-
+from probnum import randvars, statespace
+from probnum._randomvariablelist import _RandomVariableList
 from probnumeval.timeseries import (
     average_normalized_estimation_error_squared,
-    root_mean_square_error,
     non_credibility_index,
+    root_mean_square_error,
 )
-
-
 from scipy.integrate import solve_bvp
+from tqdm import tqdm
 
+from bvps import (
+    BoundaryValueProblem,
+    MyIteratedDiscreteComponent,
+    MyKalman,
+    MyStoppingCriterion,
+    WrappedIntegrator,
+    from_ode,
+    generate_samples,
+    matlab_example,
+    new_grid,
+    new_grid2,
+    r_example,
+    split_grid,
+)
 
 bvp = r_example(xi=0.01)
 bvp = matlab_example()

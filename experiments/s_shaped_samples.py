@@ -1,5 +1,7 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+#     return ddc
+import scipy.linalg
 
 # # This function evaluates the differential equation c'' = f(c, c')
 # def geodesic_system(manifold, c, dc):
@@ -39,8 +41,6 @@ import matplotlib.pyplot as plt
 #                     2 * blck @ dvecMdcn @ dc[:, n]
 #                     - dvecMdcn.T @ np.kron(dc[:, n], dc[:, n])))
 
-#     return ddc
-import scipy.linalg
 
 N = 1000
 a = 2 * np.random.rand(N, 2) - 1

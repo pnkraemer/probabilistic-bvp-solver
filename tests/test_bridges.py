@@ -1,5 +1,6 @@
-from bvps.bridges import GaussMarkovBridge
 import pytest
+
+from bvps.bridges import GaussMarkovBridge
 
 
 def test_sth():

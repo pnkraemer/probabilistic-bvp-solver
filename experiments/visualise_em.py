@@ -1,12 +1,13 @@
-from bvps import problem_examples, bvp_solver, ode_measmods
-from scipy.integrate import solve_bvp
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-from tqdm import tqdm
 import itertools
 
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
 from probnum import diffeq, statespace
+from scipy.integrate import solve_bvp
+from tqdm import tqdm
+
+from bvps import bvp_solver, ode_measmods, problem_examples
 
 bvp = problem_examples.problem_20_second_order(xi=0.00125)
 
@@ -49,7 +50,11 @@ initial_grid = np.linspace(bvp.t0, bvp.tmax, 6, endpoint=True)
 t = np.linspace(bvp.t0, bvp.tmax, 50, endpoint=True)
 
 for MAXIT_IEKS, axis_col, colormap, marker, title in zip(
-    [MAXIT, 5, 1], axes.T, [plt.cm.Blues, plt.cm.Oranges, plt.cm.Purples], ["o", "^", "d"], ["No EM Updates", "EM Updates every 5th Iteration", "EM Updates every iteration"]
+    [MAXIT, 5, 1],
+    axes.T,
+    [plt.cm.Blues, plt.cm.Oranges, plt.cm.Purples],
+    ["o", "^", "d"],
+    ["No EM Updates", "EM Updates every 5th Iteration", "EM Updates every iteration"],
 ):
     # Solver and solver parameters
 
@@ -95,13 +100,13 @@ for MAXIT_IEKS, axis_col, colormap, marker, title in zip(
         # plt.plot(x, y[:, 1:3])
         axis_col[0].plot(t, bvp.solution(t), color="black", linestyle="dotted")
         axis_col[0].plot(
-            t, y2[:, 0], color=colormap(0.2 + 0.6* iteration / MAXIT), alpha=0.9
+            t, y2[:, 0], color=colormap(0.2 + 0.6 * iteration / MAXIT), alpha=0.9
         )
         axis_col[0].plot(
             x,
             y[:, 0],
             marker=marker,
-            color=colormap(0.2 + 0.7*iteration / MAXIT),
+            color=colormap(0.2 + 0.7 * iteration / MAXIT),
             alpha=0.9,
             markersize=5,
         )
@@ -110,7 +115,7 @@ for MAXIT_IEKS, axis_col, colormap, marker, title in zip(
             (np.abs(res) + 1e-18),
             marker=marker,
             linestyle="None",
-            color=colormap(0.2 + 0.7*iteration / MAXIT),
+            color=colormap(0.2 + 0.7 * iteration / MAXIT),
             nonpositive="clip",
             alpha=0.9,
             markersize=5,
