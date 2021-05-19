@@ -22,7 +22,7 @@ with open("./data/problem7_problem_work_precision.json", "r") as infile:
 plt.style.use(
     [
         "./visualization/stylesheets/fontsize/7pt.mplstyle",
-        "./visualization/stylesheets/figsize/neurips/13_tile.mplstyle",
+        "./visualization/stylesheets/figsize/neurips/23_tile.mplstyle",
         "./visualization/stylesheets/misc/thin_lines.mplstyle",
         "./visualization/stylesheets/misc/bottomleftaxes.mplstyle",
         "./visualization/stylesheets/color/probnum_colors.mplstyle",
@@ -30,14 +30,13 @@ plt.style.use(
 )
 
 
+fig, ax = plt.subplots(ncols=3, nrows=2, dpi=150, constrained_layout=True)
 
-fig, ax = plt.subplots(ncols=4, dpi=350, constrained_layout=True)
-
-for axis in ax:
+for axis in ax.flatten():
     axis.spines["left"].set_position(("outward", 2))
     axis.spines["bottom"].set_position(("outward", 2))
 
-LINEWIDTH = 1.
+LINEWIDTH = 1.0
 ALPHA = 0.9
 
 markers = ["s", "d", "^", "o"]
@@ -49,10 +48,12 @@ for q, marker, color in zip(data.keys(), markers, colors):
     errors = []
     tols = []
     times = []
+    hs = []
 
     scipy_errors = []
     scipy_times = []
     scipy_Ns = []
+    scipy_hs = []
     for tol in qres.keys():
         qtolres = qres[tol]
 
@@ -60,7 +61,9 @@ for q, marker, color in zip(data.keys(), markers, colors):
         error = qtolres["error"]
         N = qtolres["N"]
         time = qtolres["time"]
+        h = qtolres["largest_step"]
 
+        hs.append(h)
         times.append(time)
         tols.append(float(tol))
         Ns.append(N)
@@ -70,20 +73,15 @@ for q, marker, color in zip(data.keys(), markers, colors):
         scipy_error = qtolres["error_scipy"]
         scipy_time = qtolres["time_scipy"]
         scipy_N = qtolres["N_scipy"]
+        scipy_h = qtolres["largest_step_scipy"]
 
         scipy_errors.append(scipy_error)
         scipy_times.append(scipy_time)
         scipy_Ns.append(scipy_N)
+        scipy_hs.append(scipy_h)
 
-
-    ax[0].loglog(
-        tols,
-        np.array(tols),
-        color="gray",
-        linestyle="dotted",
-    )
-    ax[0].loglog(
-        tols,
+    ax[0][0].loglog(
+        Ns,
         errors,
         color=color,
         label=f"$\\nu={q}$",
@@ -92,7 +90,17 @@ for q, marker, color in zip(data.keys(), markers, colors):
         linewidth=LINEWIDTH,
         alpha=ALPHA,
     )
-    ax[1].loglog(
+    ax[0][1].loglog(
+        hs,
+        errors,
+        color=color,
+        label=f"$\\nu={q}$",
+        marker=marker,
+        markersize=4,
+        linewidth=LINEWIDTH,
+        alpha=ALPHA,
+    )
+    ax[0][2].loglog(
         times,
         errors,
         color=color,
@@ -102,7 +110,26 @@ for q, marker, color in zip(data.keys(), markers, colors):
         linewidth=LINEWIDTH,
         alpha=ALPHA,
     )
-    ax[2].loglog(
+
+
+    ax[1][0].loglog(
+        tols,
+        np.array(tols),
+        color="gray",
+        linestyle="dotted",
+    )
+    ax[1][0].loglog(
+        tols,
+        errors,
+        color=color,
+        label=f"$\\nu={q}$",
+        marker=marker,
+        markersize=4,
+        linewidth=LINEWIDTH,
+        alpha=ALPHA,
+    )
+
+    ax[1][1].loglog(
         times,
         Ns,
         color=color,
@@ -113,7 +140,7 @@ for q, marker, color in zip(data.keys(), markers, colors):
         alpha=ALPHA,
     )
 
-    ax[3].loglog(
+    ax[1][2].loglog(
         Ns,
         chi2s,
         label=f"$\\nu={q}$",
@@ -125,24 +152,91 @@ for q, marker, color in zip(data.keys(), markers, colors):
     )
 
 
-ax[0].loglog(tols, scipy_errors, color="darkgray", marker="o", markersize=4, linewidth=1., alpha=0.8)
-ax[1].loglog(scipy_times, scipy_errors, color="darkgray", marker="o", markersize=4, linewidth=1., alpha=0.8)
-ax[2].loglog(scipy_times, scipy_Ns, color="darkgray", marker="o", markersize=4, linewidth=1., alpha=0.9)
+ax[1][0].loglog(
+    tols,
+    scipy_errors,
+    color="darkgray",
+    marker="o",
+    markersize=4,
+    linewidth=1.0,
+    alpha=0.8,
+    label="SciPy"
+)
+ax[0][0].loglog(
+    scipy_Ns,
+    scipy_errors,
+    color="darkgray",
+    marker="o",
+    markersize=4,
+    linewidth=1.0,
+    alpha=0.8,
+    label="SciPy"
+)
+ax[0][1].loglog(
+    scipy_hs,
+    scipy_errors,
+    color="darkgray",
+    marker="o",
+    markersize=4,
+    linewidth=1.0,
+    alpha=0.8,
+    label="SciPy"
+)
+ax[0][2].loglog(
+    scipy_times,
+    scipy_errors,
+    color="darkgray",
+    marker="o",
+    markersize=4,
+    linewidth=1.0,
+    alpha=0.8,
+    label="SciPy"
+)
+ax[1][1].loglog(
+    scipy_times,
+    scipy_Ns,
+    color="darkgray",
+    marker="o",
+    markersize=4,
+    linewidth=1.0,
+    alpha=0.9,
+    label="SciPy"
+)
 
-ax[0].set_xlabel(r"Tolerance")
-ax[1].set_xlabel(r"Runtime (s)")
-ax[2].set_xlabel("Runtime (s)")
-ax[3].set_xlabel(r"No. of grid points")
+ax[0][0].set_xlabel("No. of grid points")
+ax[0][0].set_ylabel("RMSE")
 
-ax[0].set_ylabel("RMSE")
-ax[1].set_ylabel("RMSE")
-ax[2].set_ylabel(r"No. of grid points")
-ax[3].set_ylabel("ANEES")
+ax[0][1].set_xlabel("Largest step")
+ax[0][1].set_ylabel("RMSE")
 
-ax[3].axhspan(out[0], out[1], alpha=0.1, color="black", linewidth=0.0)
-ax[3].axhline(1.0, color="black", linewidth=0.5)
+ax[0][2].set_xlabel("Runtime (s)")
+ax[0][2].set_ylabel("RMSE")
 
-ax[-2].legend(fancybox=False, edgecolor="black", fontsize="x-small").get_frame().set_linewidth(0.5)
+ax[1][0].set_xlabel("Tolerance")
+ax[1][0].set_ylabel("RMSE")
+
+ax[1][1].set_xlabel("Runtime (s)")
+ax[1][1].set_ylabel("No. of grid points")
+
+ax[1][2].set_xlabel("No. of grid points")
+ax[1][2].set_ylabel("$\\chi^2$ statistic")
+
+# ax[0].set_xlabel(r"Tolerance")
+# ax[1].set_xlabel(r"Runtime (s)")
+# ax[2].set_xlabel("Runtime (s)")
+# ax[3].set_xlabel(r"No. of grid points")
+#
+# ax[0].set_ylabel("RMSE")
+# ax[1].set_ylabel("RMSE")
+# ax[2].set_ylabel(r"No. of grid points")
+# ax[3].set_ylabel("ANEES")
+
+ax[1][2].axhspan(out[0], out[1], alpha=0.1, color="black", linewidth=0.0)
+ax[1][2].axhline(1.0, color="black", linewidth=0.5)
+
+ax[0][2].legend(
+    fancybox=False, edgecolor="black", fontsize="x-small"
+).get_frame().set_linewidth(0.5)
 # ax[1].legend(fancybox=False, edgecolor="black").get_frame().set_linewidth(0.5)
 # ax[2].legend(fancybox=False, edgecolor="black").get_frame().set_linewidth(0.5)
 
