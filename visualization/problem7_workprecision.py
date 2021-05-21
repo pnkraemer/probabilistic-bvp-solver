@@ -30,7 +30,7 @@ plt.style.use(
         "./visualization/stylesheets/misc/thin_lines.mplstyle",
         "./visualization/stylesheets/misc/bottomleftaxes.mplstyle",
         "./visualization/stylesheets/marker/framed_markers.mplstyle",
-        # "./visualization/stylesheets/color/probnum_colors.mplstyle",
+        "./visualization/stylesheets/color/muted.mplstyle",
     ]
 )
 
@@ -63,37 +63,37 @@ for problem_index, key in enumerate(data.keys()):
     SHIFT = 0.05
     ax.annotate(
         f"({N_1e2}, {round_to_1(time_1e2)})",
-        (problem_index - 0.4, error_1e2),
+        (problem_index - 0.35, error_1e2),
         zorder=10,
         bbox={"facecolor": "white", "edgecolor": "white", "pad": 0},
-        fontsize="small"
+        fontsize="x-small", color="C0"
     )
     ax.annotate(
         f"({N_1e5}, {round_to_1(time_1e5)})",
-        (problem_index - 0.4, error_1e5),
+        (problem_index - 0.35, error_1e5),
         zorder=10,
         bbox={"facecolor": "white", "edgecolor": "white", "pad": 0},
-        fontsize="small"
+        fontsize="x-small", color="C1"
     )
     ax.annotate(
         f"({scipy_N_1e2}, {round_to_1(scipy_time_1e2)})",
         (problem_index + 0.1, scipy_error_1e2),
         zorder=10,
         bbox={"facecolor": "white", "edgecolor": "white", "pad": 0},
-        fontsize="small"    
+        fontsize="x-small", color="C0"
     )
     ax.annotate(
         f"({scipy_N_1e5}, {round_to_1(scipy_time_1e5)})",
         (problem_index + 0.1, scipy_error_1e5),
         zorder=10,
         bbox={"facecolor": "white", "edgecolor": "white", "pad": 0},
-        fontsize="small"
+        fontsize="x-small", color="C1"
     )
 
-    ax.semilogy(problem_index - SHIFT, error_1e2, marker="P", color="C0")
-    ax.semilogy(problem_index - SHIFT, error_1e5, marker="P", color="C1")
-    ax.semilogy(problem_index + SHIFT, scipy_error_1e2, marker="d", color="C0")
-    ax.semilogy(problem_index + SHIFT, scipy_error_1e5, marker="d", color="C1")
+    ax.semilogy(problem_index - SHIFT, error_1e2, marker="P", markersize=7, color="C0")
+    ax.semilogy(problem_index - SHIFT, error_1e5, marker="P",markersize=7,  color="C1")
+    ax.semilogy(problem_index + SHIFT, scipy_error_1e2, marker="d", markersize=7, color="C0")
+    ax.semilogy(problem_index + SHIFT, scipy_error_1e5, marker="d",markersize=7,  color="C1")
     #
     # ax.vlines(
     #     x=problem_index - SHIFT,
@@ -134,7 +134,6 @@ for problem_index, key in enumerate(data.keys()):
     # )
 
 # print(problem_index, key)
-plt.legend()
 ax.annotate("Tol $10^{-2}$", (-0.1, 2e-2), color="C0")
 ax.annotate("Tol $10^{-5}$", (0.5, 2e-5), color="C1")
 ax.axhline(1e-2, linestyle="dashed", color="C0", linewidth=1)
