@@ -36,12 +36,26 @@ for q, ax in tqdm(zip(orders, axes.T), total=len(orders)):
         backward_implementation="sqrt",
     )
 
-    prior = bridges.GaussMarkovBridge(ibm, bvp)
-
-    initrv_not_initialised = randvars.Normal(
-        np.zeros(ibm.dimension), np.eye(ibm.dimension)
+    ibm2 = statespace.IBM(
+        ordint=q,
+        spatialdim=2,
+        forward_implementation="sqrt",
+        backward_implementation="sqrt",
     )
-    initrv = prior.initialise_boundary_conditions(initrv_not_initialised)
+    ibm2.equivalent_discretisation_preconditioned._proc_noise_cov_cholesky *= 5
+    ibm2.equivalent_discretisation_preconditioned.proc_noise_cov_mat *= 25
+
+    prior = bridges.GaussMarkovBridge(ibm2, bvp)
+
+    initmean =  np.zeros(ibm.dimension)
+    initmean[0] = 1.2
+    initrv_not_initialised = randvars.Normal(
+       initmean, 0.125 * np.eye(ibm.dimension)
+    )
+    initrv_not_initialised2 = randvars.Normal(
+       initmean, 5 * np.eye(ibm.dimension)
+    )
+    initrv = prior.initialise_boundary_conditions(initrv_not_initialised2)
 
     base_measure_samples = np.random.randn(num_samples, len(grid), ibm.dimension)
     base_measure_samples2 = np.random.randn(num_samples, len(grid), ibm.dimension)

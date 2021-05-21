@@ -102,8 +102,6 @@ for q in tqdm.tqdm(ORDERS):
 
         # Save results
         results[q][tol]["chi2"] = chi2 / sigma_squared
-
-
         results[q][tol]["time"] = runtime
         results[q][tol]["error"] = error
         results[q][tol]["N"] = N

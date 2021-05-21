@@ -111,7 +111,6 @@ for q, marker, color in zip(data.keys(), markers, colors):
         alpha=ALPHA,
     )
 
-
     ax[1][0].loglog(
         tols,
         np.array(tols),
@@ -160,7 +159,7 @@ ax[1][0].loglog(
     markersize=4,
     linewidth=1.0,
     alpha=0.8,
-    label="SciPy"
+    label="SciPy",
 )
 ax[0][0].loglog(
     scipy_Ns,
@@ -170,7 +169,7 @@ ax[0][0].loglog(
     markersize=4,
     linewidth=1.0,
     alpha=0.8,
-    label="SciPy"
+    label="SciPy",
 )
 ax[0][1].loglog(
     scipy_hs,
@@ -180,7 +179,7 @@ ax[0][1].loglog(
     markersize=4,
     linewidth=1.0,
     alpha=0.8,
-    label="SciPy"
+    label="SciPy",
 )
 ax[0][2].loglog(
     scipy_times,
@@ -190,7 +189,7 @@ ax[0][2].loglog(
     markersize=4,
     linewidth=1.0,
     alpha=0.8,
-    label="SciPy"
+    label="SciPy",
 )
 ax[1][1].loglog(
     scipy_times,
@@ -200,7 +199,7 @@ ax[1][1].loglog(
     markersize=4,
     linewidth=1.0,
     alpha=0.9,
-    label="SciPy"
+    label="SciPy",
 )
 
 ax[0][0].set_xlabel("No. of grid points")
