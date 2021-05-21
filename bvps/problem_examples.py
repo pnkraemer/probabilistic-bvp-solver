@@ -45,33 +45,33 @@ def pendulum_jac(t, y):
 
 
 def bratus(tmax=1.0):
-
-    L = np.eye(1, 2)
-    R = np.eye(1, 2)
-    y0 = np.zeros(1)
-    ymax = np.zeros(1)
-    t0 = 0.0
-    tmax = tmax
-
-    return BoundaryValueProblem(
-        f=bratus_rhs,
-        t0=t0,
-        tmax=tmax,
-        L=L,
-        R=R,
-        y0=y0,
-        ymax=ymax,
-        df=bratus_jacobian,
-        dimension=2,
-    )
-
-
-def bratus_rhs(t, y):
-    return np.array([y[1], -np.exp(y[0])])
-
-
-def bratus_jacobian(t, y):
-    return np.array([[0.0, 1.0], [-np.exp(y[0]), 0.0]])
+    return bratus_second_order(tmax=tmax).to_first_order()
+#     L = np.eye(1, 2)
+#     R = np.eye(1, 2)
+#     y0 = np.zeros(1)
+#     ymax = np.zeros(1)
+#     t0 = 0.0
+#     tmax = tmax
+# 
+#     return BoundaryValueProblem(
+#         f=bratus_rhs,
+#         t0=t0,
+#         tmax=tmax,
+#         L=L,
+#         R=R,
+#         y0=y0,
+#         ymax=ymax,
+#         df=bratus_jacobian,
+#         dimension=2,
+#     )
+# 
+# 
+# def bratus_rhs(t, y):
+#     return np.array([y[1], -np.exp(y[0])])
+# 
+# 
+# def bratus_jacobian(t, y):
+#     return np.array([[0.0, 1.0], [-np.exp(y[0]), 0.0]])
 
 
 def bratus_second_order(tmax=1.0):
@@ -112,38 +112,38 @@ def bratus_second_order_jacobian_dy(t, y, dy):
 def matlab_example(tmax=1.0):
     """This has a closed form solution AND anisotropic behaviour (a lot happens in the beginning).
     Use this to show step-size adaptivity."""
-
-    L = np.eye(1, 2)
-    R = np.eye(1, 2)
-
-    t0 = 1 / (3 * np.pi)
-    tmax = tmax
-
-    y0 = matlab_solution(t0)[0].reshape((-1,))
-    ymax = matlab_solution(tmax)[0].reshape((-1,))
-
-    return BoundaryValueProblem(
-        f=matlab_rhs,
-        t0=t0,
-        tmax=tmax,
-        L=L,
-        R=R,
-        y0=y0,
-        ymax=ymax,
-        df=matlab_jacobian,
-        solution=matlab_solution,
-        dimension=2,
-    )
-
-
-def matlab_rhs(t, y):
-    return np.array([y[1], -2 * y[1] / t - y[0] / t ** 4])
-
-
-def matlab_jacobian(t, y):
-    return np.array([[0, 1], [-1 / t ** 4, -2 / t]])
-
-
+    return matlab_example_second_order(tmax=tmax).to_first_order()
+#     L = np.eye(1, 2)
+#     R = np.eye(1, 2)
+# 
+#     t0 = 1 / (3 * np.pi)
+#     tmax = tmax
+# 
+#     y0 = matlab_solution(t0)[0].reshape((-1,))
+#     ymax = matlab_solution(tmax)[0].reshape((-1,))
+# 
+#     return BoundaryValueProblem(
+#         f=matlab_rhs,
+#         t0=t0,
+#         tmax=tmax,
+#         L=L,
+#         R=R,
+#         y0=y0,
+#         ymax=ymax,
+#         df=matlab_jacobian,
+#         solution=matlab_solution,
+#         dimension=2,
+#     )
+# 
+# 
+# def matlab_rhs(t, y):
+#     return np.array([y[1], -2 * y[1] / t - y[0] / t ** 4])
+# 
+# 
+# def matlab_jacobian(t, y):
+#     return np.array([[0, 1], [-1 / t ** 4, -2 / t]])
+# 
+# 
 def matlab_solution(t):
     y1 = np.sin(1 / t)
     y2 = -1 / t ** 2 * np.cos(1 / t)
@@ -233,43 +233,44 @@ def r_jacobian(t, y, xi):
 
 def problem_7(xi=0.01):
     """https://rdrr.io/rforge/bvpSolve/f/inst/doc/bvpTests.pdf"""
-    L = np.eye(1, 2)
-    R = np.eye(1, 2)
-
-    y0 = np.array([-1.0])
-    ymax = np.array([1.0])
-
-    t0 = -1.0
-    tmax = 1.0
-
-    return BoundaryValueProblem(
-        f=lambda t, y: p7_rhs(t, y, xi=xi),
-        t0=t0,
-        tmax=tmax,
-        L=L,
-        R=R,
-        y0=y0,
-        ymax=ymax,
-        df=lambda t, y: p7_jacobian(t, y, xi=xi),
-        dimension=2,
-    )
-
-
-def p7_rhs(t, y, xi):
-    x, dx = y
-    ynew = (
-        x
-        - t * dx
-        - (1 + xi * np.pi ** 2) * np.cos(np.pi * t)
-        - np.pi * t * np.sin(np.pi * t)
-    ) / xi
-    return np.array([dx, ynew])
-
-
-def p7_jacobian(t, y, xi):
-    x, dx = y
-    ynew = (x - x * dx) / xi
-    return np.array([[0, 1.0], [1 / xi, -t / xi]])
+    return problem_7_second_order(xi=xi).to_first_order()
+#     L = np.eye(1, 2)
+#     R = np.eye(1, 2)
+#
+#     y0 = np.array([-1.0])
+#     ymax = np.array([1.0])
+#
+#     t0 = -1.0
+#     tmax = 1.0
+#
+#     return BoundaryValueProblem(
+#         f=lambda t, y: p7_rhs(t, y, xi=xi),
+#         t0=t0,
+#         tmax=tmax,
+#         L=L,
+#         R=R,
+#         y0=y0,
+#         ymax=ymax,
+#         df=lambda t, y: p7_jacobian(t, y, xi=xi),
+#         dimension=2,
+#     )
+#
+#
+# def p7_rhs(t, y, xi):
+#     x, dx = y
+#     ynew = (
+#         x
+#         - t * dx
+#         - (1 + xi * np.pi ** 2) * np.cos(np.pi * t)
+#         - np.pi * t * np.sin(np.pi * t)
+#     ) / xi
+#     return np.array([dx, ynew])
+#
+#
+# def p7_jacobian(t, y, xi):
+#     x, dx = y
+#     ynew = (x - x * dx) / xi
+#     return np.array([[0, 1.0], [1 / xi, -t / xi]])
 
 
 def problem_15(xi=0.01):
