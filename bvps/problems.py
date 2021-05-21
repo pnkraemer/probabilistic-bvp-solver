@@ -63,3 +63,42 @@ class SecondOrderBoundaryValueProblem:
             return np.array([self.L @ ya - self.y0, self.R @ yb - self.ymax]).squeeze()
 
         return bc
+
+    def to_first_order(self):
+
+        f = self._rhs_as_firstorder
+        if self.df_dy is not None and self.df_ddy is not None:
+            df = self._jac_as_firstorder
+        else:
+            df = None
+        return BoundaryValueProblem(
+            f=f,
+            t0=self.t0,
+            tmax=self.tmax,
+            L=self.L,
+            R=self.R,
+            y0=self.y0,
+            ymax=self.ymax,
+            df=df,
+            dimension=self.dimension * 2,
+            solution=self.solution
+        )
+
+    def _rhs_as_firstorder(self, t, y):
+        x, dx = y
+        x = np.atleast_1d(x)
+        dx = np.atleast_1d(dx)
+        dy = self.f(t=t, y=x, dy=dx)
+        return np.block([dx, dy])
+
+    def _jac_as_firstorder(self, t, y):
+        x, dx = y
+        x = np.atleast_1d(x)
+        dx = np.atleast_1d(dx)
+        df_dy = self.df_dy(t, y=x, dy=dx)
+        df_ddy = self.df_ddy(t, y=x, dy=dx)
+        I = np.eye(self.dimension)
+        O = np.zeros_like(I)
+        return np.block([[O, I], [df_dy, df_ddy]])
+
+

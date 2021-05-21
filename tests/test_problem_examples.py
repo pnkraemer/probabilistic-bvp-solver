@@ -15,6 +15,12 @@ all_first_order_bvps = pytest.mark.parametrize(
         problem_15(),
         seir_as_bvp(),
         measles(),
+        bratus_second_order().to_first_order(),
+        matlab_example_second_order().to_first_order(),
+        problem_7_second_order().to_first_order(),
+        problem_20_second_order().to_first_order(),
+        problem_24_second_order().to_first_order(),
+        problem_28_second_order().to_first_order(),
     ],
 )
 
@@ -27,6 +33,7 @@ all_second_order_bvps = pytest.mark.parametrize(
         problem_7_second_order(),
         problem_20_second_order(),
         problem_24_second_order(),
+        problem_28_second_order(),
     ],
 )
 
@@ -44,7 +51,7 @@ def rtol():
 @all_first_order_bvps
 def test_jacobians_1st(bvp1st, dt, rtol):
 
-    bvp_dim = len(bvp1st.R.T)
+    bvp_dim = bvp1st.dimension
     random_direction = 1 + 0.1 * np.random.rand(bvp_dim)
     random_point = 1 + np.random.rand(bvp_dim)
 
@@ -68,7 +75,7 @@ def test_jacobians_1st(bvp1st, dt, rtol):
 @all_second_order_bvps
 def test_jacobians_2nd_dy(bvp2nd, dt, rtol):
 
-    bvp_dim = len(bvp2nd.R.T) // 2
+    bvp_dim = bvp2nd.dimension
     random_direction = 1 + 0.1 * np.random.rand(bvp_dim)
     random_point = 1 + np.random.rand(bvp_dim)
 
