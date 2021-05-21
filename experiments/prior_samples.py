@@ -47,14 +47,10 @@ for q, ax in tqdm(zip(orders, axes.T), total=len(orders)):
 
     prior = bridges.GaussMarkovBridge(ibm2, bvp)
 
-    initmean =  np.zeros(ibm.dimension)
+    initmean = np.zeros(ibm.dimension)
     initmean[0] = 1.2
-    initrv_not_initialised = randvars.Normal(
-       initmean, 0.125 * np.eye(ibm.dimension)
-    )
-    initrv_not_initialised2 = randvars.Normal(
-       initmean, 5 * np.eye(ibm.dimension)
-    )
+    initrv_not_initialised = randvars.Normal(initmean, 0.125 * np.eye(ibm.dimension))
+    initrv_not_initialised2 = randvars.Normal(initmean, 5 * np.eye(ibm.dimension))
     initrv = prior.initialise_boundary_conditions(initrv_not_initialised2)
 
     base_measure_samples = np.random.randn(num_samples, len(grid), ibm.dimension)

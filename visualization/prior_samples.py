@@ -55,7 +55,7 @@ for ax in axes:
     # axes.set_title(f"Order $\\nu = {q}$")
     ax.set_xticks([])
     ax.set_yticks([])
-    ax.set_xlim((0., 1.))
+    ax.set_xlim((0.0, 1.0))
     ax.set_ylim((0.8, 1.8))
 # axes[0].set_title(r"$\bf B$", loc="left", fontweight="bold", pad=5)
 # axes[1].set_title(r"$\bf C$", loc="left", fontweight="bold", pad=5)

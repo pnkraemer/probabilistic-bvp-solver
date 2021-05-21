@@ -4,8 +4,13 @@ import matplotlib.pyplot as plt
 
 plt.rcParams["text.usetex"] = True
 
-plt.style.use(["./visualization/stylesheets/fontsize/7pt.mplstyle", "./visualization/stylesheets/color/probnum_colors.mplstyle"])
-pgm = daft.PGM(dpi=300, aspect=1.0,grid_unit=1.41)
+plt.style.use(
+    [
+        "./visualization/stylesheets/fontsize/7pt.mplstyle",
+        "./visualization/stylesheets/color/probnum_colors.mplstyle",
+    ]
+)
+pgm = daft.PGM(dpi=300, aspect=1.0, grid_unit=1.41)
 
 # Bridge prior
 pgm.add_plate(

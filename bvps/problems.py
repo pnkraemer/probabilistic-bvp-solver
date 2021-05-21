@@ -81,7 +81,7 @@ class SecondOrderBoundaryValueProblem:
             ymax=self.ymax,
             df=df,
             dimension=self.dimension * 2,
-            solution=self.solution
+            solution=self.solution,
         )
 
     def _rhs_as_firstorder(self, t, y):
@@ -89,7 +89,7 @@ class SecondOrderBoundaryValueProblem:
         x = np.atleast_1d(x)
         dx = np.atleast_1d(dx)
         dy = self.f(t=t, y=x, dy=dx)
-        return np.block([dx, dy])
+        return np.block([[dx], [dy]])
 
     def _jac_as_firstorder(self, t, y):
         x, dx = y
@@ -100,5 +100,3 @@ class SecondOrderBoundaryValueProblem:
         I = np.eye(self.dimension)
         O = np.zeros_like(I)
         return np.block([[O, I], [df_dy, df_ddy]])
-
-

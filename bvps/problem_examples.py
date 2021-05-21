@@ -47,13 +47,15 @@ def pendulum_jac(t, y):
 
 def bratus(tmax=1.0):
     return bratus_second_order(tmax=tmax).to_first_order()
+
+
 #     L = np.eye(1, 2)
 #     R = np.eye(1, 2)
 #     y0 = np.zeros(1)
 #     ymax = np.zeros(1)
 #     t0 = 0.0
 #     tmax = tmax
-# 
+#
 #     return BoundaryValueProblem(
 #         f=bratus_rhs,
 #         t0=t0,
@@ -65,12 +67,12 @@ def bratus(tmax=1.0):
 #         df=bratus_jacobian,
 #         dimension=2,
 #     )
-# 
-# 
+#
+#
 # def bratus_rhs(t, y):
 #     return np.array([y[1], -np.exp(y[0])])
-# 
-# 
+#
+#
 # def bratus_jacobian(t, y):
 #     return np.array([[0.0, 1.0], [-np.exp(y[0]), 0.0]])
 
@@ -114,15 +116,17 @@ def matlab_example(tmax=1.0):
     """This has a closed form solution AND anisotropic behaviour (a lot happens in the beginning).
     Use this to show step-size adaptivity."""
     return matlab_example_second_order(tmax=tmax).to_first_order()
+
+
 #     L = np.eye(1, 2)
 #     R = np.eye(1, 2)
-# 
+#
 #     t0 = 1 / (3 * np.pi)
 #     tmax = tmax
-# 
+#
 #     y0 = matlab_solution(t0)[0].reshape((-1,))
 #     ymax = matlab_solution(tmax)[0].reshape((-1,))
-# 
+#
 #     return BoundaryValueProblem(
 #         f=matlab_rhs,
 #         t0=t0,
@@ -135,16 +139,16 @@ def matlab_example(tmax=1.0):
 #         solution=matlab_solution,
 #         dimension=2,
 #     )
-# 
-# 
+#
+#
 # def matlab_rhs(t, y):
 #     return np.array([y[1], -2 * y[1] / t - y[0] / t ** 4])
-# 
-# 
+#
+#
 # def matlab_jacobian(t, y):
 #     return np.array([[0, 1], [-1 / t ** 4, -2 / t]])
-# 
-# 
+#
+#
 def matlab_solution(t):
     y1 = np.sin(1 / t)
     y2 = -1 / t ** 2 * np.cos(1 / t)
@@ -235,6 +239,8 @@ def r_jacobian(t, y, xi):
 def problem_7(xi=0.01):
     """https://rdrr.io/rforge/bvpSolve/f/inst/doc/bvpTests.pdf"""
     return problem_7_second_order(xi=xi).to_first_order()
+
+
 #     L = np.eye(1, 2)
 #     R = np.eye(1, 2)
 #
@@ -428,7 +434,7 @@ def seir_jac(t, y, params):
     return jac_matrix
 
 
-def problem_20_second_order(xi=0.1):
+def problem_20_second_order(xi=0.2):
     """https://rdrr.io/rforge/bvpSolve/f/inst/doc/bvpTests.pdf"""
     L = np.eye(1, 2)
     R = np.eye(1, 2)
@@ -470,7 +476,7 @@ def p20_solution(t, xi):
     return 1 + xi * np.log(np.cosh((t - 0.745) / xi))
 
 
-def problem_24_second_order(xi=0.1, gamma=1.4):
+def problem_24_second_order(xi=0.05, gamma=1.4):
     """https://rdrr.io/rforge/bvpSolve/f/inst/doc/bvpTests.pdf"""
     L = np.eye(1, 2)
     R = np.eye(1, 2)
@@ -618,9 +624,6 @@ def measles_jac(t, y, mu, betafun, xi, eta):
     return df_dy
 
 
-
-
-
 ##################################################################################################################
 ##################################################################################################################
 ##################################################################################################################
@@ -629,7 +632,6 @@ def measles_jac(t, y, mu, betafun, xi, eta):
 ##################################################################################################################
 ##################################################################################################################
 ##################################################################################################################
-
 
 
 def problem_28_second_order(xi=0.1):
@@ -637,7 +639,7 @@ def problem_28_second_order(xi=0.1):
     L = np.eye(1, 2)
     R = np.eye(1, 2)
 
-    y0 = np.array([1.])
+    y0 = np.array([1.0])
     ymax = np.array([1.5])
 
     t0 = 0.0
@@ -651,12 +653,8 @@ def problem_28_second_order(xi=0.1):
         R=R,
         y0=y0,
         ymax=ymax,
-        df_dy=lambda t, y, dy: p28_jacobian_second_order_dy(
-            t, y, dy, xi=xi
-        ),
-        df_ddy=lambda t, y, dy: p28_jacobian_second_order_ddy(
-            t, y, dy, xi=xi
-        ),
+        df_dy=lambda t, y, dy: p28_jacobian_second_order_dy(t, y, dy, xi=xi),
+        df_ddy=lambda t, y, dy: p28_jacobian_second_order_ddy(t, y, dy, xi=xi),
         dimension=1,
     )
 
@@ -670,37 +668,4 @@ def p28_jacobian_second_order_ddy(t, y, dy, xi):
 
 
 def p28_jacobian_second_order_dy(t, y, dy, xi):
-    return np.ones((1, 1)) *( 1 - dy) / xi
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    return np.ones((1, 1)) * (1 - dy) / xi
