@@ -4,7 +4,9 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 from probnumeval.timeseries import chi2_confidence_intervals
-
+from math import log10, floor
+def round_to_1(x):
+    return round(x, -int(floor(log10(abs(x)))))
 out = chi2_confidence_intervals(dim=1, perc=0.95)
 
 with open("./data/problem7_problem_work_precision.json", "r") as infile:
@@ -44,41 +46,44 @@ for problem_index, key in enumerate(data.keys()):
 
     error_1e2 = problem_results_1e2["error"]
     N_1e2 = problem_results_1e2["N"]
+    time_1e2 = problem_results_1e2["time"]
     scipy_error_1e2 = problem_results_1e2["error_scipy"]
     scipy_N_1e2 = problem_results_1e2["N_scipy"]
+    scipy_time_1e2 = problem_results_1e2["time_scipy"]
 
     error_1e5 = problem_results_1e5["error"]
     N_1e5 = problem_results_1e5["N"]
+    time_1e5 = problem_results_1e5["time"]
     scipy_error_1e5 = problem_results_1e5["error_scipy"]
     scipy_N_1e5 = problem_results_1e5["N_scipy"]
+    scipy_time_1e5 = problem_results_1e5["time_scipy"]
 
     xticks.append(problem_index)
     xticklabels.append(key)
     SHIFT = 0.05
-
     ax.annotate(
-        f"N={N_1e2}",
-        (problem_index - 0.3, error_1e2),
+        f"({N_1e2}, {round_to_1(time_1e2)})",
+        (problem_index - 0.4, error_1e2),
         zorder=10,
         bbox={"facecolor": "white", "edgecolor": "white", "pad": 0},
         fontsize="small"
     )
     ax.annotate(
-        f"N={N_1e5}",
-        (problem_index - 0.3, error_1e5),
+        f"({N_1e5}, {round_to_1(time_1e5)})",
+        (problem_index - 0.4, error_1e5),
         zorder=10,
         bbox={"facecolor": "white", "edgecolor": "white", "pad": 0},
         fontsize="small"
     )
     ax.annotate(
-        f"N={scipy_N_1e2}",
+        f"({scipy_N_1e2}, {round_to_1(scipy_time_1e2)})",
         (problem_index + 0.1, scipy_error_1e2),
         zorder=10,
         bbox={"facecolor": "white", "edgecolor": "white", "pad": 0},
-        fontsize="small"
+        fontsize="small"    
     )
     ax.annotate(
-        f"N={scipy_N_1e5}",
+        f"({scipy_N_1e5}, {round_to_1(scipy_time_1e5)})",
         (problem_index + 0.1, scipy_error_1e5),
         zorder=10,
         bbox={"facecolor": "white", "edgecolor": "white", "pad": 0},
