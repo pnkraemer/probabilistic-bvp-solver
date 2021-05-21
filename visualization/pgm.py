@@ -1,29 +1,22 @@
 import daft
 import matplotlib.pyplot as plt
 
-plt.style.use(
-    [
-        "./visualization/stylesheets/science.mplstyle",
-        # "./visualization/stylesheets/misc/grid.mplstyle",
-        "./visualization/stylesheets/one_of_12_tile.mplstyle",
-        "./visualization/stylesheets/8pt.mplstyle",
-        "./visualization/stylesheets/probnum_colors.mplstyle",
-    ]
-)
 
+plt.rcParams["text.usetex"] = True
 
-pgm = daft.PGM(dpi=300, aspect=1.0, shape=(5.3, 3.3), grid_unit=1.41)
+plt.style.use(["./visualization/stylesheets/fontsize/7pt.mplstyle", "./visualization/stylesheets/color/probnum_colors.mplstyle"])
+pgm = daft.PGM(dpi=300, aspect=1.0,grid_unit=1.41)
 
 # Bridge prior
 pgm.add_plate(
     [-0.5, -1.5, 5.0, 2.0],
-    rect_params={"ec": "C0", "linewidth": 2},
+    rect_params={"ec": "C1", "linewidth": 2},
 )
 
 # Classic prior
 pgm.add_plate(
     [-0.55, -0.55, 5.10, 1.10],
-    rect_params={"ec": "C1", "linewidth": 2},
+    rect_params={"ec": "C0", "linewidth": 2},
 )
 
 # Placeholder for space reasons
