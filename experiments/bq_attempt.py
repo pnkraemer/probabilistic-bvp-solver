@@ -1,7 +1,7 @@
 """How hard is it to make BQ work?"""
 
 import numpy as np
-from probnum import quad, kernels
+from probnum import kernels, quad
 
 SCALE = 1e-3
 

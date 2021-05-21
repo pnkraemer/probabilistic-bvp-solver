@@ -1,10 +1,9 @@
 """Template to turn the .csv files in data/ into work-precision plots."""
 
 import matplotlib.pyplot as plt
-from probnumeval.timeseries import chi2_confidence_intervals
-from _styles import LINESTYLES, MARKERS
-
 import numpy as np
+from _styles import LINESTYLES, MARKERS
+from probnumeval.timeseries import chi2_confidence_intervals
 
 evalgrid = np.load("./data/initialisation_visualisation/evalgrid.npy")
 

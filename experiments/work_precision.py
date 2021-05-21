@@ -1,20 +1,19 @@
 """Try out probsolve_bvp."""
-import numpy as np
+import time
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from probnum import statespace, randvars, filtsmooth, diffeq
-from probnum._randomvariablelist import _RandomVariableList
-from bvps import problem_examples, bridges, bvp_solver
-from tqdm import tqdm
+import numpy as np
 import pandas as pd
-
-from probnumeval import timeseries
+from probnum import diffeq, filtsmooth
 from probnum import random_variables as randvars
-
-
+from probnum import randvars, statespace
+from probnum._randomvariablelist import _RandomVariableList
+from probnumeval import timeseries
 from scipy.integrate import solve_bvp
-import time
+from tqdm import tqdm
+
+from bvps import bridges, bvp_solver, problem_examples
 
 # Easy aliases
 anees = timeseries.average_normalized_estimation_error_squared
@@ -74,9 +73,9 @@ for q in [3, 4]:
     evalgrid = np.linspace(bvp.t0, bvp.tmax, 250, endpoint=True)
 
     for tol_order in np.arange(1.0, 9.0):
-        if q ==3:
+        if q == 3:
             if tol_order > 7:
-                tol_order = 7.
+                tol_order = 7.0
         TOL = 10.0 ** (-tol_order)
 
         print("tol", TOL)
@@ -118,11 +117,17 @@ for q in [3, 4]:
         solution = diffeq.KalmanODESolution(post)
 
         testlocations = np.linspace(bvp.t0, bvp.tmax)
-        reference_solution = lambda *args, **kwargs: bvp.solution(*args, **kwargs).reshape((-1, 1))
+        reference_solution = lambda *args, **kwargs: bvp.solution(
+            *args, **kwargs
+        ).reshape((-1, 1))
         # plt.plot(testlocations, reference_solution(testlocations))
         # plt.plot(testlocations, solution(testlocations).mean[:, 0])
         # plt.show()
-        solution_mean = lambda *args, **kwargs: solution(*args, **kwargs).mean[:, 0].reshape((-1, 1))
+        solution_mean = (
+            lambda *args, **kwargs: solution(*args, **kwargs)
+            .mean[:, 0]
+            .reshape((-1, 1))
+        )
 
         print(ssq)
         chi2 = anees(solution, reference_solution, testlocations, damping=1e-30) / ssq

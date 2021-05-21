@@ -1,9 +1,9 @@
-from bvps import problem_examples, bvp_solver, ode_measmods
-from scipy.integrate import solve_bvp
-import numpy as np
 import matplotlib.pyplot as plt
-
+import numpy as np
 from probnum import diffeq, statespace
+from scipy.integrate import solve_bvp
+
+from bvps import bvp_solver, ode_measmods, problem_examples
 
 bvp = problem_examples.measles()
 

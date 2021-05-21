@@ -1,21 +1,20 @@
 """Solving BVPs."""
 import numpy as np
+import scipy.linalg
 from probnum import diffeq, randvars, utils
 from probnum._randomvariablelist import _RandomVariableList
 
 from bvps import (
+    bridges,
+    bvp_initialise,
+    control,
+    error_estimates,
+    kalman,
     mesh,
     ode_measmods,
     problems,
-    kalman,
-    bvp_initialise,
-    bridges,
-    control,
-    error_estimates,
     stopcrit,
 )
-
-import scipy.linalg
 
 
 def refine_median(quotient):

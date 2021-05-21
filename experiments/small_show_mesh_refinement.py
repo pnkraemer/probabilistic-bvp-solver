@@ -1,17 +1,18 @@
 """Try out probsolve_bvp."""
-import numpy as np
+import itertools
 import warnings
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from probnum import statespace, randvars, filtsmooth, diffeq
-from probnum._randomvariablelist import _RandomVariableList
-from bvps import bvp_solver, problem_examples, ode_measmods
-from tqdm import tqdm
+import numpy as np
 import pandas as pd
-
-import itertools
+from probnum import diffeq, filtsmooth
 from probnum import random_variables as randvars
+from probnum import randvars, statespace
+from probnum._randomvariablelist import _RandomVariableList
+from tqdm import tqdm
 
+from bvps import bvp_solver, ode_measmods, problem_examples
 
 # bvp = problem_examples.problem_24_second_order(xi=1e-2)
 bvp = problem_examples.problem_7_second_order(xi=1e-3)
@@ -347,7 +348,6 @@ for axis_index, (N, ax) in enumerate(zip([5 ** 1, 5 ** 2, 5 ** 3, 5 ** 4], axes.
             color="black",
             alpha=0.2,
         )
-
 
     ax[i].semilogy(
         t,

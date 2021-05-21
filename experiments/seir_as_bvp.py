@@ -1,11 +1,9 @@
-from bvps.problem_examples import seir, seir_as_bvp
-
-
-from scipy.integrate import solve_ivp, solve_bvp
-
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import scipy.stats
+from scipy.integrate import solve_bvp, solve_ivp
+
+from bvps.problem_examples import seir, seir_as_bvp
 
 ivp = seir()
 
@@ -60,8 +58,8 @@ plt.legend(fancybox=False, edgecolor="black").get_frame().set_linewidth(0.5)
 
 # plt.xlim((-5, 60))
 # plt.ylim((0, 110))
-plt.xticks((0., 50))
-plt.yticks((0., 100.))
+plt.xticks((0.0, 50))
+plt.yticks((0.0, 100.0))
 plt.xlabel(r"Time")
 plt.ylabel(r"Case counts")
 

@@ -1,20 +1,19 @@
 """Try out probsolve_bvp."""
-import numpy as np
+import time
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from probnum import statespace, randvars, filtsmooth, diffeq
-from probnum._randomvariablelist import _RandomVariableList
-from bvps import problem_examples, bridges, bvp_solver
-from tqdm import tqdm
+import numpy as np
 import pandas as pd
-
-from probnumeval import timeseries
+from probnum import diffeq, filtsmooth
 from probnum import random_variables as randvars
-
-
+from probnum import randvars, statespace
+from probnum._randomvariablelist import _RandomVariableList
+from probnumeval import timeseries
 from scipy.integrate import solve_bvp
-import time
+from tqdm import tqdm
+
+from bvps import bridges, bvp_solver, problem_examples
 
 # Easy aliases
 anees = timeseries.average_normalized_estimation_error_squared
@@ -109,11 +108,17 @@ for q, initial_N, maxit_IEKS in zip([6, 5, 4], [10, 10, 10], [2, 5, 5]):
         solution = diffeq.KalmanODESolution(post)
 
         testlocations = np.linspace(bvp.t0, bvp.tmax)
-        reference_solution = lambda *args, **kwargs: bvp.solution(*args, **kwargs)[0].reshape((-1, 1))
+        reference_solution = lambda *args, **kwargs: bvp.solution(*args, **kwargs)[
+            0
+        ].reshape((-1, 1))
         # plt.plot(testlocations, reference_solution(testlocations))
         # plt.plot(testlocations, solution(testlocations).mean[:, 0])
         # plt.show()
-        solution_mean = lambda *args, **kwargs: solution(*args, **kwargs).mean[:, :1].reshape((-1, 1))
+        solution_mean = (
+            lambda *args, **kwargs: solution(*args, **kwargs)
+            .mean[:, :1]
+            .reshape((-1, 1))
+        )
 
         print(ssq)
         chi2 = anees(solution, reference_solution, testlocations, damping=1e-30) / ssq

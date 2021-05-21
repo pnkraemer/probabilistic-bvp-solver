@@ -1,25 +1,23 @@
-import numpy as np
-from probnum import diffeq, randvars, utils, statespace
-from probnum._randomvariablelist import _RandomVariableList
-
+import abc
 import functools
 
+import numpy as np
+import scipy.linalg
+from probnum import diffeq, randvars, statespace, utils
+from probnum._randomvariablelist import _RandomVariableList
 
-import abc
 from bvps import (
+    bridges,
+    bvp_initialise,
+    control,
+    error_estimates,
+    kalman,
     mesh,
     ode_measmods,
     problems,
-    kalman,
-    bvp_initialise,
-    bridges,
-    control,
-    error_estimates,
-    stopcrit,
     quadrature,
+    stopcrit,
 )
-
-import scipy.linalg
 
 
 class BVPSolver:
@@ -158,7 +156,6 @@ class BVPSolver:
             measmod_list[0] = [left_measmod, measmod_list[0]]
             measmod_list[-1] = [measmod_list[-1], right_measmod]
         dataset = np.zeros((N, d))
-
 
         # Filter
         kalman_posterior = filter_object.filtsmooth(

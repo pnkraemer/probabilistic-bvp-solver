@@ -1,9 +1,8 @@
 """Template to turn the .csv files in data/ into work-precision plots."""
-import pandas as pd
-
 import matplotlib.pyplot as plt
-from probnumeval.timeseries import chi2_confidence_intervals
+import pandas as pd
 from _styles import LINESTYLES, MARKERS
+from probnumeval.timeseries import chi2_confidence_intervals
 
 out = chi2_confidence_intervals(dim=2)
 print(out)

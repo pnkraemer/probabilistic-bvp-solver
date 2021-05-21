@@ -1,14 +1,12 @@
 """Template to turn the .csv files in data/ into work-precision plots."""
 
 import matplotlib.pyplot as plt
-from probnumeval.timeseries import chi2_confidence_intervals
-from _styles import LINESTYLES, MARKERS
-
 import numpy as np
+from _styles import LINESTYLES, MARKERS
+from probnumeval.timeseries import chi2_confidence_intervals
 
 x = np.load("./data/firstpage_plot/x.npy")
 y = np.load("./data/firstpage_plot/y.npy")
-
 
 
 plt.style.use(
@@ -30,25 +28,25 @@ ax.plot(x, y[1], "--", color="C1", linewidth=1.5)
 ax.plot(x[[0, -1]], y[0][[0, -1]], "o", color="C0")
 ax.plot(x, y[0], color="C0", linewidth=1.5)
 ax.annotate(
-    "Fixed Boundary",
-    (x[50] - 0.25, y[0][50]),
+    "Solution",
+    (0.5, y[0][50] + 0.3),
     color="C0",
     bbox={"facecolor": "white", "edgecolor": "white", "pad": 2},
     zorder=10,
 )
 ax.annotate(
-    "Any Boundary",
-    (x[100] - 0.7, y[1][100]),
+    "Derivative",
+    (0.5, y[1][100] + 0.3),
     color="C1",
     bbox={"facecolor": "white", "edgecolor": "white", "pad": 2},
     zorder=10,
 )
 # ax.set_title(r"$\bf A$" + "  ", loc="left", fontweight="bold", ha="right")
 
-ax.set_xticks((0., 1.5))
-ax.set_yticks((-np.pi/2, np.pi/2))
+ax.set_xticks((0.0, 1.5))
+ax.set_yticks((-np.pi / 2, np.pi / 2))
 ax.set_xlabel("Time")
-ax.set_ylabel(r"Position / Velocity")
+ax.set_ylabel(r"Solution / Derivative")
 plt.savefig("./figures/firstpage.pdf")
 plt.show()
 

@@ -6,7 +6,6 @@ import scipy.linalg
 from probnum import filtsmooth, statespace
 from probnum._randomvariablelist import _RandomVariableList
 
-
 from .problems import SecondOrderBoundaryValueProblem
 
 
