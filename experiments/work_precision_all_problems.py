@@ -18,17 +18,23 @@ results = {}
 problems = [
     problem_examples.problem_32_fourth_order(),
     problem_examples.problem_24_second_order(),
-    problem_examples.problem_20_second_order(),
+    # problem_examples.problem_20_second_order(),
     problem_examples.problem_28_second_order(),
     problem_examples.problem_7_second_order(),
 ]
-labels = ["P32", "P24", "P20", "P28", "P7"]
+labels = [
+    "P32",
+    "P24",
+    # "P20",
+    "P28",
+    "P7",
+]
 
 for bvp, label in zip(problems, labels):
 
     results[label] = {}
-    ORDERS = list(reversed([5]))
-    TOLERANCES = list(reversed([1e-2, 1e-2]))
+    ORDERS = list(reversed([6]))
+    TOLERANCES = list(reversed([1e-1, 1e-6]))
 
     bvp1st = bvp.to_first_order()
 
@@ -40,7 +46,7 @@ for bvp, label in zip(problems, labels):
     )
     assert refsol_fine.success
 
-    initial_grid = np.linspace(bvp.t0, bvp.tmax, 15)
+    initial_grid = np.linspace(bvp.t0, bvp.tmax, 5)
     initial_guess = np.ones((bvp1st.dimension, len(initial_grid)))
 
     bvp.solution = refsol_fine.sol
@@ -64,14 +70,14 @@ for bvp, label in zip(problems, labels):
                 forward_implementation="sqrt",
                 backward_implementation="sqrt",
             )
-            solver = bvp_solver.BVPSolver.from_default_values(
+            solver = bvp_solver.BVPSolver.from_default_values_std_refinement(
                 ibm, initial_sigma_squared=1e8, normalise_with_interval_size=False
             )
 
             start_time = time.time()
             # We dont need initial guess nor bridge because the problem is linear.
             initial_posterior, _ = solver.compute_initialisation(
-                bvp, initial_grid, initial_guess=np.ones((bvp.dimension, len(initial_grid))).T, use_bridge=False
+                bvp, initial_grid, initial_guess=None, use_bridge=True
             )
 
             solution_gen = solver.solution_generator(
@@ -80,7 +86,7 @@ for bvp, label in zip(problems, labels):
                 rtol=tol,
                 initial_posterior=initial_posterior,
                 maxit_ieks=3,
-                maxit_em=10,
+                maxit_em=1,
                 yield_ieks_iterations=False,
             )
 

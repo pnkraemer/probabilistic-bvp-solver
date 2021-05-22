@@ -13,17 +13,17 @@ import matplotlib.pyplot as plt
 # Load problems
 
 
-bvp = problem_examples.problem_32_fourth_order()
+bvp = problem_examples.problem_24_second_order()
 bvp1st = bvp.to_first_order()
 
 q = 6
-tol = 1e-6
+tol = 1e-1
 
 # Compute reference solution
 initial_grid = np.linspace(bvp.t0, bvp.tmax, 50)
 initial_guess = np.ones((bvp1st.dimension, len(initial_grid)))
 refsol_fine = solve_bvp(
-    bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=1e-5
+    bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=1e-6
 )
 assert refsol_fine.success
 

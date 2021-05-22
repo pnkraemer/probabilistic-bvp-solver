@@ -240,7 +240,7 @@ def r_jacobian(t, y, xi):
     return np.array([[0, 1.0], [1 / xi - dx / xi, -x / xi]])
 
 
-def problem_7(xi=0.01):
+def problem_7(xi=0.1):
     """https://rdrr.io/rforge/bvpSolve/f/inst/doc/bvpTests.pdf"""
     return problem_7_second_order(xi=xi).to_first_order()
 
@@ -319,7 +319,7 @@ def p15_jacobian(t, y, xi):
     return np.array([[0, 1.0], [t / xi, 0.0]])
 
 
-def problem_7_second_order(xi=0.01):
+def problem_7_second_order(xi=0.1):
     """https://rdrr.io/rforge/bvpSolve/f/inst/doc/bvpTests.pdf"""
     L = np.eye(1, 2)
     R = np.eye(1, 2)
@@ -438,7 +438,7 @@ def seir_jac(t, y, params):
     return jac_matrix
 
 
-def problem_20_second_order(xi=0.2):
+def problem_20_second_order(xi=0.3):
     """https://rdrr.io/rforge/bvpSolve/f/inst/doc/bvpTests.pdf"""
     L = np.eye(1, 2)
     R = np.eye(1, 2)
@@ -480,7 +480,7 @@ def p20_solution(t, xi):
     return 1 + xi * np.log(np.cosh((t - 0.745) / xi))
 
 
-def problem_24_second_order(xi=0.05, gamma=1.4):
+def problem_24_second_order(xi=0.5, gamma=1.4):
     """https://rdrr.io/rforge/bvpSolve/f/inst/doc/bvpTests.pdf"""
     L = np.eye(1, 2)
     R = np.eye(1, 2)
@@ -675,7 +675,7 @@ def p28_jacobian_second_order_dy(t, y, dy, xi):
     return np.ones((1, 1)) * (1 - dy) / xi
 
 
-def problem_32_fourth_order(xi=0.005):
+def problem_32_fourth_order(xi=0.25):
 
     L_y = np.eye(1, 1)
     R_y = np.eye(1, 1)

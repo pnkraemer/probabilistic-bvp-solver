@@ -44,9 +44,9 @@ fig, ax = plt.subplots(nrows=1, ncols=1, constrained_layout=True, dpi=300)
 xticks = []
 xticklabels = []
 for problem_index, key in enumerate(data.keys()):
-    problem_results = data[key]["4"]
-    problem_results_1e2 = problem_results["0.01"]
-    problem_results_1e5 = problem_results["1e-05"]
+    problem_results = data[key]["6"]
+    problem_results_1e2 = problem_results["0.1"]
+    problem_results_1e5 = problem_results["1e-06"]
 
     error_1e2 = problem_results_1e2["error"]
     N_1e2 = problem_results_1e2["N"]

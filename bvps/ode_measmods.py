@@ -12,13 +12,9 @@ from .problems import SecondOrderBoundaryValueProblem, FourthOrderBoundaryValueP
 def from_ode(ode, prior, damping_value=0.0):
 
     if isinstance(ode, FourthOrderBoundaryValueProblem):
-        return from_fourth_order_ode(
-            ode, prior, damping_value=damping_value
-        )
+        return from_fourth_order_ode(ode, prior, damping_value=damping_value)
     if isinstance(ode, SecondOrderBoundaryValueProblem):
-        return from_second_order_ode(
-            ode, prior, damping_value=damping_value
-        )
+        return from_second_order_ode(ode, prior, damping_value=damping_value)
 
     spatialdim = prior.spatialdim
     h0 = prior.proj2coord(coord=0)
@@ -177,7 +173,6 @@ def from_boundary_conditions_fourth_order(bvp, prior, damping_value=0.0):
     P3 = prior.proj2coord(3)
     proj = np.vstack((P0, P1, P2, P3))
 
-
     y0 = np.block([[bvp.y0], [bvp.dy0]]).squeeze()
     ymax = np.block([[bvp.ymax], [bvp.dymax]]).squeeze()
 
@@ -191,7 +186,6 @@ def from_boundary_conditions_fourth_order(bvp, prior, damping_value=0.0):
     assert R.shape == (2 * bvp.dimension, 4 * bvp.dimension), L.shape
     assert y0.shape == (2 * bvp.dimension,), y0.shape
     assert ymax.shape == (2 * bvp.dimension,), ymax.shape
-
 
     Rnew = R @ proj
     Lnew = L @ proj
@@ -213,6 +207,4 @@ def from_boundary_conditions_fourth_order(bvp, prior, damping_value=0.0):
         backward_implementation="sqrt",
     )
 
-    print(measmod_R.input_dim, measmod_L.input_dim)
-    print(measmod_R.output_dim, measmod_L.output_dim)
     return measmod_L, measmod_R

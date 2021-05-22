@@ -157,10 +157,10 @@ class FourthOrderBoundaryValueProblem:
         R = np.block([[self.R_y, O, O, O], [0, self.R_dy, O, O]])
         y0 = np.vstack((self.y0, self.dy0)).squeeze()
         ymax = np.vstack((self.ymax, self.dymax)).squeeze()
-        assert L.shape == (2*self.dimension, 4*self.dimension), L.shape
-        assert R.shape == (2*self.dimension, 4*self.dimension), L.shape
-        assert y0.shape == (2*self.dimension,), y0.shape
-        assert ymax.shape == (2*self.dimension,), ymax.shape
+        assert L.shape == (2 * self.dimension, 4 * self.dimension), L.shape
+        assert R.shape == (2 * self.dimension, 4 * self.dimension), L.shape
+        assert y0.shape == (2 * self.dimension,), y0.shape
+        assert ymax.shape == (2 * self.dimension,), ymax.shape
         return BoundaryValueProblem(
             f=f,
             t0=self.t0,
