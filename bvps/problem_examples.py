@@ -669,3 +669,53 @@ def p28_jacobian_second_order_ddy(t, y, dy, xi):
 
 def p28_jacobian_second_order_dy(t, y, dy, xi):
     return np.ones((1, 1)) * (1 - dy) / xi
+
+
+def problem_32_fourth_order(xi=0.1):
+
+    L_y = np.eye(1, 1)
+    R_y = np.eye(1, 1)
+    L_dy = np.eye(1, 1)
+    R_dy = np.eye(1, 1)
+
+    y0 = np.array([0.0])
+    ymax = np.array([1.0])
+    dy0 = np.array([0.0])
+    dymax = np.array([0.0])
+
+    t0 = 0.0
+    tmax = 1.0
+
+    return FourthOrderBoundaryValueProblem(
+        f=lambda t, y, dy, ddy, dddy: p32_rhs_fourth_order(t, y, dy, ddy, dddy, xi=xi),
+        t0=t0,
+        tmax=tmax,
+        L_y=L_y,
+        R_y=R_y,
+        L_dy=L_dy,
+        R_dy=R_dy,
+        y0=y0,
+        ymax=ymax,
+        dy0=dy0,
+        dymax=dymax,
+        df_dy=lambda t, y, dy, ddy, dddy: p32_jac_fourth_order_dy(t, y, dy, ddy, dddy, xi=xi),
+        df_ddy=lambda t, y, dy, ddy, dddy: p32_jac_fourth_order_ddy(t, y, dy, ddy, dddy, xi=xi),
+        df_dddy=lambda t, y, dy, ddy, dddy: p32_jac_fourth_order_dddy(t, y, dy, ddy, dddy, xi=xi),
+        df_ddddy=lambda t, y, dy, ddy, dddy: p32_jac_fourth_order_ddddy(t, y, dy, ddy, dddy, xi=xi),
+        dimension=1,
+    )
+
+def p32_rhs_fourth_order(t, y, dy, ddy, dddy, xi):
+    return (dy * ddy - y * dddy) / xi
+
+def p32_jac_fourth_order_dy(t, y, dy, ddy, dddy, xi):
+    return np.ones((1, 1)) * -dddy / xi
+
+def p32_jac_fourth_order_ddy(t, y, dy, ddy, dddy, xi):
+    return np.ones((1, 1)) * ddy / xi
+
+def p32_jac_fourth_order_dddy(t, y, dy, ddy, dddy, xi):
+    return np.ones((1, 1)) * dy / xi
+
+def p32_jac_fourth_order_ddddy(t, y, dy, ddy, dddy, xi):
+    return np.ones((1, 1)) * -y / xi
