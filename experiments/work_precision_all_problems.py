@@ -23,11 +23,11 @@ problems = [
     problem_examples.problem_7_second_order(),
 ]
 labels = [
-    "P32",
-    "P24",
-    # "P20",
-    "P28",
-    "P7",
+    "32nd Problem",
+    "24th Problem",
+    # "20th Problem",
+    "28th Problem",
+    "7th Problem",
 ]
 
 for bvp, label in zip(problems, labels):
@@ -71,7 +71,7 @@ for bvp, label in zip(problems, labels):
                 backward_implementation="sqrt",
             )
             solver = bvp_solver.BVPSolver.from_default_values_std_refinement(
-                ibm, initial_sigma_squared=1e8, normalise_with_interval_size=False
+                ibm, initial_sigma_squared=1e12, normalise_with_interval_size=False
             )
 
             start_time = time.time()
@@ -99,7 +99,7 @@ for bvp, label in zip(problems, labels):
             solution_mean = lambda *args: solution(*args).mean
 
             # Compute error and calibration
-            chi2 = timeseries.anees(solution, reference_solution, testlocations)
+            chi2 = timeseries.anees(solution, reference_solution, testlocations, damping=0.)
             # chi2 = timeseries.average_normalized_estimation_error_squared(
             #     solution, reference_solution, testlocations
             # )

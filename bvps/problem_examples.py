@@ -438,7 +438,7 @@ def seir_jac(t, y, params):
     return jac_matrix
 
 
-def problem_20_second_order(xi=0.3):
+def problem_20_second_order(xi=1.):
     """https://rdrr.io/rforge/bvpSolve/f/inst/doc/bvpTests.pdf"""
     L = np.eye(1, 2)
     R = np.eye(1, 2)
@@ -638,7 +638,7 @@ def measles_jac(t, y, mu, betafun, xi, eta):
 ##################################################################################################################
 
 
-def problem_28_second_order(xi=0.1):
+def problem_28_second_order(xi=0.4):
 
     L = np.eye(1, 2)
     R = np.eye(1, 2)
