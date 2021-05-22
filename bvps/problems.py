@@ -89,7 +89,7 @@ class SecondOrderBoundaryValueProblem:
         x = np.atleast_1d(x)
         dx = np.atleast_1d(dx)
         dy = self.f(t=t, y=x, dy=dx)
-        return np.block([[dx], [dy]])
+        return np.block([[dx], [dy]]).squeeze()
 
     def _jac_as_firstorder(self, t, y):
         x, dx = y
