@@ -102,8 +102,6 @@ class SecondOrderBoundaryValueProblem:
         return np.block([[O, I], [df_dy, df_ddy]])
 
 
-
-
 @dataclasses.dataclass
 class FourthOrderBoundaryValueProblem:
     """4th order boundary value problems. Now, f=f(t, y, dy, ddy, dddy)."""
@@ -113,15 +111,14 @@ class FourthOrderBoundaryValueProblem:
     tmax: float
     dimension: int
 
-    L_y:Optional[np.ndarray] = None
+    L_y: Optional[np.ndarray] = None
     R_y: Optional[np.ndarray] = None
     L_dy: Optional[np.ndarray] = None
     R_dy: Optional[np.ndarray] = None
     L_ddy: Optional[np.ndarray] = None
     R_ddy: Optional[np.ndarray] = None
-    L_dddy:Optional[np.ndarray] = None
+    L_dddy: Optional[np.ndarray] = None
     R_dddy: Optional[np.ndarray] = None
-
 
     y0: Optional[np.ndarray] = None
     ymax: Optional[np.ndarray] = None
@@ -132,12 +129,18 @@ class FourthOrderBoundaryValueProblem:
     dddy0: Optional[np.ndarray] = None
     dddymax: Optional[np.ndarray] = None
 
-
-    df_dy: Optional[Callable[[float, np.ndarray, np.ndarray, np.ndarray, np.ndarray], np.ndarray]] = None
-    df_ddy: Optional[Callable[[float, np.ndarray, np.ndarray, np.ndarray, np.ndarray], np.ndarray]] = None
-    df_dddy: Optional[Callable[[float, np.ndarray, np.ndarray, np.ndarray, np.ndarray], np.ndarray]] = None
-    df_ddddy: Optional[Callable[[float, np.ndarray, np.ndarray, np.ndarray, np.ndarray], np.ndarray]] = None
+    df_dy: Optional[
+        Callable[[float, np.ndarray, np.ndarray, np.ndarray, np.ndarray], np.ndarray]
+    ] = None
+    df_ddy: Optional[
+        Callable[[float, np.ndarray, np.ndarray, np.ndarray, np.ndarray], np.ndarray]
+    ] = None
+    df_dddy: Optional[
+        Callable[[float, np.ndarray, np.ndarray, np.ndarray, np.ndarray], np.ndarray]
+    ] = None
+    df_ddddy: Optional[
+        Callable[[float, np.ndarray, np.ndarray, np.ndarray, np.ndarray], np.ndarray]
+    ] = None
 
     # For testing and benchmarking
     solution: Optional[Callable[[float], np.ndarray]] = None
-

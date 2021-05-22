@@ -5,7 +5,11 @@ import numpy as np
 import probnum.problems
 from probnum.type import FloatArgType
 
-from .problems import BoundaryValueProblem, SecondOrderBoundaryValueProblem, FourthOrderBoundaryValueProblem
+from .problems import (
+    BoundaryValueProblem,
+    SecondOrderBoundaryValueProblem,
+    FourthOrderBoundaryValueProblem,
+)
 
 # Check out: https://uk.mathworks.com/help/matlab/ref/bvp4c.html
 # and: http://www.orcca.on.ca/TechReports/TechReports/2001/TR-01-02.pdf
@@ -698,24 +702,37 @@ def problem_32_fourth_order(xi=0.1):
         ymax=ymax,
         dy0=dy0,
         dymax=dymax,
-        df_dy=lambda t, y, dy, ddy, dddy: p32_jac_fourth_order_dy(t, y, dy, ddy, dddy, xi=xi),
-        df_ddy=lambda t, y, dy, ddy, dddy: p32_jac_fourth_order_ddy(t, y, dy, ddy, dddy, xi=xi),
-        df_dddy=lambda t, y, dy, ddy, dddy: p32_jac_fourth_order_dddy(t, y, dy, ddy, dddy, xi=xi),
-        df_ddddy=lambda t, y, dy, ddy, dddy: p32_jac_fourth_order_ddddy(t, y, dy, ddy, dddy, xi=xi),
+        df_dy=lambda t, y, dy, ddy, dddy: p32_jac_fourth_order_dy(
+            t, y, dy, ddy, dddy, xi=xi
+        ),
+        df_ddy=lambda t, y, dy, ddy, dddy: p32_jac_fourth_order_ddy(
+            t, y, dy, ddy, dddy, xi=xi
+        ),
+        df_dddy=lambda t, y, dy, ddy, dddy: p32_jac_fourth_order_dddy(
+            t, y, dy, ddy, dddy, xi=xi
+        ),
+        df_ddddy=lambda t, y, dy, ddy, dddy: p32_jac_fourth_order_ddddy(
+            t, y, dy, ddy, dddy, xi=xi
+        ),
         dimension=1,
     )
+
 
 def p32_rhs_fourth_order(t, y, dy, ddy, dddy, xi):
     return (dy * ddy - y * dddy) / xi
 
+
 def p32_jac_fourth_order_dy(t, y, dy, ddy, dddy, xi):
     return np.ones((1, 1)) * -dddy / xi
+
 
 def p32_jac_fourth_order_ddy(t, y, dy, ddy, dddy, xi):
     return np.ones((1, 1)) * ddy / xi
 
+
 def p32_jac_fourth_order_dddy(t, y, dy, ddy, dddy, xi):
     return np.ones((1, 1)) * dy / xi
+
 
 def p32_jac_fourth_order_ddddy(t, y, dy, ddy, dddy, xi):
     return np.ones((1, 1)) * -y / xi

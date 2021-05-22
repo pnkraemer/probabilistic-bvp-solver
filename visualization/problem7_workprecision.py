@@ -5,8 +5,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from probnumeval.timeseries import chi2_confidence_intervals
 from math import log10, floor
+
+
 def round_to_1(x):
     return round(x, -int(floor(log10(abs(x)))))
+
+
 out = chi2_confidence_intervals(dim=1, perc=0.95)
 
 with open("./data/problem7_problem_work_precision.json", "r") as infile:
@@ -66,34 +70,42 @@ for problem_index, key in enumerate(data.keys()):
         (problem_index - 0.35, error_1e2),
         zorder=10,
         bbox={"facecolor": "white", "edgecolor": "white", "pad": 0},
-        fontsize="x-small", color="C0"
+        fontsize="x-small",
+        color="C0",
     )
     ax.annotate(
         f"({N_1e5}, {round_to_1(time_1e5)})",
         (problem_index - 0.35, error_1e5),
         zorder=10,
         bbox={"facecolor": "white", "edgecolor": "white", "pad": 0},
-        fontsize="x-small", color="C1"
+        fontsize="x-small",
+        color="C1",
     )
     ax.annotate(
         f"({scipy_N_1e2}, {round_to_1(scipy_time_1e2)})",
         (problem_index + 0.1, scipy_error_1e2),
         zorder=10,
         bbox={"facecolor": "white", "edgecolor": "white", "pad": 0},
-        fontsize="x-small", color="C0"
+        fontsize="x-small",
+        color="C0",
     )
     ax.annotate(
         f"({scipy_N_1e5}, {round_to_1(scipy_time_1e5)})",
         (problem_index + 0.1, scipy_error_1e5),
         zorder=10,
         bbox={"facecolor": "white", "edgecolor": "white", "pad": 0},
-        fontsize="x-small", color="C1"
+        fontsize="x-small",
+        color="C1",
     )
 
     ax.semilogy(problem_index - SHIFT, error_1e2, marker="P", markersize=7, color="C0")
-    ax.semilogy(problem_index - SHIFT, error_1e5, marker="P",markersize=7,  color="C1")
-    ax.semilogy(problem_index + SHIFT, scipy_error_1e2, marker="d", markersize=7, color="C0")
-    ax.semilogy(problem_index + SHIFT, scipy_error_1e5, marker="d",markersize=7,  color="C1")
+    ax.semilogy(problem_index - SHIFT, error_1e5, marker="P", markersize=7, color="C1")
+    ax.semilogy(
+        problem_index + SHIFT, scipy_error_1e2, marker="d", markersize=7, color="C0"
+    )
+    ax.semilogy(
+        problem_index + SHIFT, scipy_error_1e5, marker="d", markersize=7, color="C1"
+    )
     #
     # ax.vlines(
     #     x=problem_index - SHIFT,

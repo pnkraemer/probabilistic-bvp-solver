@@ -112,3 +112,45 @@ def from_boundary_conditions(bvp, prior, damping_value=0.0):
         backward_implementation="sqrt",
     )
     return measmod_L, measmod_R
+
+
+def from_fourth_order_ode(ode, prior, damping_value=0.0):
+
+    spatialdim = prior.spatialdim
+    h0 = prior.proj2coord(coord=0)
+    h1 = prior.proj2coord(coord=1)
+    h2 = prior.proj2coord(coord=2)
+    h3 = prior.proj2coord(coord=3)
+    h4 = prior.proj2coord(coord=4)
+
+    def dyna(t, x):
+        return h4 @ x - ode.f(t, h0 @ x, h1 @ x, h2 @ x, h3 @ x)
+
+    def diff(t):
+        SQ = diff_cholesky(t)
+        return SQ @ SQ.T
+
+    def diff_cholesky(t):
+        return np.sqrt(damping_value) * np.eye(spatialdim)
+
+    def jacobian(t, x):
+
+        df_dy = ode.df_dy(t, h0 @ x, h1 @ x, h2 @ x, h3 @ x)
+        df_ddy = ode.df_ddy(t, h0 @ x, h1 @ x, h2 @ x, h3 @ x)
+        df_dddy = ode.df_dddy(t, h0 @ x, h1 @ x, h2 @ x, h3 @ x)
+        df_ddddy = ode.df_ddddy(t, h0 @ x, h1 @ x, h2 @ x, h3 @ x)
+        return h2 - df_dy @ h0 - df_ddy @ h1 - df_dddy @ h2 - df_ddddy @ h3
+
+    discrete_model = statespace.DiscreteGaussian(
+        input_dim=prior.dimension,
+        output_dim=spatialdim,
+        state_trans_fun=dyna,
+        proc_noise_cov_mat_fun=diff,
+        jacob_state_trans_fun=jacobian,
+        proc_noise_cov_cholesky_fun=diff_cholesky,
+    )
+    return filtsmooth.DiscreteEKFComponent(
+        discrete_model,
+        forward_implementation="sqrt",
+        backward_implementation="sqrt",
+    )
