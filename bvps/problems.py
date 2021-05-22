@@ -150,10 +150,17 @@ class FourthOrderBoundaryValueProblem:
         assert self.L_ddy is None and self.L_dddy is None
         assert self.R_ddy is None and self.R_dddy is None
 
-        L = np.hstack((self.L_y, self.L_dy))
-        R = np.hstack((self.R_y, self.R_dy))
-        y0 = np.vstack((self.y0, self.dy0))
-        ymax = np.hstack((self.ymax, self.dymax))
+        I = np.eye(self.dimension)
+        O = np.zeros_like(I)
+
+        L = np.block([[self.L_y, O, O, O], [0, self.L_dy, O, O]])
+        R = np.block([[self.R_y, O, O, O], [0, self.R_dy, O, O]])
+        y0 = np.vstack((self.y0, self.dy0)).squeeze()
+        ymax = np.vstack((self.ymax, self.dymax)).squeeze()
+        assert L.shape == (2*self.dimension, 4*self.dimension), L.shape
+        assert R.shape == (2*self.dimension, 4*self.dimension), L.shape
+        assert y0.shape == (2*self.dimension,), y0.shape
+        assert ymax.shape == (2*self.dimension,), ymax.shape
         return BoundaryValueProblem(
             f=f,
             t0=self.t0,

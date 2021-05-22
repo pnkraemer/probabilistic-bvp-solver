@@ -115,7 +115,7 @@ class GaussMarkovBridge(statespace.Integrator, statespace.LTISDE):
             final_point_rv = rv
 
         # Condition on measurement at endpoint
-        zero_data = np.zeros(len(self.bvp.ymax))
+        zero_data = np.zeros(self.measmod_R.output_dim)
         updated_final_point_rv, _ = self.measmod_R.backward_realization(
             realization_obtained=zero_data,
             rv=final_point_rv,
@@ -134,7 +134,7 @@ class GaussMarkovBridge(statespace.Integrator, statespace.LTISDE):
 
     def _update_rv_initial_value(self, rv):
 
-        zero_data = np.zeros(len(self.bvp.y0))
+        zero_data = np.zeros(self.measmod_L.output_dim)
         updated_rv, _ = self.measmod_L.backward_realization(
             realization_obtained=zero_data,
             rv=rv,

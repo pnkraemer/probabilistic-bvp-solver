@@ -675,7 +675,7 @@ def p28_jacobian_second_order_dy(t, y, dy, xi):
     return np.ones((1, 1)) * (1 - dy) / xi
 
 
-def problem_32_fourth_order(xi=0.1):
+def problem_32_fourth_order(xi=0.005):
 
     L_y = np.eye(1, 1)
     R_y = np.eye(1, 1)

@@ -11,6 +11,15 @@ from .problems import SecondOrderBoundaryValueProblem, FourthOrderBoundaryValueP
 
 def from_ode(ode, prior, damping_value=0.0):
 
+    if isinstance(ode, FourthOrderBoundaryValueProblem):
+        return from_fourth_order_ode(
+            ode, prior, damping_value=damping_value
+        )
+    if isinstance(ode, SecondOrderBoundaryValueProblem):
+        return from_second_order_ode(
+            ode, prior, damping_value=damping_value
+        )
+
     spatialdim = prior.spatialdim
     h0 = prior.proj2coord(coord=0)
     h1 = prior.proj2coord(coord=1)
@@ -143,7 +152,7 @@ def from_fourth_order_ode(ode, prior, damping_value=0.0):
         df_ddy = ode.df_ddy(t, h0 @ x, h1 @ x, h2 @ x, h3 @ x)
         df_dddy = ode.df_dddy(t, h0 @ x, h1 @ x, h2 @ x, h3 @ x)
         df_ddddy = ode.df_ddddy(t, h0 @ x, h1 @ x, h2 @ x, h3 @ x)
-        return h2 - df_dy @ h0 - df_ddy @ h1 - df_dddy @ h2 - df_ddddy @ h3
+        return h4 - df_dy @ h0 - df_ddy @ h1 - df_dddy @ h2 - df_ddddy @ h3
 
     discrete_model = statespace.DiscreteGaussian(
         input_dim=prior.dimension,
@@ -166,53 +175,44 @@ def from_boundary_conditions_fourth_order(bvp, prior, damping_value=0.0):
     P1 = prior.proj2coord(1)
     P2 = prior.proj2coord(2)
     P3 = prior.proj2coord(3)
-    proj = np.vstack((P0, P1, P2, p3))
+    proj = np.vstack((P0, P1, P2, P3))
 
-    use_y0 = bvp.y0 is not None
-    use_dy0 = bvp.dy0 is not None
-    use_ddy0 = bvp.ddy0 is not None
-    use_dddy0 = bvp.dddy0 is not None
-    use_ymax = bvp.ymax is not None
-    use_dymax = bvp.dymax is not None
-    use_ddymax = bvp.ddymax is not None
-    use_dddymax = bvp.dddymax is not None
 
-    zeros = np.zeros((bvp.dimension, bvp.dimension))
-    Ls = (
-        Li if use else zeros
-        for Li, use in zip(
-            [bvp.L_y, bvp.L_dy, bvp.L_ddy, bvp.L_dddy],
-            [use_y0, use_dy0, use_ddy0, use_dddy0],
-        )
-    )
-    Rs = (
-        Ri if use else zeros
-        for Ri, use in zip(
-            [bvp.R_y, bvp.R_dy, bvp.R_ddy, bvp.R_dddy],
-            [use_ymax, use_dymax, use_ddymax, use_dddymax],
-        )
-    )
+    y0 = np.block([[bvp.y0], [bvp.dy0]]).squeeze()
+    ymax = np.block([[bvp.ymax], [bvp.dymax]]).squeeze()
 
-    L = np.hstack(tuple(Ls))
-    R = np.hstack(tuple(Rs))
+    I = np.eye(bvp.dimension)
+    O = np.zeros_like(I)
+
+    L = np.block([[bvp.L_y, O, O, O], [0, bvp.L_dy, O, O]])
+    R = np.block([[bvp.R_y, O, O, O], [0, bvp.R_dy, O, O]])
+
+    assert L.shape == (2 * bvp.dimension, 4 * bvp.dimension), L.shape
+    assert R.shape == (2 * bvp.dimension, 4 * bvp.dimension), L.shape
+    assert y0.shape == (2 * bvp.dimension,), y0.shape
+    assert ymax.shape == (2 * bvp.dimension,), ymax.shape
+
 
     Rnew = R @ proj
     Lnew = L @ proj
 
     measmod_R = statespace.DiscreteLTIGaussian(
         Rnew,
-        -bvp.ymax,
-        damping_value * np.eye(len(R)),
+        -ymax,
+        damping_value * np.eye(len(ymax)),
         proc_noise_cov_cholesky=np.sqrt(damping_value) * np.eye(len(R)),
         forward_implementation="sqrt",
         backward_implementation="sqrt",
     )
     measmod_L = statespace.DiscreteLTIGaussian(
         Lnew,
-        -bvp.y0,
-        damping_value * np.eye(len(L)),
+        -y0,
+        damping_value * np.eye(len(y0)),
         proc_noise_cov_cholesky=np.sqrt(damping_value) * np.eye(len(L)),
         forward_implementation="sqrt",
         backward_implementation="sqrt",
     )
+
+    print(measmod_R.input_dim, measmod_L.input_dim)
+    print(measmod_R.output_dim, measmod_L.output_dim)
     return measmod_L, measmod_R
