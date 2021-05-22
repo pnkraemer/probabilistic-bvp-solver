@@ -5,7 +5,7 @@ import numpy as np
 import probnum.problems
 from probnum.type import FloatArgType
 
-from .problems import BoundaryValueProblem, SecondOrderBoundaryValueProblem
+from .problems import BoundaryValueProblem, SecondOrderBoundaryValueProblem, FourthOrderBoundaryValueProblem
 
 # Check out: https://uk.mathworks.com/help/matlab/ref/bvp4c.html
 # and: http://www.orcca.on.ca/TechReports/TechReports/2001/TR-01-02.pdf
