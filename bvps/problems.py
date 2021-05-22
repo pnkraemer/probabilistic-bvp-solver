@@ -56,14 +56,6 @@ class SecondOrderBoundaryValueProblem:
     # For testing and benchmarking
     solution: Optional[Callable[[float], np.ndarray]] = None
 
-    @property
-    def scipy_bc(self):
-        def bc(ya, yb):
-
-            return np.array([self.L @ ya - self.y0, self.R @ yb - self.ymax]).squeeze()
-
-        return bc
-
     def to_first_order(self):
 
         f = self._rhs_as_firstorder
@@ -144,3 +136,65 @@ class FourthOrderBoundaryValueProblem:
 
     # For testing and benchmarking
     solution: Optional[Callable[[float], np.ndarray]] = None
+
+    def to_first_order(self):
+
+        f = self._rhs_as_firstorder
+        if self.df_dy is not None and self.df_ddy is not None:
+            df = self._jac_as_firstorder
+        else:
+            df = None
+
+        assert self.L_y is not None and self.L_dy is not None
+        assert self.R_y is not None and self.R_dy is not None
+        assert self.L_ddy is None and self.L_dddy is None
+        assert self.R_ddy is None and self.R_dddy is None
+
+        L = np.hstack((self.L_y, self.L_dy))
+        R = np.hstack((self.R_y, self.R_dy))
+        y0 = np.vstack((self.y0, self.dy0))
+        ymax = np.hstack((self.ymax, self.dymax))
+        return BoundaryValueProblem(
+            f=f,
+            t0=self.t0,
+            tmax=self.tmax,
+            L=L,
+            R=R,
+            y0=y0,
+            ymax=ymax,
+            df=df,
+            dimension=self.dimension * 4,
+            solution=self.solution,
+        )
+
+    def _rhs_as_firstorder(self, t, y):
+        x, dx, ddx, dddx = y
+        x = np.atleast_1d(x)
+        dx = np.atleast_1d(dx)
+        ddx = np.atleast_1d(ddx)
+        dddx = np.atleast_1d(dddx)
+        dy = self.f(t=t, y=x, dy=dx, ddy=ddx, dddy=dddx)
+        return np.block([[dx], [ddx], [dddx], [dy]]).squeeze()
+
+    def _jac_as_firstorder(self, t, y):
+        x, dx, ddx, dddx = y
+        x = np.atleast_1d(x)
+        dx = np.atleast_1d(dx)
+        ddx = np.atleast_1d(ddx)
+        dddx = np.atleast_1d(dddx)
+
+        df_dy = self.df_dy(t=t, y=x, dy=dx, ddy=ddx, dddy=dddx)
+        df_ddy = self.df_ddy(t=t, y=x, dy=dx, ddy=ddx, dddy=dddx)
+        df_dddy = self.df_dddy(t=t, y=x, dy=dx, ddy=ddx, dddy=dddx)
+        df_ddddy = self.df_ddddy(t=t, y=x, dy=dx, ddy=ddx, dddy=dddx)
+
+        I = np.eye(self.dimension)
+        O = np.zeros_like(I)
+        return np.block(
+            [
+                [O, I, O, O],
+                [O, O, I, O],
+                [O, O, O, I],
+                [df_dy, df_ddy, df_dddy, df_ddddy],
+            ]
+        )

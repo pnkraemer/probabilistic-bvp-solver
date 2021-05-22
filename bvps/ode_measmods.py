@@ -84,7 +84,9 @@ def from_second_order_ode(ode, prior, damping_value=0.0):
 def from_boundary_conditions(bvp, prior, damping_value=0.0):
 
     if isinstance(bvp, FourthOrderBoundaryValueProblem):
-        return from_boundary_conditions_fourth_order(bvp, prior, damping_value=damping_value)
+        return from_boundary_conditions_fourth_order(
+            bvp, prior, damping_value=damping_value
+        )
     if isinstance(bvp, SecondOrderBoundaryValueProblem):
         P0 = prior.proj2coord(0)
         P1 = prior.proj2coord(1)
@@ -166,21 +168,33 @@ def from_boundary_conditions_fourth_order(bvp, prior, damping_value=0.0):
     P3 = prior.proj2coord(3)
     proj = np.vstack((P0, P1, P2, p3))
 
-    use_y0 = (bvp.y0 is not None)
-    use_dy0 = (bvp.dy0 is not None)
-    use_ddy0 = (bvp.ddy0 is not None)
-    use_dddy0 = (bvp.dddy0 is not None)
-    use_ymax = (bvp.ymax is not None)
-    use_dymax = (bvp.dymax is not None)
-    use_ddymax = (bvp.ddymax is not None)
-    use_dddymax = (bvp.dddymax is not None)
+    use_y0 = bvp.y0 is not None
+    use_dy0 = bvp.dy0 is not None
+    use_ddy0 = bvp.ddy0 is not None
+    use_dddy0 = bvp.dddy0 is not None
+    use_ymax = bvp.ymax is not None
+    use_dymax = bvp.dymax is not None
+    use_ddymax = bvp.ddymax is not None
+    use_dddymax = bvp.dddymax is not None
 
     zeros = np.zeros((bvp.dimension, bvp.dimension))
-    Ls = (Li if use else zeros for Li, use in zip([bvp.L_y,bvp.L_dy,bvp.L_ddy,bvp.L_dddy], [use_y0,use_dy0,use_ddy0,use_dddy0]))
-    Rs = (Ri if use else zeros for Ri, use in zip([bvp.R_y,bvp.R_dy,bvp.R_ddy,bvp.R_dddy], [use_ymax,use_dymax,use_ddymax,use_dddymax]))
+    Ls = (
+        Li if use else zeros
+        for Li, use in zip(
+            [bvp.L_y, bvp.L_dy, bvp.L_ddy, bvp.L_dddy],
+            [use_y0, use_dy0, use_ddy0, use_dddy0],
+        )
+    )
+    Rs = (
+        Ri if use else zeros
+        for Ri, use in zip(
+            [bvp.R_y, bvp.R_dy, bvp.R_ddy, bvp.R_dddy],
+            [use_ymax, use_dymax, use_ddymax, use_dddymax],
+        )
+    )
 
-    L = np.vstack(tuple(Ls))
-    R = np.vstack(tuple(Rs))
+    L = np.hstack(tuple(Ls))
+    R = np.hstack(tuple(Rs))
 
     Rnew = R @ proj
     Lnew = L @ proj

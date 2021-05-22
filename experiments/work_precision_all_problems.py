@@ -16,6 +16,7 @@ from bvps import bvp_solver, problem_examples
 results = {}
 
 problems = [
+    problem_examples.problem_32_fourth_order(),
     problem_examples.problem_24_second_order(),
     problem_examples.problem_20_second_order(),
     problem_examples.problem_28_second_order(),
