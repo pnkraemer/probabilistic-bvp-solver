@@ -16,6 +16,7 @@ plt.style.use(
         "./visualization/stylesheets/figsize/neurips/13_tile.mplstyle",
         "./visualization/stylesheets/misc/thin_lines.mplstyle",
         "./visualization/stylesheets/misc/bottomleftaxes.mplstyle",
+        "./visualization/stylesheets/misc/no_minor_ticks.mplstyle",
         "./visualization/stylesheets/color/probnum_colors.mplstyle",
     ]
 )
