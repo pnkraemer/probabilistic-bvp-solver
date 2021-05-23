@@ -16,16 +16,16 @@ from bvps import bvp_solver, problem_examples
 results = {}
 
 problems = [
+    problem_examples.problem_23_second_order(xi=0.25),
     problem_examples.problem_32_fourth_order(),
     problem_examples.problem_24_second_order(),
-    # problem_examples.problem_20_second_order(),
     problem_examples.problem_28_second_order(),
     problem_examples.problem_7_second_order(),
 ]
 labels = [
+    "23rd Problem",
     "32nd Problem",
     "24th Problem",
-    # "20th Problem",
     "28th Problem",
     "7th Problem",
 ]

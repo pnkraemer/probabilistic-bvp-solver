@@ -765,7 +765,7 @@ def problem_23_second_order(xi=1.):
 
 
 def p23_rhs_second_order(t, y, dy, xi):
-    return xi * np.sinh(xi*y)
+    return np.sinh(y/xi) / xi
 
 
 def p23_jacobian_second_order_ddy(t, y, dy, xi):
@@ -773,4 +773,4 @@ def p23_jacobian_second_order_ddy(t, y, dy, xi):
 
 
 def p23_jacobian_second_order_dy(t, y, dy, xi):
-    return np.ones((1, 1)) * xi**2 * np.cosh(xi*y)
+    return np.ones((1, 1)) * np.cosh(y/xi) / xi**2

@@ -12,14 +12,12 @@ import matplotlib.pyplot as plt
 
 # Load problems
 
-raise RuntimeError
 
-
-bvp = problem_examples.problem_23_second_order()
+bvp = problem_examples.problem_23_second_order(xi=0.25)
 bvp1st = bvp.to_first_order()
 
-q = 6
-tol = 1e-1
+q = 5
+tol = 1e-6
 
 # Compute reference solution
 initial_grid = np.linspace(bvp.t0, bvp.tmax, 50)
@@ -60,7 +58,7 @@ solution_gen = solver.solution_generator(
     rtol=tol,
     initial_posterior=initial_posterior,
     maxit_ieks=3,
-    maxit_em=1,
+    maxit_em=5,
     yield_ieks_iterations=False,
 )
 
