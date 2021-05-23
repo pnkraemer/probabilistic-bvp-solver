@@ -736,3 +736,41 @@ def p32_jac_fourth_order_dddy(t, y, dy, ddy, dddy, xi):
 
 def p32_jac_fourth_order_ddddy(t, y, dy, ddy, dddy, xi):
     return np.ones((1, 1)) * -y / xi
+
+
+
+def problem_23_second_order(xi=1.):
+
+    L = np.eye(1, 2)
+    R = np.eye(1, 2)
+
+    y0 = np.array([.0])
+    ymax = np.array([1.])
+
+    t0 = 0.0
+    tmax = 1.0
+
+    return SecondOrderBoundaryValueProblem(
+        f=lambda t, y, dy: p23_rhs_second_order(t, y, dy, xi=xi),
+        t0=t0,
+        tmax=tmax,
+        L=L,
+        R=R,
+        y0=y0,
+        ymax=ymax,
+        df_dy=lambda t, y, dy: p23_jacobian_second_order_dy(t, y, dy, xi=xi),
+        df_ddy=lambda t, y, dy: p23_jacobian_second_order_ddy(t, y, dy, xi=xi),
+        dimension=1,
+    )
+
+
+def p23_rhs_second_order(t, y, dy, xi):
+    return xi * np.sinh(xi*y)
+
+
+def p23_jacobian_second_order_ddy(t, y, dy, xi):
+    return np.zeros((1, 1))
+
+
+def p23_jacobian_second_order_dy(t, y, dy, xi):
+    return np.ones((1, 1)) * xi**2 * np.cosh(xi*y)
