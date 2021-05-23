@@ -16,7 +16,7 @@ from tqdm import tqdm
 from bvps import bridges, bvp_solver, problem_examples
 
 # Easy aliases
-anees = timeseries.average_normalized_estimation_error_squared
+anees = timeseries.anees
 rmse = timeseries.root_mean_square_error
 
 
@@ -24,24 +24,27 @@ TMAX = 1.0
 XI = 0.001
 
 
-bvp = problem_examples.problem_20_second_order(xi=0.5)
+bvp = problem_examples.bratus_second_order(tmax=1.)
+bvp1st = bvp.to_first_order()
 
 TOL = 1e-5
 
+initial_grid = np.linspace(bvp.t0, bvp.tmax, 300)
+initial_guess = np.ones((bvp1st.dimension, len(initial_grid)))
 
-# refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=TOL)
-# refsol_fine = solve_bvp(
-#     bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=1e-12
-# )
-# bvp.solution = refsol_fine.sol
-
+refsol = solve_bvp(bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=TOL)
+refsol_fine = solve_bvp(
+    bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=1e-10
+)
+assert refsol_fine.success
+bvp.solution = refsol_fine.sol
 
 results = {}
 
-testlocations = np.linspace(bvp.t0, bvp.tmax, 500)
+testlocations = np.linspace(bvp.t0, bvp.tmax, 50)
 
 
-for q in [3, 4]:
+for q in [3, 4, 5]:
     print()
     print()
     print("q", q)
@@ -79,21 +82,10 @@ for q in [3, 4]:
         TOL = 10.0 ** (-tol_order)
 
         print("tol", TOL)
-        if TOL > 1e-4:
-            solver = bvp_solver.BVPSolver.from_default_values_std_refinement(
-                ibm, initial_sigma_squared=1e2, normalise_with_interval_size=False
-            )
-        else:
-            solver = bvp_solver.BVPSolver.from_default_values(
-                ibm, initial_sigma_squared=1e2, normalise_with_interval_size=False
-            )
-
-        if TOL > 1e-4:
-            initial_grid = np.linspace(bvp.t0, bvp.tmax, 3)
-        elif TOL > 1e-8:
-            initial_grid = np.linspace(bvp.t0, bvp.tmax, 50)
-        else:
-            initial_grid = np.linspace(bvp.t0, bvp.tmax, 160)
+        solver = bvp_solver.BVPSolver.from_default_values_std_refinement(
+            ibm, initial_sigma_squared=1e2, normalise_with_interval_size=False
+        )
+        initial_grid = np.linspace(bvp.t0, bvp.tmax, 3)
         initial_guess = np.ones((len(initial_grid), bvp.dimension))
 
         initial_posterior, sigma_squared = solver.compute_initialisation(
@@ -119,7 +111,7 @@ for q in [3, 4]:
         testlocations = np.linspace(bvp.t0, bvp.tmax)
         reference_solution = lambda *args, **kwargs: bvp.solution(
             *args, **kwargs
-        ).reshape((-1, 1))
+        )[0].reshape((-1, 1))
         # plt.plot(testlocations, reference_solution(testlocations))
         # plt.plot(testlocations, solution(testlocations).mean[:, 0])
         # plt.show()

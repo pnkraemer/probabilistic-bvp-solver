@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from probnumeval.timeseries import chi2_confidence_intervals
 
-out = chi2_confidence_intervals(dim=1)
+out = chi2_confidence_intervals(dim=1, perc=0.95)
 
 with open("./data/bratus_problem_work_precision.json", "r") as infile:
     data = json.load(infile)
@@ -81,12 +81,6 @@ for q, marker, color in zip(data.keys(), markers, colors):
         markersize=3,
         linewidth=1.0,
     )
-    with plt.style.context(
-        "./visualization/stylesheets/marker/hollow_markers.mplstyle"
-    ):
-        ax[0].loglog(
-            Ns[:3], errors[:3], color=color, marker=marker, markersize=3, linewidth=1.0
-        )
     ax[1].loglog(
         times,
         errors,
@@ -96,17 +90,6 @@ for q, marker, color in zip(data.keys(), markers, colors):
         markersize=3,
         linewidth=1.0,
     )
-    with plt.style.context(
-        "./visualization/stylesheets/marker/hollow_markers.mplstyle"
-    ):
-        ax[1].loglog(
-            times[:3],
-            errors[:3],
-            color=color,
-            marker=marker,
-            markersize=3,
-            linewidth=1.0,
-        )
     ax[2].loglog(
         Ns,
         times,
@@ -116,12 +99,6 @@ for q, marker, color in zip(data.keys(), markers, colors):
         color=color,
         linewidth=1.0,
     )
-    with plt.style.context(
-        "./visualization/stylesheets/marker/hollow_markers.mplstyle"
-    ):
-        ax[2].loglog(
-            Ns[:3], times[:3], marker=marker, markersize=3, color=color, linewidth=1.0
-        )
 
     ax[3].loglog(
         Ns,
@@ -132,12 +109,6 @@ for q, marker, color in zip(data.keys(), markers, colors):
         color=color,
         linewidth=1.0,
     )
-    with plt.style.context(
-        "./visualization/stylesheets/marker/hollow_markers.mplstyle"
-    ):
-        ax[3].loglog(
-            Ns[:3], chi2s[:3], marker=marker, markersize=3, color=color, linewidth=1.0
-        )
 
 ax[0].set_xlabel(r"No. of grid points")
 ax[1].set_xlabel(r"Time (s)")
@@ -149,18 +120,18 @@ ax[1].set_ylabel("RMSE")
 ax[2].set_ylabel("Time (s)")
 ax[3].set_ylabel("ANEES")
 
-
-ax[0].set_ylim((1e-16, 1e-0))
-ax[1].set_ylim((1e-16, 1e-0))
-ax[2].set_ylim((1e-2, 1e2))
-ax[2].set_yticks((1e-2, 1e0, 1e2))
-ax[3].set_ylim((1e-6, 1e4))
-ax[3].set_yticks((1e-6, 1e-1, 1e4))
-
-ax[0].set_xlim((1e0, 1e4))
-ax[1].set_xlim((1e-2, 1e2))
-ax[2].set_xlim((1e0, 1e4))
-ax[3].set_xlim((1e0, 1e4))
+#
+# ax[0].set_ylim((1e-16, 1e-0))
+# ax[1].set_ylim((1e-16, 1e-0))
+# ax[2].set_ylim((1e-2, 1e2))
+# ax[2].set_yticks((1e-2, 1e0, 1e2))
+# ax[3].set_ylim((1e-6, 1e4))
+# ax[3].set_yticks((1e-6, 1e-1, 1e4))
+#
+# ax[0].set_xlim((1e0, 1e4))
+# ax[1].set_xlim((1e-2, 1e2))
+# ax[2].set_xlim((1e0, 1e4))
+# ax[3].set_xlim((1e0, 1e4))
 
 
 ax[3].axhspan(out[0], out[1], alpha=0.1, color="black", linewidth=0.0)
