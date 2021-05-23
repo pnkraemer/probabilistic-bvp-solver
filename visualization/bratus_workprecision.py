@@ -39,11 +39,15 @@ markers = ["s", "d", "^", "o"]
 colors = ["C0", "C1", "C2", "C3"]
 for q, marker, color in zip(data.keys(), markers, colors):
     qres = data[q]
-    Ns = []
-    chi2s = []
-    errors = []
     tols = []
+    chi2s = []
+    Ns = []
+    errors = []
     times = []
+
+    scipy_Ns = []
+    scipy_errors = []
+    scipy_times = []
     for tol in qres.keys():
         qtolres = qres[tol]
 
@@ -52,11 +56,18 @@ for q, marker, color in zip(data.keys(), markers, colors):
         N = qtolres["N"]
         t = qtolres["time"]
 
+        scipy_error = qtolres["scipy_error"]
+        scipy_N = qtolres["scipy_N"]
+        scipy_t = qtolres["scipy_time"]
+
         tols.append(float(tol))
-        Ns.append(N)
         chi2s.append(chi2)
+        Ns.append(N)
         errors.append(error)
         times.append(t)
+        scipy_Ns.append(scipy_N)
+        scipy_errors.append(scipy_error)
+        scipy_times.append(scipy_t)
 
     # ax[0].loglog(
     #     tols,
@@ -110,6 +121,42 @@ for q, marker, color in zip(data.keys(), markers, colors):
         linewidth=1.0,
     )
 
+
+print(scipy_Ns, scipy_errors, scipy_times)
+
+
+ax[0].loglog(
+    scipy_Ns,
+    scipy_errors,
+    color="gray",
+    marker="*",
+    markersize=3,
+    linewidth=3.0,
+    alpha=0.3
+)
+ax[1].loglog(
+    scipy_times,
+    scipy_errors,
+    color="gray",
+    marker="*",
+    markersize=3,
+    linewidth=3.0,
+    alpha=0.3
+)
+ax[2].loglog(
+    scipy_Ns,
+    scipy_times,
+    label="SciPy",
+    color="gray",
+    marker="*",
+    markersize=3,
+    linewidth=3.0,
+    alpha=0.3
+)
+
+
+
+
 ax[0].set_xlabel(r"No. of grid points")
 ax[1].set_xlabel(r"Time (s)")
 ax[2].set_xlabel(r"No. of grid points")
@@ -123,7 +170,7 @@ ax[3].set_ylabel("ANEES")
 #
 # ax[0].set_ylim((1e-16, 1e-0))
 # ax[1].set_ylim((1e-16, 1e-0))
-# ax[2].set_ylim((1e-2, 1e2))
+ax[2].set_ylim((2e-3, 3e0))
 # ax[2].set_yticks((1e-2, 1e0, 1e2))
 # ax[3].set_ylim((1e-6, 1e4))
 # ax[3].set_yticks((1e-6, 1e-1, 1e4))
@@ -137,10 +184,10 @@ ax[3].set_ylabel("ANEES")
 ax[3].axhspan(out[0], out[1], alpha=0.1, color="black", linewidth=0.0)
 ax[3].axhline(1.0, color="black", linewidth=0.5)
 
-ax[0].legend(fancybox=False, edgecolor="black").get_frame().set_linewidth(0.5)
+ax[2].legend(fancybox=False, edgecolor="black", fontsize="small",handlelength=1., loc="center right").get_frame().set_linewidth(0.5)
 # ax[1].legend(fancybox=False, edgecolor="black").get_frame().set_linewidth(0.5)
 # ax[2].legend(fancybox=False, edgecolor="black").get_frame().set_linewidth(0.5)
 # ax[3].legend(fancybox=False, edgecolor="black").get_frame().set_linewidth(0.5)
-
+plt.minorticks_off()
 plt.savefig("./figures/bratu_workprecision.pdf")
 plt.show()

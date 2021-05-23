@@ -124,13 +124,33 @@ for q in [3, 4, 5]:
         print(ssq)
         chi2 = anees(solution, reference_solution, testlocations, damping=1e-30) / ssq
 
+        initial_guess = np.ones((len(initial_grid), bvp1st.dimension)).T
+
+        start_time_scipy = time.time()
+        scipy_solution = solve_bvp(
+            bvp1st.f, bvp1st.scipy_bc, initial_grid, initial_guess, tol=TOL
+        )
+        runtime_scipy = time.time() - start_time_scipy
+        assert scipy_solution.success
+
+        # How accurate would scipy be?
+        scipy_sol_for_rmse = lambda *args: scipy_solution.sol(*args)[0][:,
+                                           None]
+        error_scipy = timeseries.root_mean_square_error(
+            scipy_sol_for_rmse, reference_solution, testlocations
+        )
+
         error = rmse(solution_mean, reference_solution, testlocations)
         results[q][TOL] = {}
         results[q][TOL]["chi2"] = chi2
         results[q][TOL]["error"] = error
         results[q][TOL]["N"] = len(solution.locations)
         results[q][TOL]["time"] = end_time
-        print(chi2, error, end_time)
+        results[q][TOL]["scipy_error"] = error_scipy
+        results[q][TOL]["scipy_N"] = len(scipy_solution.x)
+        results[q][TOL]["scipy_time"] = runtime_scipy
+
+    print(chi2, error, end_time)
 print(results)
 
 import json
