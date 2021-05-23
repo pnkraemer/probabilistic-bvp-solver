@@ -48,10 +48,6 @@ xticks = []
 xticklabels = []
 
 
-# Placeholder to check how a 5th problem looks
-data["23rd Problem"] = data["24th Problem"]
-print("\nUsing a placeholder key...\n")
-
 
 for problem_index, key in enumerate(reversed(data.keys())):
     problem_results = data[key]["6"]

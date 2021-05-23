@@ -739,7 +739,7 @@ def p32_jac_fourth_order_ddddy(t, y, dy, ddy, dddy, xi):
 
 
 
-def problem_23_second_order(xi=1.):
+def problem_23_second_order(xi=0.25):
 
     L = np.eye(1, 2)
     R = np.eye(1, 2)

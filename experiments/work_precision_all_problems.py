@@ -17,10 +17,10 @@ results = {}
 
 problems = [
     problem_examples.problem_23_second_order(xi=0.25),
-    problem_examples.problem_32_fourth_order(),
-    problem_examples.problem_24_second_order(),
-    problem_examples.problem_28_second_order(),
-    problem_examples.problem_7_second_order(),
+    problem_examples.problem_32_fourth_order(xi=0.25),
+    problem_examples.problem_24_second_order(xi=0.5, gamma=1.4),
+    problem_examples.problem_28_second_order(xi=0.4),
+    problem_examples.problem_7_second_order(xi=0.1),
 ]
 labels = [
     "23rd Problem",
@@ -31,7 +31,7 @@ labels = [
 ]
 
 for bvp, label in zip(problems, labels):
-
+    assert bvp.dimension == 1
     results[label] = {}
     ORDERS = list(reversed([6]))
     TOLERANCES = list(reversed([1e-1, 1e-6]))
