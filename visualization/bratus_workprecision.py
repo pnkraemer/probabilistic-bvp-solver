@@ -166,7 +166,7 @@ ax[3].set_xlabel(r"No. of grid points")
 ax[0].set_ylabel("RMSE")
 ax[1].set_ylabel("RMSE")
 ax[2].set_ylabel("Time (s)")
-ax[3].set_ylabel("ANEES")
+ax[3].set_ylabel("$\\chi^2$ statistic")
 
 #
 # ax[0].set_ylim((1e-16, 1e-0))
