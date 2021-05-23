@@ -46,7 +46,14 @@ ax.spines["bottom"].set_position(("outward", 2))
 
 xticks = []
 xticklabels = []
-for problem_index, key in enumerate(data.keys()):
+
+
+# Placeholder to check how a 5th problem looks
+data["23rd Problem"] = data["24th Problem"]
+print("\nUsing a placeholder key...\n")
+
+
+for problem_index, key in enumerate(reversed(data.keys())):
     problem_results = data[key]["6"]
     problem_results_1e2 = problem_results["0.1"]
     problem_results_1e5 = problem_results["1e-06"]
@@ -93,7 +100,7 @@ for problem_index, key in enumerate(data.keys()):
     SHIFT = 0.035
     ax.annotate(
         f"({N_1e2}, {round_to_1(time_1e2)})",
-        (problem_index - 0.35, error_1e2),
+        (problem_index - 0.4, error_1e2),
         zorder=10,
         bbox={"facecolor": "white", "edgecolor": "white", "pad": 0},
         fontsize="x-small",
@@ -101,7 +108,7 @@ for problem_index, key in enumerate(data.keys()):
     )
     ax.annotate(
         f"({N_1e5}, {round_to_1(time_1e5)})",
-        (problem_index - 0.35, error_1e5),
+        (problem_index - 0.4, error_1e5),
         zorder=10,
         bbox={"facecolor": "white", "edgecolor": "white", "pad": 0},
         fontsize="x-small",
@@ -124,8 +131,8 @@ for problem_index, key in enumerate(data.keys()):
         color="black",
     )
 
-    ax.semilogy(problem_index - SHIFT, error_1e2, marker="P", markersize=7, markeredgecolor="C0", markerfacecolor=fillcolor_1e2, markeredgewidth=1., zorder=9)
-    ax.semilogy(problem_index - SHIFT, error_1e5, marker="P", markersize=7, markeredgecolor="C2", markerfacecolor=fillcolor_1e5, markeredgewidth=1., zorder=9)
+    ax.semilogy(problem_index - SHIFT, error_1e2, marker="v", markersize=7, markeredgecolor="C0", markerfacecolor=fillcolor_1e2, markeredgewidth=1., zorder=9)
+    ax.semilogy(problem_index - SHIFT, error_1e5, marker="v", markersize=7, markeredgecolor="C2", markerfacecolor=fillcolor_1e5, markeredgewidth=1., zorder=9)
     ax.semilogy(
         problem_index + SHIFT, scipy_error_1e2, marker="d", markersize=7, markeredgecolor="C0", markerfacecolor="white", markeredgewidth=1., zorder=9
     )
@@ -175,7 +182,7 @@ for problem_index, key in enumerate(data.keys()):
 ax.annotate("Tol $10^{-1}$", (-0.1, 2e-1), color="C0")
 ax.annotate("Tol $10^{-6}$", (0.3, 2e-6), color="C2")
 ax.axhline(1e-1, linestyle="dashed", color="C0", linewidth=1)
-ax.axhline(1e-6, linestyle="dashed", color="C2", linewidth=1)
+ax.axhline(1e-6, linestyle="dotted", color="C2", linewidth=1)
 ax.set_xlim(np.amin(xticks) - 0.5, np.amax(xticks) + 0.5)
 ax.set_xticks(xticks)
 ax.set_xticklabels(xticklabels)
