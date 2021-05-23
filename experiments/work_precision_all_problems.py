@@ -99,7 +99,7 @@ for bvp, label in zip(problems, labels):
             solution_mean = lambda *args: solution(*args).mean
 
             # Compute error and calibration
-            chi2 = timeseries.anees(solution, reference_solution, testlocations, damping=0.)
+            chi2 = timeseries.anees(solution, reference_solution, testlocations, damping=1e-15)
             # chi2 = timeseries.average_normalized_estimation_error_squared(
             #     solution, reference_solution, testlocations
             # )
