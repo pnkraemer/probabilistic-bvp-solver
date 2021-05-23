@@ -16,18 +16,18 @@ from bvps import bvp_solver, problem_examples
 results = {}
 
 problems = [
+    problem_examples.problem_7_second_order(xi=0.1),
     problem_examples.problem_23_second_order(xi=0.25),
-    problem_examples.problem_32_fourth_order(xi=0.25),
     problem_examples.problem_24_second_order(xi=0.5, gamma=1.4),
     problem_examples.problem_28_second_order(xi=0.4),
-    problem_examples.problem_7_second_order(xi=0.1),
+    problem_examples.problem_32_fourth_order(xi=0.25),
 ]
 labels = [
+    "7th Problem",
     "23rd Problem",
-    "32nd Problem",
     "24th Problem",
     "28th Problem",
-    "7th Problem",
+    "32nd Problem",
 ]
 
 for bvp, label in zip(problems, labels):

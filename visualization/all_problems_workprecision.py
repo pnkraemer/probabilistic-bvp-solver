@@ -49,7 +49,7 @@ xticklabels = []
 
 
 
-for problem_index, key in enumerate(reversed(data.keys())):
+for problem_index, key in enumerate(data.keys()):
     problem_results = data[key]["6"]
     problem_results_1e2 = problem_results["0.1"]
     problem_results_1e5 = problem_results["1e-06"]
@@ -72,23 +72,23 @@ for problem_index, key in enumerate(reversed(data.keys())):
 
     if out_67[0] <= chi2_1e5 <= out_67[1]:
         print("yaheay", chi2_1e5)
-        fillcolor_1e5 = "green"
+        fillcolor_1e5 = "forestgreen"
     elif out_99[0] <= chi2_1e5 <= out_99[1]:
         print("yakinda", chi2_1e5)
         fillcolor_1e5 = "orange"
     else:
         print("jasad", chi2_1e5)
-        fillcolor_1e5 = "red"
+        fillcolor_1e5 = "tomato"
 
     if out_67[0] <= chi2_1e2 <= out_67[1]:
         print("yaheay", chi2_1e2)
-        fillcolor_1e2 = "green"
+        fillcolor_1e2 = "forestgreen"
     elif out_99[0] <= chi2_1e2 <= out_99[1]:
         print("yakinda", chi2_1e2)
         fillcolor_1e2 = "orange"
     else:
         print("jasad", chi2_1e2)
-        fillcolor_1e2 = "red"
+        fillcolor_1e2 = "tomato"
 
     xticks.append(problem_index)
 
@@ -176,7 +176,7 @@ for problem_index, key in enumerate(reversed(data.keys())):
 
 # print(problem_index, key)
 ax.annotate("Tol $10^{-1}$", (-0.1, 2e-1), color="C0")
-ax.annotate("Tol $10^{-6}$", (0.3, 2e-6), color="C2")
+ax.annotate("Tol $10^{-6}$", (0.1, 2e-6), color="C2")
 ax.axhline(1e-1, linestyle="dashed", color="C0", linewidth=1)
 ax.axhline(1e-6, linestyle="dotted", color="C2", linewidth=1)
 ax.set_xlim(np.amin(xticks) - 0.5, np.amax(xticks) + 0.5)
